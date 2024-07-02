@@ -1,0 +1,9 @@
+mesop>=0.9.3
+Flask==3.0.0
+gunicorn==20.1.0
+Werkzeug==3.0.1
+dataclasses_json
+google-cloud-aiplatform
+google-cloud-logging
+google-cloud-discoveryengine==0.11.13
+python-dotenv

@@ -1,0 +1,62 @@
+{ "templates":[
+    {
+        "name": "Medieval Portraits",
+        "template": "Line art, vector art. Portrait, realistic. White background. Medieval. ${role} ${physical_traits}. ${clothing}. ${face_expression_or_emotion}",
+        "preview": "templates/medieval_portraits.png",
+        "author": "drabiej@google.com"
+    },
+    {
+        "name": "3D Clay Stickers",
+        "template": "A miniature clay animation 3D floating ${object_with_attributes} on a white background. The background is white. The colors are bright and saturated, and the overall look is playful. Everything in the scene is made of colorful clay.",
+        "preview": "templates/3d_clay_stickers.png",
+        "author": "nmatarese@google.com"
+    },
+    {
+        "name": "Enamel Pins",
+        "template": "An enamel pin with a gold border on a white background. It features a ${object_with_attributes}. Enamel pin on white background. It looks like a pin you might find on a jean jacket or backpack.",
+        "preview": "templates/enamel_pins.png",
+        "author": "nmatarese@google.com"
+    },
+    {
+        "name": "Paper Craft",
+        "template": "A construction paper craft depicting a ${object_with_attributes} on a white background. Made of pieces of textured construction paper pieces. It looks like something you would expect from an art student.",
+        "preview": "templates/paper_craft.png",
+        "author": "schome@google.com"
+    },
+    {
+        "name": "Stylized Portraits",
+        "template": "Close-up portrait. Graphic novel style. Vector art. ${subject}. ${profession_or_role}. ${physical_traits}. ${clothing_or_apparel_details}. ${activity_or_action}. ${setting_details}. ${background_elements}.",
+        "preview": "templates/stylized_portraits.png",
+        "author": "drabiej@google.com"
+    },
+    {
+        "name": "Cake Pops",
+        "template": "A cute cake pop of a [object with attributes]. The cake pop is mostly round in shape and made of bright colors and mostly fondant and edible materials, with simple features and not too much detail. A lollipop stick protrudes out the bottom of the cake pop. The image is on a white background.",
+        "preview": "templates/cake_pops.png",
+        "author": "jeganc@google.com"
+    },
+    {
+        "name": "Corporate Memphis",
+        "template": "A simple vector illustration on a white background with light blue background atmosphere and colorful characters. It features [subject in location]. A google-style vector illustration. The type of illustration you would see on a modern website.",
+        "preview": "templates/corporate_memphis.png",
+        "author": "hatefulcrawdad@google.com"
+    },
+    {
+        "name": "Embroidered Patches",
+        "template": "An embroidered patch like you might see on a backpack or jean jacket. The patch has a [color profile] picture of [an object] and [optional phrase]. The patch's shape is a [shape]. The edges are a solid color of string piped all around. The patch is on a white background, shot from overhead. ",
+        "preview": "templates/embroidered_patches.png",
+        "author": "btomassetti@google.com"
+    },
+    {
+        "name": "Stylized 3D",
+        "template": "A miniature soap animation 3D floating [object with attributes] on a white background. The background is white. The colors are bright and saturated, and the overall look is playful. Everything in the scene is made of colorful translucent soap.",
+        "preview": "templates/stylized_3d.png",
+        "author": "aastewart@google.com & nmatarese@google.com"
+    },
+    {
+        "name": "Black Ink Tattoo",
+        "template": "A monochrome black ink tattoo of [object with attributes] on a person’s arms. The image is zoomed in on the tattoo. The person is [gender] and muscular. The person’s face is not in the frame.",
+        "preview": "templates/black_ink_tattoo.png",
+        "author": "hamidmohammadi@google.com"
+    }
+]}
