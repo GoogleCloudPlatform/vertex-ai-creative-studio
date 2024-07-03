@@ -22,6 +22,7 @@ from vertexai.generative_models import (
     HarmCategory,
     Part,
 )
+from google.cloud.aiplatform import telemetry
 
 
 title = "CREATIVE STUDIO"
@@ -31,7 +32,9 @@ LOCATION = "us-central1"
 multimodal_model_name = "gemini-1.5-flash"
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
-model = GenerativeModel(model_name=multimodal_model_name)
+
+with telemetry.tool_context_manager('creative-studio'):
+    model = GenerativeModel(model_name=multimodal_model_name)
 
 imagen2 = "imagegeneration@006"
 imagen_nano = "imagegeneration@004"
@@ -112,7 +115,7 @@ def generate_images(input: str):
                 modifiers.append(getattr(state, f"image_{mod}"))
     prompt_modifiers = ", ".join(modifiers)
     prompt = f"{input} {prompt_modifiers}"
-    print(prompt)
+    print(f"prompt: {prompt}")
     print(f"model: {state.image_model_name}")
     imagen3_generation_model = ImageGenerationModel.from_pretrained(state.image_model_name)
     response = imagen3_generation_model.generate_images(
@@ -128,7 +131,6 @@ def generate_images(input: str):
         #state.image_output.append(output)
         state.image_output.append(img._gcs_uri)
         
- 
 
 def random_prompt(e: me.ClickEvent):
     state = me.state(State)
@@ -138,7 +140,7 @@ def random_prompt(e: me.ClickEvent):
     random_prompt = random.choice(prompts["imagen"])
     state.image_prompt_placeholder = random_prompt
     on_image_input(me.InputEvent(key=str(state.image_textarea_key), value=random_prompt))
-    #print(random_prompt)
+    print(f"preset chosen: {random_prompt}")
     yield
 
 
@@ -198,7 +200,8 @@ def generateCompliment(generation_instruction: str):
     Outputs a Gemini generated comment about images
     """
     state = me.state(State)
-    model = GenerativeModel(multimodal_model_name)
+    with telemetry.tool_context_manager('creative-studio'):
+        model = GenerativeModel(multimodal_model_name)
     config = GenerationConfig(temperature=0.8, max_output_tokens=2048)
     safety_settings = {
         HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -215,8 +218,8 @@ def generateCompliment(generation_instruction: str):
     prompt_parts.append("""
                         
 You're a friendly visual magazine editor who loves AI generated images with Imagen3, Google's latest image generation model whose quality exceeds all leading external competitors in aesthetics, defect-free, and text image alignment. You are always friendly and positive and have a delightfully cheeky, clever streak.
-    
-The prompt used by the author to create this was: "{}"
+
+The prompt used by the author to create these images was: "{}"
     
 Create a few sentence critique and commentary (3-4 sentences) complimenting each these images individually and together, paying special attention to color, tone, subject, lighting, and composition. You may address the author as "you."
     
