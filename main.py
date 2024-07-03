@@ -123,8 +123,11 @@ def generate_images(input: str):
         add_watermark=True,
         aspect_ratio=getattr(state, "image_aspect_ratio"),
         number_of_images=3,
-        output_gcs_uri=image_creation_bucket
+        output_gcs_uri=image_creation_bucket,
+        language="auto",
     )
+    print(response)
+    print(response.__dict__)
     for idx, img in enumerate(response.images):
         print(f"generated image: {idx} len {len(img._as_base64_string())} at {img._gcs_uri}")
         #output = img._as_base64_string()
