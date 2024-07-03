@@ -126,8 +126,6 @@ def generate_images(input: str):
         output_gcs_uri=image_creation_bucket,
         language="auto",
     )
-    print(response)
-    print(response.__dict__)
     for idx, img in enumerate(response.images):
         print(f"generated image: {idx} len {len(img._as_base64_string())} at {img._gcs_uri}")
         #output = img._as_base64_string()
