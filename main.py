@@ -47,8 +47,8 @@ image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 # set this if you want to use templates; you must update to publicly accessible image source
 template_portrait_base_url = ""
 #template_portrait_base_url = "https://storage.googleapis.com/creative-studio-867-static-assets/"
-#image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
-image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
+image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
+#image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
 class ImageModel(TypedDict):
     display: str
