@@ -48,6 +48,7 @@ image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 template_portrait_base_url = ""
 #template_portrait_base_url = "https://storage.googleapis.com/creative-studio-867-static-assets/"
 image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
+#image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
 class ImageModel(TypedDict):
     display: str
@@ -64,19 +65,26 @@ image_models_json = [
 class State:
     is_loading: bool = False
     show_templates: bool = False
+    show_advanced: bool = False
 
     # imagen
     image_models: list[ImageModel] = field(default_factory=lambda:image_models_json)
     image_model_name: str = "imagen-3.0-fast-generate-preview-0611"
     image_prompt_input: str
-    image_output: list[str] = field(default_factory=lambda:[])
+    image_prompt_placeholder: str
     image_textarea_key: int
+    
     image_aspect_ratio: str = "1:1"
+    image_negative_prompt_input: str = ""
+    image_negative_prompt_placeholder: str = ""
+    image_negative_prompt_key: int
+    
     image_content_type: str = "Photo"
     image_color_tone: str = "Cool tone"
     image_lighting: str = "Golden hour"
     image_composition: str = "Wide angle"
-    image_prompt_placeholder: str
+    
+    image_output: list[str] = field(default_factory=lambda:[])
     image_commentary: str
 
 
@@ -90,6 +98,8 @@ def on_image_input(e: me.InputEvent):
 def on_blur_image_prompt(e: me.InputBlurEvent):
     me.state(State).image_prompt_input = e.value
 
+def on_blur_image_negative_prompt(e: me.InputBlurEvent):
+    me.state(State).image_negative_prompt_input = e.value
 
 def on_click_generate_images(e: me.ClickEvent):
     state = me.state(State)
@@ -116,6 +126,8 @@ def generate_images(input: str):
     prompt_modifiers = ", ".join(modifiers)
     prompt = f"{input} {prompt_modifiers}"
     print(f"prompt: {prompt}")
+    if state.image_negative_prompt_input:
+        print(f"negative prompt: {state.image_negative_prompt_input}")
     print(f"model: {state.image_model_name}")
     imagen3_generation_model = ImageGenerationModel.from_pretrained(state.image_model_name)
     response = imagen3_generation_model.generate_images(
@@ -125,6 +137,7 @@ def generate_images(input: str):
         number_of_images=3,
         output_gcs_uri=image_creation_bucket,
         language="auto",
+        negative_prompt=state.image_negative_prompt_input
     )
     for idx, img in enumerate(response.images):
         print(f"generated image: {idx} len {len(img._as_base64_string())} at {img._gcs_uri}")
@@ -143,6 +156,11 @@ def random_prompt(e: me.ClickEvent):
     on_image_input(me.InputEvent(key=str(state.image_textarea_key), value=random_prompt))
     print(f"preset chosen: {random_prompt}")
     yield
+
+
+# advanced controls
+def on_click_advanced_controls(e: me.ClickEvent):
+    me.state(State).show_advanced = not me.state(State).show_advanced
 
 
 # fun templates
@@ -187,7 +205,9 @@ def on_click_clear_images(e: me.ClickEvent):
     state.image_prompt_input = ""
     state.image_prompt_placeholder = ""
     state.image_output.clear()
+    state.image_negative_prompt_input = ""
     state.image_textarea_key += 1
+    state.image_negative_prompt_key += 1
     
 
 def on_selection_change_image(e: me.SelectSelectionChangeEvent):
@@ -267,7 +287,12 @@ def app():
                     flex_direction="column",
                 )
             ):
-                with me.box(style=me.Style(display="flex", justify_content="space-between")):
+                with me.box(
+                    style=me.Style(
+                        display="flex", 
+                        justify_content="space-between",
+                    )
+                ):
                     with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
                         me.icon(icon="auto_fix_high")
                         me.text(title, type="headline-5", style=me.Style(font_family="Google Sans"))
@@ -344,8 +369,19 @@ def app():
                     if state.show_templates == True:
                         # Templates
                         with me.box(style=_BOX_STYLE_ROW):
-                            with me.box(style=me.Style(flex_direction="row", display="flex")):
-                                with me.box(style=me.Style(flex_direction="column", display="flex", padding=me.Padding(top=-5))):
+                            with me.box(
+                                style=me.Style(
+                                    flex_direction="row", 
+                                    display="flex",
+                                )
+                            ):
+                                with me.box(
+                                    style=me.Style(
+                                        flex_direction="column", 
+                                        display="flex", 
+                                        padding=me.Padding(top=-5),
+                                    )
+                                ):
                                     # clickable cancel icon button
                                     with me.content_button(on_click=on_click_show_templates):
                                         with me.tooltip(message="hide templates"):
@@ -375,7 +411,14 @@ def app():
                     else:
                         # Modifiers
                         with me.box(style=_BOX_STYLE):            
-                            with me.box(style=me.Style(display="flex", justify_content="space-between", gap=2, width="100%")):
+                            with me.box(
+                                style=me.Style(
+                                    display="flex", 
+                                    justify_content="space-between", 
+                                    gap=2, 
+                                    width="100%",
+                                )
+                            ):
                                 me.select(
                                     label="Aspect Ratio",
                                     options=[
@@ -436,6 +479,35 @@ def app():
                                     on_selection_change=on_selection_change_image,
                                     value=state.image_composition
                                 )
+
+                            # Advanced controls
+                            # negative prompt
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                )
+                            ):
+                                if state.show_advanced:
+                                    with me.content_button(on_click=on_click_advanced_controls):
+                                        with me.tooltip(message="hide advanced controls"):
+                                            with me.box(style=me.Style(display="flex")):
+                                                me.icon("cancel")
+                                    me.input(
+                                        label="negative phrases",
+                                        on_blur=on_blur_image_negative_prompt,
+                                        value=state.image_negative_prompt_placeholder,
+                                        key=str(state.image_negative_prompt_key),
+                                        style=me.Style(
+                                            width="350px",
+                                        )
+                                        )
+                                else:
+                                    with me.content_button(on_click=on_click_advanced_controls):
+                                        with me.tooltip(message="show advanced controls"):
+                                            with me.box(style=me.Style(display="flex")):
+                                                me.icon("expand_more")
+
 
                     # Image output
                     with me.box(style=_BOX_STYLE):
