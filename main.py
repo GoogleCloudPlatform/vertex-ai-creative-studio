@@ -47,8 +47,8 @@ image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 # set this if you want to use templates; you must update to publicly accessible image source
 template_portrait_base_url = ""
 #template_portrait_base_url = "https://storage.googleapis.com/creative-studio-867-static-assets/"
-image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
-#image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
+#image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
+image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
 class ImageModel(TypedDict):
     display: str
@@ -419,6 +419,18 @@ def app():
                                     width="100%",
                                 )
                             ):
+                                if state.show_advanced:
+                                    with me.content_button(on_click=on_click_advanced_controls):
+                                        with me.tooltip(message="hide advanced controls"):
+                                            with me.box(style=me.Style(display="flex")):
+                                                me.icon("expand_less")
+                                else:
+                                    with me.content_button(on_click=on_click_advanced_controls):
+                                        with me.tooltip(message="show advanced controls"):
+                                            with me.box(style=me.Style(display="flex")):
+                                                me.icon("expand_more")
+                                            
+                                # Default Modifiers
                                 me.select(
                                     label="Aspect Ratio",
                                     options=[
@@ -489,10 +501,7 @@ def app():
                                 )
                             ):
                                 if state.show_advanced:
-                                    with me.content_button(on_click=on_click_advanced_controls):
-                                        with me.tooltip(message="hide advanced controls"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("cancel")
+                                    me.box(style=me.Style(width=67))
                                     me.input(
                                         label="negative phrases",
                                         on_blur=on_blur_image_negative_prompt,
@@ -501,12 +510,7 @@ def app():
                                         style=me.Style(
                                             width="350px",
                                         )
-                                        )
-                                else:
-                                    with me.content_button(on_click=on_click_advanced_controls):
-                                        with me.tooltip(message="show advanced controls"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("expand_more")
+                                    )
 
 
                     # Image output
