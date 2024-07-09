@@ -30,7 +30,7 @@ from vertexai.generative_models import (
 from google.cloud.aiplatform import telemetry
 
 
-title = "CREATIVE STUDIO"
+title = "IMAGEN CREATIVE STUDIO"
 
 PROJECT_ID = os.environ.get('PROJECT_ID')
 LOCATION = "us-central1"
@@ -227,7 +227,7 @@ def on_click_rewrite_prompt(e: me.ClickEvent):
         rewritten = rewrite_prompt(state.image_prompt_input)
         state.image_prompt_input = rewritten
         state.image_prompt_placeholder = rewritten
-    #state.image_textarea_key += 1
+        #state.image_textarea_key += 1
 
 
 def rewrite_prompt(original_prompt: str):
@@ -296,7 +296,7 @@ def generateCompliment(generation_instruction: str):
         allowed_script_srcs	    = ["https://cdn.jsdelivr.net"],
         allowed_connect_srcs	= ["https://cdn.jsdelivr.net"],
         dangerously_disable_trusted_types=True),
-    title="Creative Studio | Vertex AI Gemini",
+    title="Imagen Creative Studio | Vertex AI",
 )
 def app():
     state = me.state(State)
@@ -405,7 +405,7 @@ def app():
                                     with me.box(
                                         style=me.Style(
                                             display="flex", 
-                                            gap=2, 
+                                            gap=3, 
                                             align_items="center",
                                         )
                                     ):
