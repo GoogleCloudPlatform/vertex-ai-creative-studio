@@ -223,9 +223,10 @@ def on_selection_change_image(e: me.SelectSelectionChangeEvent):
 
 def on_click_rewrite_prompt(e: me.ClickEvent):
     state = me.state(State)
-    rewritten = rewrite_prompt(state.image_prompt_input)
-    state.image_prompt_input = rewritten
-    state.image_prompt_placeholder = rewritten
+    if state.image_prompt_input:
+        rewritten = rewrite_prompt(state.image_prompt_input)
+        state.image_prompt_input = rewritten
+        state.image_prompt_placeholder = rewritten
     #state.image_textarea_key += 1
 
 
