@@ -394,9 +394,11 @@ def app():
                                 style=me.Style(color="#1A73E8"),
                             )
                             # prompt rewriter
+                            #disabled = not state.image_prompt_input if not state.image_prompt_input else False
                             with me.content_button(
                                 on_click=on_click_rewrite_prompt, 
                                 type="stroked",
+                                #disabled=disabled,
                             ):
                                 with me.tooltip(message="rewrite prompt with Gemini"):
                                     with me.box(
