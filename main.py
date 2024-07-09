@@ -6,6 +6,11 @@ from svg_icon.svg_icon_component import (
     svg_icon_component,
 )
 
+from prompts.critics import (
+    REWRITER_PROMPT,
+    MAGAZINE_EDITOR_PROMPT,
+)
+
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from typing import List, TypedDict, Any, cast
@@ -55,8 +60,8 @@ class ImageModel(TypedDict):
     model_name: str
 
 image_models_json = [
-    {"display": "Imagen3 Fast", "model": "imagen-3.0-fast-generate-preview-0611"},
-    {"display": "Imagen3", "model": "imagen-3.0-generate-preview-0611"}
+    {"display": "Imagen 3 Fast", "model": "imagen-3.0-fast-generate-preview-0611"},
+    {"display": "Imagen 3", "model": "imagen-3.0-generate-preview-0611"}
 ]
 
 
@@ -216,6 +221,41 @@ def on_selection_change_image(e: me.SelectSelectionChangeEvent):
     setattr(state, f"image_{e.key}", e.value)
 
 
+def on_click_rewrite_prompt(e: me.ClickEvent):
+    state = me.state(State)
+    rewritten = rewrite_prompt(state.image_prompt_input)
+    state.image_prompt_input = rewritten
+    state.image_prompt_placeholder = rewritten
+    #state.image_textarea_key += 1
+
+
+def rewrite_prompt(original_prompt: str):
+    """
+    Outputs a rewritten prompt
+
+    Args:
+        original_prompt (str): artists's original prompt
+    """
+    #state = me.state(State)
+    with telemetry.tool_context_manager('creative-studio'):
+        model = GenerativeModel(multimodal_model_name)
+    config = GenerationConfig(temperature=0.8, max_output_tokens=2048)
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
+    response = model.generate_content(
+        REWRITER_PROMPT.format(original_prompt), 
+        generation_config=config,
+        safety_settings=safety_settings,
+        )
+    print(f"asked to rewrite: '{original_prompt}")
+    print(f"rewritten as: {response.text}")
+    return response.text
+    
+
 def generateCompliment(generation_instruction: str):
     """
     Outputs a Gemini generated comment about images
@@ -231,20 +271,14 @@ def generateCompliment(generation_instruction: str):
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
     }
     prompt_parts = []
-    for img in state.image_output:
+    for idx, img in enumerate(state.image_output):
         # not bytes
         #prompt_parts.append(Part.from_data(data=img, mime_type="image/png"))
         # now gcs uri
+        prompt_parts.append(f"""image {idx}
+""")
         prompt_parts.append(Part.from_uri(uri=img,mime_type="image/png"))
-    prompt_parts.append("""
-                        
-You're a friendly visual magazine editor who loves AI generated images with Imagen3, Google's latest image generation model whose quality exceeds all leading external competitors in aesthetics, defect-free, and text image alignment. You are always friendly and positive and have a delightfully cheeky, clever streak.
-
-The prompt used by the author to create these images was: "{}"
-    
-Create a few sentence critique and commentary (3-4 sentences) complimenting each these images individually and together, paying special attention to color, tone, subject, lighting, and composition. You may address the author as "you."
-    
-""".format(generation_instruction))
+    prompt_parts.append(MAGAZINE_EDITOR_PROMPT.format(generation_instruction))
     
     response = model.generate_content(
         prompt_parts, 
@@ -252,6 +286,7 @@ Create a few sentence critique and commentary (3-4 sentences) complimenting each
         safety_settings=safety_settings,
         )
     state.image_commentary = response.text
+
 
 
 @me.page(
@@ -358,6 +393,22 @@ def app():
                                 on_click=random_prompt,
                                 style=me.Style(color="#1A73E8"),
                             )
+                            # prompt rewriter
+                            with me.content_button(
+                                on_click=on_click_rewrite_prompt, 
+                                type="stroked",
+                            ):
+                                with me.tooltip(message="rewrite prompt with Gemini"):
+                                    with me.box(
+                                        style=me.Style(
+                                            display="flex", 
+                                            gap=2, 
+                                            align_items="center",
+                                        )
+                                    ):
+                                        me.icon("auto_awesome")
+                                        me.text("Rewriter")
+                            # generate
                             me.button(
                                 "Generate",
                                 color="primary",
