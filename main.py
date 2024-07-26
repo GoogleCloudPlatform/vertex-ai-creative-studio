@@ -52,8 +52,8 @@ image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 # set this if you want to use templates; you must update to publicly accessible image source
 template_portrait_base_url = ""
 #template_portrait_base_url = "https://storage.googleapis.com/creative-studio-867-static-assets/"
-image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
-#image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
+#image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
+image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
 class ImageModel(TypedDict):
     display: str
@@ -83,6 +83,9 @@ class State:
     image_negative_prompt_input: str = ""
     image_negative_prompt_placeholder: str = ""
     image_negative_prompt_key: int
+    imagen_watermark: bool = True
+    imagen_seed: int
+    imagen_image_count: int = 3
     
     image_content_type: str = "Photo"
     image_color_tone: str = "Cool tone"
@@ -116,6 +119,10 @@ def on_click_generate_images(e: me.ClickEvent):
     state.is_loading = False
     yield
     
+def on_select_image_count(e: me.SelectSelectionChangeEvent):
+    state = me.state(State)
+    setattr(state, e.key, e.value)
+
 
 def generate_images(input: str):
     state = me.state(State)
@@ -139,7 +146,7 @@ def generate_images(input: str):
         prompt=prompt,
         add_watermark=True,
         aspect_ratio=getattr(state, "image_aspect_ratio"),
-        number_of_images=3,
+        number_of_images=int(state.imagen_image_count),
         output_gcs_uri=image_creation_bucket,
         language="auto",
         negative_prompt=state.image_negative_prompt_input
@@ -276,7 +283,7 @@ def generateCompliment(generation_instruction: str):
         # not bytes
         #prompt_parts.append(Part.from_data(data=img, mime_type="image/png"))
         # now gcs uri
-        prompt_parts.append(f"""image {idx}
+        prompt_parts.append(f"""image {idx+1}
 """)
         prompt_parts.append(Part.from_uri(uri=img,mime_type="image/png"))
     prompt_parts.append(MAGAZINE_EDITOR_PROMPT.format(generation_instruction))
@@ -552,6 +559,7 @@ def app():
                                 style=me.Style(
                                     display="flex",
                                     flex_direction="row",
+                                    gap=5,
                                 )
                             ):
                                 if state.show_advanced:
@@ -563,8 +571,33 @@ def app():
                                         key=str(state.image_negative_prompt_key),
                                         style=me.Style(
                                             width="350px",
-                                        )
+                                        ),
                                     )
+                                    me.select(
+                                        label="number of images",
+                                        value="3",
+                                        options=[
+                                            me.SelectOption(label="1", value="1"),
+                                            me.SelectOption(label="2", value="2"),
+                                            me.SelectOption(label="3", value="3"),
+                                            me.SelectOption(label="4", value="4")
+                                        ],
+                                        on_selection_change=on_select_image_count,
+                                        key="imagen_image_count",
+                                        style=me.Style(width="155px")
+                                    )
+                                    me.checkbox(
+                                        label="watermark", 
+                                        checked=True,
+                                        disabled=True,
+                                        key="imagen_watermark",
+                                    )
+                                    me.input(
+                                        label="seed",
+                                        disabled=True,
+                                        key="imagen_seed",
+                                    )
+                                    
 
 
                     # Image output
