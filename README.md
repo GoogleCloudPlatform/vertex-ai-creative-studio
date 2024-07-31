@@ -19,7 +19,7 @@ Provide an environment variable for your Google Cloud Project ID
 export PROJECT_ID=$(gcloud config get project)
 ```
 
-Install requirements
+### Install requirements
 
 ```
 python3 -m venv venv
@@ -28,12 +28,15 @@ pip install -r requirements.txt
 
 ```
 
-Modify two items in `main.py`
-* `template_portrait_base_url` point this to a public bucket of template images, see `templates` folder and the `templates.json`
+Modify one item in `main.py`
 * `image_creation_bucket` a GCS url of a bucket the app can write to, this is where images will be generated and retrieved from
 
+Optionally, modify this
+* (Optional) `template_portrait_base_url` point this to a public bucket of template images, see `templates` folder and the `templates.json`
 
-Run with mesop
+
+
+### Run with mesop
 
 ```
 mesop main.py
