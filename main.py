@@ -43,8 +43,8 @@ with telemetry.tool_context_manager('creative-studio'):
 
 imagen2 = "imagegeneration@006"
 imagen_nano = "imagegeneration@004"
-imagen3_fast = "imagen-3.0-fast-generate-preview-0611"
-imagen3 = "imagen-3.0-generate-preview-0611"
+imagen3_fast = "imagen-3.0-fast-generate-001"
+imagen3 = "imagen-3.0-generate-001"
 imagen3_model_name = imagen2
 imagen3_generation_model = ImageGenerationModel.from_pretrained(imagen3)
 image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
@@ -60,8 +60,8 @@ class ImageModel(TypedDict):
     model_name: str
 
 image_models_json = [
-    {"display": "Imagen 3 Fast", "model": "imagen-3.0-fast-generate-preview-0611"},
-    {"display": "Imagen 3", "model": "imagen-3.0-generate-preview-0611"}
+    {"display": "Imagen 3 Fast", "model": "imagen-3.0-fast-generate-001"},
+    {"display": "Imagen 3", "model": "imagen-3.0-generate-001"}
 ]
 
 
