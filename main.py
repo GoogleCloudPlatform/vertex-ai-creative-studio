@@ -49,9 +49,6 @@ imagen3_model_name = imagen2
 imagen3_generation_model = ImageGenerationModel.from_pretrained(imagen3)
 image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 
-# set this if you want to use templates; you must update to publicly accessible image source
-template_portrait_base_url = ""
-#template_portrait_base_url = "https://storage.googleapis.com/creative-studio-867-static-assets/"
 #image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
 image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
@@ -69,12 +66,11 @@ image_models_json = [
 @me.stateclass
 class State:
     is_loading: bool = False
-    show_templates: bool = False
     show_advanced: bool = False
 
     # imagen
     image_models: list[ImageModel] = field(default_factory=lambda:image_models_json)
-    image_model_name: str = "imagen-3.0-fast-generate-preview-0611"
+    image_model_name: str = imagen3_fast
     image_prompt_input: str
     image_prompt_placeholder: str
     image_textarea_key: int
@@ -175,43 +171,6 @@ def on_click_advanced_controls(e: me.ClickEvent):
     me.state(State).show_advanced = not me.state(State).show_advanced
 
 
-# fun templates
-all_templates = []
-templates = []
-
-if template_portrait_base_url:
-    with open('./templates/templates.json', 'r') as file:
-        data = file.read()
-        tmpls = json.loads(data)
-        for tmpl in tmpls["templates"]:
-            all_templates.append(tmpl)
-        templates = random.sample(all_templates,5) 
-
-def on_click_show_templates(e: me.ClickEvent):
-    state = me.state(State)
-    shuffle_templates()
-    state.show_templates = not state.show_templates
-    
-def on_click_choose_template(e: me.ClickEvent):
-    state = me.state(State)
-    tmpl = next(item for item in all_templates if item["name"] == e.key)
-    template = tmpl.get('template')    
-    state.image_prompt_placeholder = template
-    on_image_input(me.InputEvent(key=str(state.image_textarea_key), value=template))
-    state.show_templates = not state.show_templates
-    yield
-
-def on_click_shuffle_templates(e: me.ClickEvent):
-    shuffle_templates()
-
-def shuffle_templates():
-    print(templates)
-    templates = random.sample(all_templates,5)
-    for t in templates:
-        print(t["name"])
-    yield
-
-
 def on_click_clear_images(e: me.ClickEvent):
     state = me.state(State)
     state.image_prompt_input = ""
@@ -294,7 +253,6 @@ def generateCompliment(generation_instruction: str):
         safety_settings=safety_settings,
         )
     state.image_commentary = response.text
-
 
 
 @me.page(
@@ -386,14 +344,7 @@ def app():
                                 type="stroked",
                                 on_click=on_click_clear_images,
                             )
-                            if templates:
-                                me.button(
-                                    "Templates",
-                                    color="primary",
-                                    type="stroked",
-                                    on_click=on_click_show_templates,
-                                    style=me.Style(color="#1A73E8")
-                                )
+
                             me.button(
                                 "Random",
                                 color="primary",
@@ -426,177 +377,133 @@ def app():
                                 on_click=on_click_generate_images,
                             )
 
-                    # Modifiers or Templates
-                    if state.show_templates == True:
-                        # Templates
-                        with me.box(style=_BOX_STYLE_ROW):
-                            with me.box(
-                                style=me.Style(
-                                    flex_direction="row", 
-                                    display="flex",
-                                )
-                            ):
-                                with me.box(
-                                    style=me.Style(
-                                        flex_direction="column", 
-                                        display="flex", 
-                                        padding=me.Padding(top=-5),
-                                    )
-                                ):
-                                    # clickable cancel icon button
-                                    with me.content_button(on_click=on_click_show_templates):
-                                        with me.tooltip(message="hide templates"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("cancel")
-                                    with me.content_button(on_click=on_click_shuffle_templates):
-                                        with me.tooltip(message="random"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("shuffle")      
-                            with me.box(style=me.Style(
+                    # Modifiers
+                    with me.box(style=_BOX_STYLE):            
+                        with me.box(
+                            style=me.Style(
                                 display="flex", 
-                                flex_wrap="wrap", gap=2, 
-                                width="100%",height="80px")):
-                                    for tmpl in templates:
-                                        tmpl_name = tmpl.get('name')
-                                        url = f"{template_portrait_base_url}{tmpl.get('preview')}"
-                                        with me.content_button(on_click=on_click_choose_template, key=f"{tmpl_name}"):
-                                            with me.tooltip(message=f"{tmpl_name}"):
-                                                with me.box(style=_BOX_STYLE_TEMPLATE):
-                                                    me.image(
-                                                        alt=f"{tmpl_name}",
-                                                        src=f"{url}", 
-                                                        style=me.Style(width="50px")
-                                                    )
-                                                    me.text(tmpl_name)
-                    
-                    else:
-                        # Modifiers
-                        with me.box(style=_BOX_STYLE):            
-                            with me.box(
-                                style=me.Style(
-                                    display="flex", 
-                                    justify_content="space-between", 
-                                    gap=2, 
-                                    width="100%",
-                                )
-                            ):
-                                if state.show_advanced:
-                                    with me.content_button(on_click=on_click_advanced_controls):
-                                        with me.tooltip(message="hide advanced controls"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("expand_less")
-                                else:
-                                    with me.content_button(on_click=on_click_advanced_controls):
-                                        with me.tooltip(message="show advanced controls"):
-                                            with me.box(style=me.Style(display="flex")):
-                                                me.icon("expand_more")
-                                            
-                                # Default Modifiers
-                                me.select(
-                                    label="Aspect Ratio",
-                                    options=[
-                                        me.SelectOption(label="1:1", value="1:1"),
-                                        me.SelectOption(label="3:4", value="3:4"),
-                                        me.SelectOption(label="4:3", value="4:3"),
-                                        me.SelectOption(label="16:9", value="16:9"),
-                                        me.SelectOption(label="9:16", value="9:16"),
-                                    ],
-                                    key="aspect_ratio",
-                                    on_selection_change=on_selection_change_image,
-                                    style=me.Style(width="160px"),
-                                    value=state.image_aspect_ratio,
-                                )
-                                me.select(
-                                    label="Content Type",
-                                    options=[
-                                        me.SelectOption(label="None", value="None"),
-                                        me.SelectOption(label="Photo", value="Photo"),
-                                        me.SelectOption(label="Art", value="Art"), 
-                                    ],
-                                    key="content_type",
-                                    on_selection_change=on_selection_change_image,
-                                    style=me.Style(width="160px"),
-                                    value=state.image_content_type
-                                )
-                                
-                                color_and_tone_options = []
-                                for c in ["None", "Black and white", "Cool tone", "Golden", "Monochromatic", "Muted color", "Pastel color", "Toned image"]:
-                                        color_and_tone_options.append(me.SelectOption(label=c, value=c))
-                                me.select(
-                                    label="Color & Tone",
-                                    options=color_and_tone_options,
-                                    key="color_tone",
-                                    on_selection_change=on_selection_change_image,
-                                    style=me.Style(width="160px"),
-                                    value=state.image_color_tone
-                                )
-                                
-                                lighting_options = []
-                                for l in ["None", "Backlighting", "Dramatic light", "Golden hour", "Long-time exposure", "Low lighting", "Multiexposure", "Studio light", "Surreal lighting"]:
-                                    lighting_options.append(me.SelectOption(label=l, value=l))
-                                me.select(
-                                    label="Lighting",
-                                    options=lighting_options,
-                                    key="lighting",
-                                    on_selection_change=on_selection_change_image,
-                                    value=state.image_lighting
-                                )
-                                
-                                composition_options = []
-                                for c in ["None", "Closeup", "Knolling", "Landscape photography", "Photographed through window", "Shallow depth of field", "Shot from above", "Shot from below", "Surface detail", "Wide angle"]:
-                                    composition_options.append(me.SelectOption(label=c, value=c))
-                                me.select(
-                                    label="Composition",
-                                    options=composition_options,
-                                    key="composition",
-                                    on_selection_change=on_selection_change_image,
-                                    value=state.image_composition
-                                )
+                                justify_content="space-between", 
+                                gap=2, 
+                                width="100%",
+                            )
+                        ):
+                            if state.show_advanced:
+                                with me.content_button(on_click=on_click_advanced_controls):
+                                    with me.tooltip(message="hide advanced controls"):
+                                        with me.box(style=me.Style(display="flex")):
+                                            me.icon("expand_less")
+                            else:
+                                with me.content_button(on_click=on_click_advanced_controls):
+                                    with me.tooltip(message="show advanced controls"):
+                                        with me.box(style=me.Style(display="flex")):
+                                            me.icon("expand_more")
+                                        
+                            # Default Modifiers
+                            me.select(
+                                label="Aspect Ratio",
+                                options=[
+                                    me.SelectOption(label="1:1", value="1:1"),
+                                    me.SelectOption(label="3:4", value="3:4"),
+                                    me.SelectOption(label="4:3", value="4:3"),
+                                    me.SelectOption(label="16:9", value="16:9"),
+                                    me.SelectOption(label="9:16", value="9:16"),
+                                ],
+                                key="aspect_ratio",
+                                on_selection_change=on_selection_change_image,
+                                style=me.Style(width="160px"),
+                                value=state.image_aspect_ratio,
+                            )
+                            me.select(
+                                label="Content Type",
+                                options=[
+                                    me.SelectOption(label="None", value="None"),
+                                    me.SelectOption(label="Photo", value="Photo"),
+                                    me.SelectOption(label="Art", value="Art"), 
+                                ],
+                                key="content_type",
+                                on_selection_change=on_selection_change_image,
+                                style=me.Style(width="160px"),
+                                value=state.image_content_type
+                            )
+                            
+                            color_and_tone_options = []
+                            for c in ["None", "Black and white", "Cool tone", "Golden", "Monochromatic", "Muted color", "Pastel color", "Toned image"]:
+                                    color_and_tone_options.append(me.SelectOption(label=c, value=c))
+                            me.select(
+                                label="Color & Tone",
+                                options=color_and_tone_options,
+                                key="color_tone",
+                                on_selection_change=on_selection_change_image,
+                                style=me.Style(width="160px"),
+                                value=state.image_color_tone
+                            )
+                            
+                            lighting_options = []
+                            for l in ["None", "Backlighting", "Dramatic light", "Golden hour", "Long-time exposure", "Low lighting", "Multiexposure", "Studio light", "Surreal lighting"]:
+                                lighting_options.append(me.SelectOption(label=l, value=l))
+                            me.select(
+                                label="Lighting",
+                                options=lighting_options,
+                                key="lighting",
+                                on_selection_change=on_selection_change_image,
+                                value=state.image_lighting
+                            )
+                            
+                            composition_options = []
+                            for c in ["None", "Closeup", "Knolling", "Landscape photography", "Photographed through window", "Shallow depth of field", "Shot from above", "Shot from below", "Surface detail", "Wide angle"]:
+                                composition_options.append(me.SelectOption(label=c, value=c))
+                            me.select(
+                                label="Composition",
+                                options=composition_options,
+                                key="composition",
+                                on_selection_change=on_selection_change_image,
+                                value=state.image_composition
+                            )
 
-                            # Advanced controls
-                            # negative prompt
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    gap=5,
+                        # Advanced controls
+                        # negative prompt
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="row",
+                                gap=5,
+                            )
+                        ):
+                            if state.show_advanced:
+                                me.box(style=me.Style(width=67))
+                                me.input(
+                                    label="negative phrases",
+                                    on_blur=on_blur_image_negative_prompt,
+                                    value=state.image_negative_prompt_placeholder,
+                                    key=str(state.image_negative_prompt_key),
+                                    style=me.Style(
+                                        width="350px",
+                                    ),
                                 )
-                            ):
-                                if state.show_advanced:
-                                    me.box(style=me.Style(width=67))
-                                    me.input(
-                                        label="negative phrases",
-                                        on_blur=on_blur_image_negative_prompt,
-                                        value=state.image_negative_prompt_placeholder,
-                                        key=str(state.image_negative_prompt_key),
-                                        style=me.Style(
-                                            width="350px",
-                                        ),
-                                    )
-                                    me.select(
-                                        label="number of images",
-                                        value="3",
-                                        options=[
-                                            me.SelectOption(label="1", value="1"),
-                                            me.SelectOption(label="2", value="2"),
-                                            me.SelectOption(label="3", value="3"),
-                                            me.SelectOption(label="4", value="4")
-                                        ],
-                                        on_selection_change=on_select_image_count,
-                                        key="imagen_image_count",
-                                        style=me.Style(width="155px")
-                                    )
-                                    me.checkbox(
-                                        label="watermark", 
-                                        checked=True,
-                                        disabled=True,
-                                        key="imagen_watermark",
-                                    )
-                                    me.input(
-                                        label="seed",
-                                        disabled=True,
-                                        key="imagen_seed",
-                                    )
+                                me.select(
+                                    label="number of images",
+                                    value="3",
+                                    options=[
+                                        me.SelectOption(label="1", value="1"),
+                                        me.SelectOption(label="2", value="2"),
+                                        me.SelectOption(label="3", value="3"),
+                                        me.SelectOption(label="4", value="4")
+                                    ],
+                                    on_selection_change=on_select_image_count,
+                                    key="imagen_image_count",
+                                    style=me.Style(width="155px")
+                                )
+                                me.checkbox(
+                                    label="watermark", 
+                                    checked=True,
+                                    disabled=True,
+                                    key="imagen_watermark",
+                                )
+                                me.input(
+                                    label="seed",
+                                    disabled=True,
+                                    key="imagen_seed",
+                                )
                                     
 
 
@@ -720,16 +627,4 @@ _BOX_STYLE_ROW = me.Style(
     padding=me.Padding(top=12, left=12, right=12, bottom=12),
     display="flex",
     flex_direction="row",
-)
-
-_BOX_STYLE_TEMPLATE = me.Style(
-    flex_basis="max(480px, calc(50% - 48px))",
-    background="#fff",
-    border_radius=12,
-    box_shadow=(
-        "0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"
-    ),
-    padding=me.Padding(top=10, left=10, right=10, bottom=10),
-    display="flex",
-    flex_direction="column",
 )
