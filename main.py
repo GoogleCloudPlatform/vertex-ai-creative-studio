@@ -32,6 +32,7 @@ from google.cloud.aiplatform import telemetry
 
 title = "IMAGEN CREATIVE STUDIO"
 
+GENMEDIA_BUCKET = os.environ.get("GENMEDIA_BUCKET")
 PROJECT_ID = os.environ.get('PROJECT_ID')
 LOCATION = "us-central1"
 multimodal_model_name = "gemini-1.5-flash"
@@ -49,8 +50,9 @@ imagen3_model_name = imagen2
 imagen3_generation_model = ImageGenerationModel.from_pretrained(imagen3)
 image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 
-#image_creation_bucket = "gs://creative-studio-867-static-assets/temporary-generations/"
-image_creation_bucket = "gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
+image_creation_bucket = f"gs://{GENMEDIA_BUCKET}" 
+#"gs://creative-studio-867-static-assets/temporary-generations/"
+#"gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
 
 class ImageModel(TypedDict):
     display: str
