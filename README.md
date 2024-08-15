@@ -5,7 +5,7 @@ Creative Studio is an app that highlights the capabilities of Google Cloud Verte
 This app is built with [Mesop](https://google.github.io/mesop), an unofficial Google Python UX framework.
 
 
-## Imagen | Creative Studio
+## GenMedia | Creative Studio
 
 ![](./screenshots/creative_studio.png)
 
@@ -38,6 +38,8 @@ Optionally, modify this
 
 ### Run with mesop
 
+To run locally, use the `mesop` command and open the browser to the URL provided:
+
 ```
 mesop main.py
 ```
@@ -45,9 +47,30 @@ mesop main.py
 
 ## Deploy to Cloud Run
 
-```
-gcloud run deploy creative-studio --source . --allow-unauthenticated --region us-central1
-```
+Deploy this application to a Cloud Run service.
 
 It's recommended that you create a separate service account to deploy a Cloud Run Service.
+
+
+```
+export SA_NAME=sa-genmedia-creative-studio
+export PROJECT_ID=$(gcloud config get project)
+
+gcloud iam service-accounts create $SA_NAME \
+    --description="genmedia creative studio" \
+    --display-name="$SA_NAME"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/storage.objectUser"
+
+```
+gcloud run deploy creative-studio --source . --allow-unauthenticated --region us-central1 --service-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
+```
+
+
 
