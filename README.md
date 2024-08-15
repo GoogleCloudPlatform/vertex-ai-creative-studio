@@ -2,21 +2,31 @@
 
 Creative Studio is an app that highlights the capabilities of Google Cloud Vertex AI generative AI creative APIs, including Imagen, the text-to-image model.
 
-This app is built with [Mesop](https://google.github.io/mesop), an unofficial Google Python UX framework.
+This app is built with [Mesop](https://google.github.io/mesop), a Python-based UI framework that allows you to rapidly build web apps like this demo and internal apps.
 
 
 ## GenMedia | Creative Studio
 
-![](./screenshots/creative_studio.png)
+![](./screenshots/creative_studio_02.png)
 
 
 
 ## Run locally
 
+Two environment variables are required to run this application:
+
+`PROJECT_ID` 
 Provide an environment variable for your Google Cloud Project ID
 
 ```
 export PROJECT_ID=$(gcloud config get project)
+```
+
+`GENMEDIA_BUCKET`
+Provide a Google Cloud Storage bucket for the generative media, without the gs:// url prefix, for example:
+
+```
+export GENMEDIA_BUCKET=myproject-genmedia/temp/
 ```
 
 ### Install requirements
@@ -27,13 +37,6 @@ python3 -m venv venv
 pip install -r requirements.txt
 
 ```
-
-Modify one item in `main.py`
-* `image_creation_bucket` a GCS url of a bucket the app can write to, this is where images will be generated and retrieved from
-
-Optionally, modify this
-* (Optional) `template_portrait_base_url` point this to a public bucket of template images, see `templates` folder and the `templates.json`
-
 
 
 ### Run with mesop
@@ -69,7 +72,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role="roles/storage.objectUser"
 ```
 
-Deploy with the service account and environment variables (see above).
+Deploy with the service account and environment variables, `PROJECT_ID` and `GENMEDIA_BUCKET` (see above).
 
 ```
 gcloud run deploy creative-studio --source . \
