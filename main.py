@@ -65,8 +65,7 @@ imagen3_generation_model = ImageGenerationModel.from_pretrained(imagen3)
 image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 
 image_creation_bucket = f"gs://{GENMEDIA_BUCKET}" 
-#"gs://creative-studio-867-static-assets/temporary-generations/"
-#"gs://ghchinoy-genai-sa-assets/creative-studio-temp/"
+
 
 class ImageModel(TypedDict):
     display: str
