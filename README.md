@@ -2,6 +2,8 @@
 
 Creative Studio is an app that highlights the capabilities of Google Cloud Vertex AI generative AI creative APIs, including Imagen, the text-to-image model.
 
+Features Gemini for prompt rewriting as well as for a critic to provide a multimodal evaluation of the generated images. 
+
 This app is built with [Mesop](https://google.github.io/mesop), a Python-based UI framework that allows you to rapidly build web apps like this demo and internal apps.
 
 
