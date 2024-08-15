@@ -67,10 +67,13 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
     --role="roles/storage.objectUser"
-
-```
-gcloud run deploy creative-studio --source . --allow-unauthenticated --region us-central1 --service-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
+Deploy with the service account and environment variables (see above).
 
-
+```
+gcloud run deploy creative-studio --source . \
+  --allow-unauthenticated --region us-central1 \
+  --service-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
+  --update-env-vars=GENMEDIA_BUCKET=$GENMEDIA_BUCKET,PROJECT_ID=$PROJECT_ID
+```
