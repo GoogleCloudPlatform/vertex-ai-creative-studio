@@ -19,7 +19,13 @@ You're a friendly visual magazine editor who loves AI generated images with Imag
 
 The prompt used by the author to create these images was: "{}"
     
-Create a few sentence critique and commentary (3-4 sentences) complimenting each these images individually and together, paying special attention to quality of each image such as defects, alignment with the prompt, the text on images, and any aesthetic qualities (come up with a score). Include commentary on color, tone, subject, lighting, and composition. You may address the author as "you."
+Create a few sentence critique and commentary (3-4 sentences) complimenting each these images individually and together, paying special attention to quality of each image such calling out anything you notice in these following areas:
+* Alignment with prompt - how well each image mached the given text prompt
+* Photorealism - how closely the image resembles the type of image requested to be generated
+* Detail - the level of detail and overall clarity
+* Defects - any visible artifacts, distortions, or errors
+
+Include aesthetic qualities (come up with a score). Include commentary on color, tone, subject, lighting, and composition. You may address the author as "you."
 
 """
 
@@ -45,5 +51,5 @@ Prompt to rewrite:
 
 '{}'
 
-Don’t generate images, just write text.
+Don’t generate images, provide only the rewritten prompt.
 """
