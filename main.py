@@ -66,6 +66,13 @@ image_generation_model = ImageGenerationModel.from_pretrained(imagen2)
 
 image_creation_bucket = f"gs://{GENMEDIA_BUCKET}" 
 
+safety_settings = {
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+}
+
 
 class ImageModel(TypedDict):
     display: str
@@ -222,12 +229,6 @@ def rewrite_prompt(original_prompt: str):
     with telemetry.tool_context_manager('creative-studio'):
         model = GenerativeModel(multimodal_model_name)
     config = GenerationConfig(temperature=0.8, max_output_tokens=2048)
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
     response = model.generate_content(
         REWRITER_PROMPT.format(original_prompt), 
         generation_config=config,
@@ -246,12 +247,6 @@ def generateCompliment(generation_instruction: str):
     with telemetry.tool_context_manager('creative-studio'):
         model = GenerativeModel(multimodal_model_name)
     config = GenerationConfig(temperature=0.8, max_output_tokens=2048)
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
     prompt_parts = []
     for idx, img in enumerate(state.image_output):
         # not bytes
