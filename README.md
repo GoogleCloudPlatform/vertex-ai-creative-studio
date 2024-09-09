@@ -17,29 +17,60 @@ This app is built with [Mesop](https://google.github.io/mesop), a Python-based U
 
 Two environment variables are required to run this application:
 
-`PROJECT_ID` 
+`PROJECT_ID`   
 Provide an environment variable for your Google Cloud Project ID
 
 ```
 export PROJECT_ID=$(gcloud config get project)
 ```
 
-`GENMEDIA_BUCKET`
-Provide a Google Cloud Storage bucket for the generative media, without the gs:// url prefix, for example:
+`GENMEDIA_BUCKET`  
+You'll need Google Cloud Storage bucket for the generative media. Note that this has to exist prior to running the application. 
+
+If an existing Google Cloud Storage bucket is available, please provide its name without the `"gs://"` prefix.  
 
 ```
-export GENMEDIA_BUCKET=myproject-genmedia/temp/
+export GENMEDIA_BUCKET=$PROJECT_ID-genmedia
+```  
+
+Otherwise, follow the next steps to create a storage bucket.  
+
+### Create Storage Bucket (Optional) 
+
+Please run the following command to obtain new credentials.  
+
 ```
+gcloud auth login  
+```  
+
+If you have already logged in with a different account, run:  
+
+```
+gcloud config set account $PROJECT_ID  
+```  
+
+Create the storage bucket.  
+
+```
+gcloud storage buckets create gs://$BUCKET_NAME --location=US --default-storage-class=STANDARD
+```
+
+
+### Create Virtual Environment 
+
+Create and activate a virtual environment for your solution. 
+```
+python3 -m venv venv 
+source venv/bin/activate
+```  
 
 ### Install requirements
 
+Install the required Python libraries.
+
 ```
-python3 -m venv venv
-. venv/bin/activate
 pip install -r requirements.txt
-
 ```
-
 
 ### Run with mesop
 
@@ -48,6 +79,8 @@ To run locally, use the `mesop` command and open the browser to the URL provided
 ```
 mesop main.py
 ```
+
+> **NOTE:** The mesop application may request you to allow it to accept incoming network connections. Please accept to avoid limiting the application's behavior.  
 
 
 ## Deploy to Cloud Run
@@ -61,20 +94,14 @@ It's recommended that you create a separate service account to deploy a Cloud Ru
 export SA_NAME=sa-genmedia-creative-studio
 export PROJECT_ID=$(gcloud config get project)
 
-gcloud iam service-accounts create $SA_NAME \
-    --description="genmedia creative studio" \
-    --display-name="$SA_NAME"
+gcloud iam service-accounts create $SA_NAME --description="genmedia creative studio" --display-name="$SA_NAME"
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/aiplatform.user"
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"  --role="roles/aiplatform.user"
 
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/storage.objectUser"
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" --role="roles/storage.objectUser"
 ```
 
-Deploy with the service account and environment variables, `PROJECT_ID` and `GENMEDIA_BUCKET` (see above).
+Deploy with the service account and environment variables created above; `PROJECT_ID` and `GENMEDIA_BUCKET`.
 
 ```
 gcloud run deploy creative-studio --source . \
