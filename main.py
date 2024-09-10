@@ -178,7 +178,7 @@ def generate_images(input: str):
 
 def random_prompt(e: me.ClickEvent):
     state = me.state(State)
-    with open('imagen_prompts.json', 'r') as file:
+    with open('./prompts/imagen_prompts.json', 'r') as file:
         data = file.read()
     prompts = json.loads(data)
     random_prompt = random.choice(prompts["imagen"])
