@@ -1,4 +1,4 @@
 __pycache__
 venv
 local/
-
+.env
