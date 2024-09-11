@@ -55,6 +55,10 @@ Create the storage bucket.
 gcloud storage buckets create gs://$BUCKET_NAME --location=US --default-storage-class=STANDARD
 ```
 
+> **NOTE:** We have provided a `env_template` that you can use to in your development environment. Simply duplicate it, rename it to `.env` and replace `<YOUR_GCP_PROJECT_ID>` with your project ID.  
+
+Then run `source .env` to add those variables into your environment.  
+
 
 ### Create Virtual Environment 
 

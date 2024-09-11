@@ -1,0 +1,2 @@
+export PROJECT_ID="<YOUR_GCP_PROJECT_ID>"
+export IMAGE_CREATION_BUCKET="${PROJECT_ID}-genmedia"
