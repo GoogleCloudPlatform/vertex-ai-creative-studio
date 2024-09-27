@@ -24,13 +24,13 @@ Provide an environment variable for your Google Cloud Project ID
 export PROJECT_ID=$(gcloud config get project)
 ```
 
-`GENMEDIA_BUCKET`  
+`IMAGE_CREATION_BUCKET`  
 You'll need Google Cloud Storage bucket for the generative media. Note that this has to exist prior to running the application. 
 
 If an existing Google Cloud Storage bucket is available, please provide its name without the `"gs://"` prefix.  
 
 ```
-export GENMEDIA_BUCKET=$PROJECT_ID-genmedia
+export IMAGE_CREATION_BUCKET=$PROJECT_ID-genmedia
 ```  
 
 Otherwise, follow the next steps to create a storage bucket.  
@@ -105,11 +105,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" --role="roles/storage.objectUser"
 ```
 
-Deploy with the service account and environment variables created above; `PROJECT_ID` and `GENMEDIA_BUCKET`.
+Deploy with the service account and environment variables created above; `PROJECT_ID` and `IMAGE_CREATION_BUCKET`.
 
 ```
 gcloud run deploy creative-studio --source . \
   --allow-unauthenticated --region us-central1 \
   --service-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
-  --update-env-vars=GENMEDIA_BUCKET=$GENMEDIA_BUCKET,PROJECT_ID=$PROJECT_ID
+  --update-env-vars=IMAGE_CREATION_BUCKET=$IMAGE_CREATION_BUCKET,PROJECT_ID=$PROJECT_ID
 ```
