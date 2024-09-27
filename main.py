@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Main Mesos App """
+""" Main Mesop App """
 import json
 import random
 from dataclasses import dataclass, field
@@ -41,7 +41,7 @@ vertexai.init(project=cfg.PROJECT_ID, location=cfg.LOCATION)
 @dataclass
 @me.stateclass
 class State:
-    """Mesos App State"""
+    """Mesop App State"""
 
     # Image generation model selection and output
     image_models: list[ImageModel] = field(default_factory=lambda: cfg.display_image_models.copy())
@@ -286,7 +286,7 @@ def generate_compliment(generation_instruction: str):
     title="Imagen Creative Studio | Vertex AI",
 )
 def app():
-    """Mesos App"""
+    """Mesop App"""
     state = me.state(State)
     with me.box(
         style=me.Style(
