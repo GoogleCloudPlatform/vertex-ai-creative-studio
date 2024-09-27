@@ -4,7 +4,7 @@ Creative Studio is an app that highlights the capabilities of Google Cloud Verte
 
 Features Gemini for prompt rewriting as well as for a critic to provide a multimodal evaluation of the generated images. 
 
-This app is built with [Mesop](https://google.github.io/mesop), a Python-based UI framework that allows you to rapidly build web apps like this demo and internal apps.
+This app is built with [Mesop](https://google.github.io/mesop), a Python-based UI framework that enables you to rapidly build web apps like this demo and internal apps.
 
 
 ## GenMedia | Creative Studio
@@ -113,3 +113,7 @@ gcloud run deploy creative-studio --source . \
   --service-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
   --update-env-vars=IMAGE_CREATION_BUCKET=$IMAGE_CREATION_BUCKET,PROJECT_ID=$PROJECT_ID
 ```
+
+# Disclaimer
+
+This is not an officially supported Google product.
