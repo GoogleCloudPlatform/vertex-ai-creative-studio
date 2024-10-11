@@ -52,7 +52,7 @@ gcloud config set account $PROJECT_ID
 Create the storage bucket.  
 
 ```
-gcloud storage buckets create gs://$BUCKET_NAME --location=US --default-storage-class=STANDARD
+gcloud storage buckets create gs://$IMAGE_CREATION_BUCKET --location=US --default-storage-class=STANDARD
 ```
 
 > **NOTE:** We have provided a `env_template` that you can use to in your development environment. Simply duplicate it, rename it to `.env` and replace `<YOUR_GCP_PROJECT_ID>` with your project ID.  
