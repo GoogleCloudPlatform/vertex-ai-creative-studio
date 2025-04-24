@@ -74,7 +74,7 @@ grpcio-status==1.71.0
     # via google-api-core
 gunicorn==23.0.0
     # via babel-web (pyproject.toml)
-h11==0.14.0
+h11==0.16.0
     # via uvicorn
 httptools==0.6.4
     # via uvicorn
