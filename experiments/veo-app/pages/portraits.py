@@ -14,6 +14,12 @@
 """Motion portraits"""
 
 import time
+from tenacity import (
+    retry,
+    wait_exponential,
+    stop_after_attempt,
+    retry_if_exception_type,
+)
 
 import mesop as me
 import requests
@@ -30,6 +36,16 @@ from config.default import Default
 from models.model_setup import VeoModelSetup
 from models.veo import image_to_video
 from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
+from models.model_setup import GeminiModelSetup
+
+from google.genai import types
+from google.genai.types import (
+    GenerateContentConfig,
+)
+
+
+client, model_id = GeminiModelSetup.init()
+MODEL_ID = model_id
 
 config = Default()
 veo_model = VeoModelSetup.init()
@@ -274,11 +290,11 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
 def on_click_motion_portraits(e: me.ClickEvent):
     """Create the motion portrait"""
     state = me.state(PageState)
-    
+
     if not state.reference_image_file:
         print("Unable to find uploaded image")
         return
-    
+
     state.is_loading = True
     state.show_error_dialog = False  # Reset error state before starting
     state.error_message = ""
@@ -292,13 +308,14 @@ def on_click_motion_portraits(e: me.ClickEvent):
 
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
-If you're given a picture, examine the picture to improve the scene direction.
+Examine the picture provided to improve the scene direction.
 
 Optionally, include is waving of hands and if necessary, and physical motion outside the frame.
 
-Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of laughter, either in joy or cruelty."""
+Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
+    scene_direction = generate_scene_direction(prompt, state.reference_image_gcs)
 
-    print(f"Lights, camera, action!:\n{prompt}")
+    print(f"Lights, camera, action!:\n{scene_direction}")
 
     aspect_ratio = state.aspect_ratio  # @param ["16:9", "9:16"]
     seed = 120
@@ -317,7 +334,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
     try:
         op = image_to_video(
             # state.veo_prompt_input,
-            prompt,
+            scene_direction,
             state.reference_image_gcs,
             seed,
             aspect_ratio,
@@ -432,3 +449,40 @@ Do not describe the frame. There should be no lip movement like speaking, but th
     state.is_loading = False
     yield
     print("Cut! That's a wrap!")
+
+
+@retry(
+    wait=wait_exponential(
+        multiplier=1, min=1, max=10
+    ),  # Exponential backoff (1s, 2s, 4s... up to 10s)
+    stop=stop_after_attempt(3),  # Stop after 3 attempts
+    retry=retry_if_exception_type(Exception),  # Retry on all exceptions
+    reraise=True,  # re-raise the last exception if all retries fail
+)
+def generate_scene_direction(prompt: str, reference_image_gcs: str) -> str:
+    """Generate scene direction with Gemini."""
+
+    try:
+        contents = types.Content(
+            role="user",
+            parts=[
+                types.Part.from_uri(
+                    file_uri= reference_image_gcs,
+                    mime_type= 'image/png',
+                ),
+                types.Part.from_text(text=prompt),
+            ],
+        )
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=contents,
+            config=GenerateContentConfig(
+                response_modalities=["TEXT"],
+            ),
+        )
+        print(f"success! {response.text}")
+        return response.text
+    except Exception as e:
+        print(f"error: {e}")
+        raise  # Re-raise the exception for tenacity to handle
+

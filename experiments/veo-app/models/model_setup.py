@@ -46,12 +46,14 @@ class VeoModelSetup:
 
 
 class GeminiModelSetup:
+    """Gemini model setup"""
     @staticmethod
     def init(
         project_id: Optional[str] = None,
         location: Optional[str] = None,
         model_id: Optional[str] = None,
     ):
+        """Init method"""
         config = Default()
         if not project_id:
             project_id = config.PROJECT_ID
