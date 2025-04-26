@@ -44,7 +44,7 @@ class PageState:
     error_message: str = ""
     result_video: str
     timing: str
-    
+
     aspect_ratio: str = "16:9"
     video_length: int = 5
     auto_enhance_prompt: bool = False
@@ -65,74 +65,104 @@ def motion_portraits_content(app_state: me.state):
         with page_frame():  # pylint: disable=not-context-manager
             header("Motion Portraits", "portrait")
 
-            # with me.box(style=_BOX_STYLE):
-            # Uploaded image
-            with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
-                me.text("Portrait")
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                )
+            ):
+                # Uploaded image
+                with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
+                    me.text("Portrait")
 
-                if state.reference_image_uri:
-                    output_url = state.reference_image_uri
-                    # output_url = f"https://storage.mtls.cloud.google.com/{state.reference_image_uri}"
-                    # output_url = "https://storage.mtls.cloud.google.com/ghchinoy-genai-sa-assets-flat/edits/image (30).png"
-                    print(f"displaying {output_url}")
-                    me.image(
-                        src=output_url,
-                        style=me.Style(
-                            height=150,
-                            border_radius=12,
-                        ),
-                        key=str(state.reference_image_file_key),
-                    )
-                else:
-                    me.image(src=None, style=me.Style(height=200))
+                    if state.reference_image_uri:
+                        output_url = state.reference_image_uri
+                        # output_url = f"https://storage.mtls.cloud.google.com/{state.reference_image_uri}"
+                        # output_url = "https://storage.mtls.cloud.google.com/ghchinoy-genai-sa-assets-flat/edits/image (30).png"
+                        print(f"displaying {output_url}")
+                        me.image(
+                            src=output_url,
+                            style=me.Style(
+                                height=150,
+                                border_radius=12,
+                            ),
+                            key=str(state.reference_image_file_key),
+                        )
+                    else:
+                        me.image(src=None, style=me.Style(height=200))
+
+                    # uploader controls
+                    with me.box(
+                        style=me.Style(display="flex", flex_direction="row", gap=5)
+                    ):
+                        # me.button(label="Upload", type="flat", disabled=True)
+                        me.uploader(
+                            label="Upload",
+                            accepted_file_types=["image/jpeg", "image/png"],
+                            on_upload=on_click_upload,
+                            type="flat",
+                            color="primary",
+                            style=me.Style(font_weight="bold"),
+                        )
+                        me.button(
+                            label="Clear",
+                            on_click=on_click_clear_reference_image,
+                        )
 
                 with me.box(
-                    style=me.Style(display="flex", flex_direction="row", gap=5)
-                ):
-                    # me.button(label="Upload", type="flat", disabled=True)
-                    me.uploader(
-                        label="Upload",
-                        accepted_file_types=["image/jpeg", "image/png"],
-                        on_upload=on_click_upload,
-                        type="flat",
-                        color="primary",
-                        style=me.Style(font_weight="bold"),
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="column",
+                        gap=5,
+                        padding=me.Padding.all(12),
                     )
-                    me.button(label="Clear", on_click=on_click_clear_reference_image)
-
-            me.box(style=me.Style(height=24))
+                ):
+                    me.text("Video options")
+                    with me.box(
+                        style=me.Style(display="flex", flex_direction="row", gap=5)
+                    ):
+                        me.select(
+                            label="aspect",
+                            appearance="outline",
+                            options=[
+                                me.SelectOption(label="16:9 widescreen", value="16:9"),
+                                me.SelectOption(label="9:16 portrait", value="9:16"),
+                            ],
+                            value=state.aspect_ratio,
+                            on_selection_change=on_selection_change_aspect,
+                        )
+                        me.select(
+                            label="length",
+                            options=[
+                                me.SelectOption(label="5 seconds", value="5"),
+                                me.SelectOption(label="6 seconds", value="6"),
+                                me.SelectOption(label="7 seconds", value="7"),
+                                me.SelectOption(label="8 seconds", value="8"),
+                            ],
+                            appearance="outline",
+                            style=me.Style(),
+                            value=f"{state.video_length}",
+                            on_selection_change=on_selection_change_length,
+                        )
+                        me.checkbox(
+                            label="auto-enhance prompt",
+                            checked=state.auto_enhance_prompt,
+                            on_change=on_change_auto_enhance_prompt,
+                        )
+                    me.text("Style options")
+                    with me.box(
+                        style=me.Style(display="flex", flex_direction="row", gap=5)
+                    ):
+                        me.button("more motion")
+                        me.button("distracted")
 
             with me.box(
-                style=me.Style(display="flex", flex_basis="row", gap=5)
+                style=me.Style(
+                    padding=me.Padding.all(12),
+                    justify_content="center",
+                    display="flex",
+                )
             ):
-                me.select(
-                    label="aspect",
-                    appearance="outline",
-                    options=[
-                        me.SelectOption(label="16:9 widescreen", value="16:9"),
-                        me.SelectOption(label="9:16 portrait", value="9:16"),
-                    ],
-                    value=state.aspect_ratio,
-                    on_selection_change=on_selection_change_aspect,
-                )
-                me.select(
-                    label="length",
-                    options=[
-                        me.SelectOption(label="5 seconds", value="5"),
-                        me.SelectOption(label="6 seconds", value="6"),
-                        me.SelectOption(label="7 seconds", value="7"),
-                        me.SelectOption(label="8 seconds", value="8"),
-                    ],
-                    appearance="outline",
-                    style=me.Style(),
-                    value=f"{state.video_length}",
-                    on_selection_change=on_selection_change_length,
-                )
-                me.checkbox(
-                    label="auto-enhance prompt",
-                    checked=state.auto_enhance_prompt,
-                    on_change=on_change_auto_enhance_prompt,
-                )
                 with me.content_button(on_click=on_click_motion_portraits, type="flat"):
                     with me.box(
                         style=me.Style(
@@ -144,7 +174,8 @@ def motion_portraits_content(app_state: me.state):
                     ):
                         me.icon("portrait")
                         me.text("Moving Portrait")
-                
+
+                me.box(style=me.Style(height=24))
 
             # Generated video
             with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
@@ -154,13 +185,24 @@ def motion_portraits_content(app_state: me.state):
                     if state.is_loading:
                         me.progress_spinner()
                     elif state.result_video:
+                        fit_style = me.Style(
+                            height="100%",
+                            border_radius=6,
+                        )
+                        if state.aspect_ratio == "9:16":
+                            fit_style = me.Style(
+                                width="50%",
+                                border_radius=6,
+                            )
+                        print(f"state.aspect_ratio: {state.aspect_ratio}")
                         video_url = state.result_video.replace(
                             "gs://",
                             "https://storage.mtls.cloud.google.com/",
                         )
                         print(f"video_url: {video_url}")
-                        me.video(src=video_url, style=me.Style(border_radius=6))
+                        me.video(src=video_url, style=fit_style)
                         me.text(state.timing)
+
 
 _BOX_STYLE = me.Style(
     flex_basis="max(480px, calc(50% - 48px))",
@@ -172,6 +214,7 @@ _BOX_STYLE = me.Style(
     display="flex",
     flex_direction="column",
 )
+
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     """Toggle auto-enhance prompt"""
@@ -231,9 +274,17 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
 def on_click_motion_portraits(e: me.ClickEvent):
     """Create the motion portrait"""
     state = me.state(PageState)
+    
     if not state.reference_image_file:
         print("Unable to find uploaded image")
         return
+    
+    state.is_loading = True
+    state.show_error_dialog = False  # Reset error state before starting
+    state.error_message = ""
+    state.result_video = ""  # Clear previous result
+    state.timing = ""  # Clear previous timing
+    yield
 
     # get scene direction
     print(f"Getting scene direction for {state.reference_image_uri} ...")
@@ -265,7 +316,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
     print(f"I2V invoked. I see you have an image! {state.reference_image_gcs} ")
     try:
         op = image_to_video(
-            #state.veo_prompt_input,
+            # state.veo_prompt_input,
             prompt,
             state.reference_image_gcs,
             seed,
@@ -368,7 +419,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
                 state.reference_image_gcs,
                 rewrite_prompt,
                 error_message=current_error_message,
-                comment="motion portrait"
+                comment="motion portrait",
             )
         except Exception as meta_err:
             # Handle potential errors during metadata storage itself
