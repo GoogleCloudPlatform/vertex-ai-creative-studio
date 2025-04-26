@@ -428,7 +428,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
         try:
             add_video_metadata(
                 gcs_uri,
-                prompt,
+                scene_direction,
                 aspect_ratio,
                 veo_model,
                 execution_time,
