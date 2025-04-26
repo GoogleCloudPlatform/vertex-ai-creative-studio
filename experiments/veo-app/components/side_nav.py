@@ -24,6 +24,7 @@ from pages.styles import (
 page_json = [
     {"id": 0, "display": "Home", "icon": "home", "route": "/"},
     {"id": 1,  "display": "Veo", "icon": "movie_filter", "route": "/veo"},
+    {"id": 2, "display": "Portraits", "icon": "portrait", "route": "/motion_portraits"},
     #{"id": 2, "display": "Lyria", "icon": "music_note", "route": "/lyria"},
     #{"id": 3, "display": "Imagen", "icon": "image", "route": "/imagen"},
     {"id": 4, "display": "Library", "icon": "perm_media", "route": "/library"},
