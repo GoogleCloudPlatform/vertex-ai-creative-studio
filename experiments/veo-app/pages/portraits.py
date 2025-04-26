@@ -14,12 +14,7 @@
 """Motion portraits"""
 
 import time
-from tenacity import (
-    retry,
-    wait_exponential,
-    stop_after_attempt,
-    retry_if_exception_type,
-)
+from dataclasses import field
 
 import mesop as me
 import requests
@@ -31,18 +26,21 @@ from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-
-from config.default import Default
-from models.model_setup import VeoModelSetup
-from models.veo import image_to_video
-from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
-from models.model_setup import GeminiModelSetup
-
 from google.genai import types
 from google.genai.types import (
     GenerateContentConfig,
 )
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
+from config.default import Default
+from models.model_setup import GeminiModelSetup, VeoModelSetup
+from models.veo import image_to_video
+from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
 
 client, model_id = GeminiModelSetup.init()
 MODEL_ID = model_id
@@ -70,6 +68,18 @@ class PageState:
     reference_image_file_key: int = 0
     reference_image_gcs: str
     reference_image_uri: str
+
+    # Style modifiers
+    modifier_array: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    modifier_selected_states: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+
+
+modifier_options = [
+    {"label": "motion", "key": "motion"},
+    {"label": "distracted", "key": "distracted"},
+    {"label": "artistic", "key": "artistic_style"},
+    {"label": "close-up", "key": "close_up_shot"},
+]
 
 
 def motion_portraits_content(app_state: me.state):
@@ -165,12 +175,82 @@ def motion_portraits_content(app_state: me.state):
                             checked=state.auto_enhance_prompt,
                             on_change=on_change_auto_enhance_prompt,
                         )
+
                     me.text("Style options")
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
-                        me.button("more motion")
-                        me.button("distracted")
+                        for option in modifier_options:
+                            is_selected = option["key"] in state.modifier_array
+
+                            # Use me.content_button. We'll place an icon and text inside.
+                            with me.content_button(
+                                key=option[
+                                    "key"
+                                ],  # Crucial for identifying the button in the event handler
+                                on_click=on_modifier_click,
+                                # Optional: Add some styling to make the buttons look more like selectable items
+                                style=me.Style(
+                                    padding=me.Padding.symmetric(
+                                        vertical=6, horizontal=12
+                                    ),
+                                    border=me.Border.all(
+                                        me.BorderSide(
+                                            width=1,
+                                            color=me.theme_var("sys-color-primary")
+                                            if is_selected
+                                            else me.theme_var("sys-color-outline"),
+                                        )
+                                    ),
+                                    background=me.theme_var(
+                                        "sys-color-primary-container"
+                                    )
+                                    if is_selected
+                                    else "transparent",
+                                    border_radius=16,  # Makes it more chip-like
+                                ),
+                            ):
+                                # Use a horizontal box to arrange icon and text
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        align_items="center",
+                                        gap=6,  # Space between icon and text
+                                    )
+                                ):
+                                    if is_selected:
+                                        # Display a check icon when selected
+                                        me.icon(
+                                            "check",
+                                            style=me.Style(
+                                                color=me.theme_var(
+                                                    "sys-color-on-primary-container"
+                                                )
+                                                if is_selected
+                                                else me.theme_var(
+                                                    "sys-color-on-surface"
+                                                )
+                                            ),
+                                        )
+                                    # else:
+                                    # Optionally, a placeholder or different icon for unselected state
+                                    # For now, no icon when not selected.
+                                    # me.icon("add_circle_outline", style=me.Style(color=me.theme_var("sys-color-on-surface-variant")))
+
+                                    # The label for the modifier
+                                    me.text(
+                                        option["label"],
+                                        style=me.Style(
+                                            color=me.theme_var(
+                                                "sys-color-on-primary-container"
+                                            )
+                                            if is_selected
+                                            else me.theme_var("sys-color-on-surface")
+                                        ),
+                                    )
+
+                    me.text(f"Selected Modifiers: {state.modifier_array}")
 
             with me.box(
                 style=me.Style(
@@ -202,7 +282,7 @@ def motion_portraits_content(app_state: me.state):
                         me.progress_spinner()
                     elif state.result_video:
                         fit_style = me.Style(
-                            height="100%",
+                            height="90%",
                             border_radius=6,
                         )
                         if state.aspect_ratio == "9:16":
@@ -230,6 +310,27 @@ _BOX_STYLE = me.Style(
     display="flex",
     flex_direction="column",
 )
+
+
+def on_modifier_click(e: me.ClickEvent):
+    """Handles click events for modifier content_buttons."""
+    state = me.state(PageState)
+    modifier_key = e.key  # The key of the content_button that was clicked
+
+    if not modifier_key:
+        print("Error: ClickEvent has no key associated with the content_button.")
+        return
+
+    # Toggle the presence of the modifier_key in the modifier_array
+    if modifier_key in state.modifier_array:
+        # If already selected, remove it (deselect)
+        new_modifier_array = [
+            mod for mod in state.modifier_array if mod != modifier_key
+        ]
+        state.modifier_array = new_modifier_array
+    else:
+        # If not selected, add it (select)
+        state.modifier_array = [*state.modifier_array, modifier_key]
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
@@ -284,6 +385,8 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
     state.aspect_ratio = "16:9"
     state.is_loading = False
     state.auto_enhance_prompt = False
+    state.modifier_array = []
+    state.modifier_selected_states = {}
     yield
 
 
@@ -304,7 +407,7 @@ def on_click_motion_portraits(e: me.ClickEvent):
 
     # get scene direction
     print(f"Getting scene direction for {state.reference_image_uri} ...")
-    prompt = """Scene direction for a magical motion portrait for an approximately 8 second scene.
+    prompt = f"""Scene direction for a magical motion portrait for an approximately {state.video_length} second scene.
 
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
@@ -313,6 +416,15 @@ Examine the picture provided to improve the scene direction.
 Optionally, include is waving of hands and if necessary, and physical motion outside the frame.
 
 Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
+
+    if state.modifier_array:
+        prompt = (
+            prompt
+            + f"""
+
+Utilize the following modifiers for the subject: {state.modifier_array}"""
+        )
+
     scene_direction = generate_scene_direction(prompt, state.reference_image_gcs)
 
     print(f"Lights, camera, action!:\n{scene_direction}")
@@ -461,14 +573,15 @@ Do not describe the frame. There should be no lip movement like speaking, but th
 )
 def generate_scene_direction(prompt: str, reference_image_gcs: str) -> str:
     """Generate scene direction with Gemini."""
-
+    print(f"prompt: {prompt}")
+    print(f"reference_image_gcs: {reference_image_gcs}")
     try:
         contents = types.Content(
             role="user",
             parts=[
                 types.Part.from_uri(
-                    file_uri= reference_image_gcs,
-                    mime_type= 'image/png',
+                    file_uri=reference_image_gcs,
+                    mime_type="image/png",
                 ),
                 types.Part.from_text(text=prompt),
             ],
@@ -485,4 +598,3 @@ def generate_scene_direction(prompt: str, reference_image_gcs: str) -> str:
     except Exception as e:
         print(f"error: {e}")
         raise  # Re-raise the exception for tenacity to handle
-
