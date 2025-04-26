@@ -405,6 +405,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
                 state.reference_image_gcs,
                 rewrite_prompt,
                 error_message=current_error_message,
+                comment="veo2 default generation",
             )
         except Exception as meta_err:
             # Handle potential errors during metadata storage itself

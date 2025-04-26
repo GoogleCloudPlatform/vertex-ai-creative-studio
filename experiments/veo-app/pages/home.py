@@ -66,6 +66,7 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                     ),
                 ):
                     media_tile("Veo 2", "movie", "/veo")
+                    media_tile("Motion Portraits", "portrait", "/motion_portraits")
                     media_tile("Library", "perm_media", "/library")
                     media_tile("Settings", "settings", "/config")
 
