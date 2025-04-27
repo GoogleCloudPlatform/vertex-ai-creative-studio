@@ -40,7 +40,7 @@ from tenacity import (
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import image_to_video
-from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
+from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED,_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN
 
 client, model_id = GeminiModelSetup.init()
 MODEL_ID = model_id
@@ -56,18 +56,21 @@ class PageState:
     is_loading: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
-    result_video: str
-    timing: str
+    result_video: str = ""
+    timing: str = ""
 
     aspect_ratio: str = "16:9"
     video_length: int = 5
     auto_enhance_prompt: bool = False
 
+    generated_scene_direction: str = ""
+
     # I2V reference Image
     reference_image_file: me.UploadedFile = None
     reference_image_file_key: int = 0
-    reference_image_gcs: str
-    reference_image_uri: str
+    reference_image_gcs: str = ""
+    reference_image_uri: str = ""
+    reference_image_mime_type: str = ""
 
     # Style modifiers
     modifier_array: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
@@ -95,6 +98,7 @@ def motion_portraits_content(app_state: me.state):
                 style=me.Style(
                     display="flex",
                     flex_direction="row",
+                    gap=20,
                 )
             ):
                 # Uploaded image
@@ -103,23 +107,34 @@ def motion_portraits_content(app_state: me.state):
 
                     if state.reference_image_uri:
                         output_url = state.reference_image_uri
-                        # output_url = f"https://storage.mtls.cloud.google.com/{state.reference_image_uri}"
-                        # output_url = "https://storage.mtls.cloud.google.com/ghchinoy-genai-sa-assets-flat/edits/image (30).png"
-                        print(f"displaying {output_url}")
+                        print(f"Displaying reference image: {output_url}")
                         me.image(
                             src=output_url,
                             style=me.Style(
-                                height=150,
+                                height=200,
                                 border_radius=12,
+                                object_fit="contain"
                             ),
                             key=str(state.reference_image_file_key),
                         )
                     else:
-                        me.image(src=None, style=me.Style(height=200))
+                        #me.image(src=None, style=me.Style(height=200))
+                        me.box(
+                            style=me.Style(
+                                height=200,
+                                width=200,
+                                display="flex",
+                                align_items="center",
+                                justify_content="center",
+                                background=me.theme_var("sys-color-surface-container-highest"),
+                                border_radius=12,
+                                border=me.Border.all(me.BorderSide(color=me.theme_var("sys-color-outline")))
+                            )
+                        )
 
                     # uploader controls
                     with me.box(
-                        style=me.Style(display="flex", flex_direction="row", gap=5)
+                        style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=10),)
                     ):
                         # me.button(label="Upload", type="flat", disabled=True)
                         me.uploader(
@@ -139,11 +154,12 @@ def motion_portraits_content(app_state: me.state):
                     style=me.Style(
                         display="flex",
                         flex_direction="column",
-                        gap=5,
+                        gap=15,
                         padding=me.Padding.all(12),
+                        flex_grow=1
                     )
                 ):
-                    me.text("Video options")
+                    me.text("Video options", style=me.Style(font_size="1.1em", font_weight="bold"))
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
@@ -176,7 +192,7 @@ def motion_portraits_content(app_state: me.state):
                             on_change=on_change_auto_enhance_prompt,
                         )
 
-                    me.text("Style options")
+                    me.text("Style options", style=me.Style(font_size="1.1em", font_weight="bold"))
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
@@ -185,14 +201,13 @@ def motion_portraits_content(app_state: me.state):
 
                             # Use me.content_button. We'll place an icon and text inside.
                             with me.content_button(
-                                key=option[
-                                    "key"
-                                ],  # Crucial for identifying the button in the event handler
+                                key=f"mod_btn_{option['key']}",
+                                #key=option["key"],  # Crucial for identifying the button in the event handler
                                 on_click=on_modifier_click,
                                 # Optional: Add some styling to make the buttons look more like selectable items
                                 style=me.Style(
                                     padding=me.Padding.symmetric(
-                                        vertical=6, horizontal=12
+                                        vertical=8, horizontal=16
                                     ),
                                     border=me.Border.all(
                                         me.BorderSide(
@@ -207,7 +222,7 @@ def motion_portraits_content(app_state: me.state):
                                     )
                                     if is_selected
                                     else "transparent",
-                                    border_radius=16,  # Makes it more chip-like
+                                    border_radius=20,  # Makes it more chip-like
                                 ),
                             ):
                                 # Use a horizontal box to arrange icon and text
@@ -249,17 +264,17 @@ def motion_portraits_content(app_state: me.state):
                                             else me.theme_var("sys-color-on-surface")
                                         ),
                                     )
-
-                    me.text(f"Selected Modifiers: {state.modifier_array}")
+                    if state.modifier_array:
+                        me.text(f"Active Modifiers: {', '.join(state.modifier_array)}", style=me.Style(margin=me.Margin(top=10), font_size="0.9em"))
 
             with me.box(
                 style=me.Style(
-                    padding=me.Padding.all(12),
+                    padding=me.Padding.all(16),
                     justify_content="center",
                     display="flex",
                 )
             ):
-                with me.content_button(on_click=on_click_motion_portraits, type="flat"):
+                with me.content_button(on_click=on_click_motion_portraits, type="flat", key="generate_motion_portrait_button", disabled=state.is_loading or not state.reference_image_uri):
                     with me.box(
                         style=me.Style(
                             display="flex",
@@ -268,36 +283,74 @@ def motion_portraits_content(app_state: me.state):
                             gap=2,
                         )
                     ):
-                        me.icon("portrait")
-                        me.text("Moving Portrait")
+                        if state.is_loading:
+                            me.progress_spinner(diameter=20, stroke_width=3)
+                            me.text("Generating...")
+                        else:
+                            me.icon("portrait")
+                            me.text("Create Moving Portrait")
 
                 me.box(style=me.Style(height=24))
 
-            # Generated video
-            with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
-                me.text("Generated Video")
-                me.box(style=me.Style(height=8))
-                with me.box(style=me.Style(height="100%")):
+            # Generated video and prompt section
+            if state.is_loading or state.result_video or state.error_message or state.generated_scene_direction:
+                with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN):
                     if state.is_loading:
-                        me.progress_spinner()
+                        me.text("Generating your moving portrait, please wait...", style=me.Style(font_size="1.1em", margin=me.Margin(bottom=10)))
+                        me.progress_spinner(diameter=40)
                     elif state.result_video:
-                        fit_style = me.Style(
-                            height="90%",
-                            border_radius=6,
+                        me.text("Motion Portrait", style=me.Style(font_size="1.2em", font_weight="bold", margin=me.Margin(bottom=10)))
+                        video_url = state.result_video.replace("gs://", "https://storage.mtls.cloud.google.com/")
+                        print(f"Displaying result video: {video_url}")
+                        me.video(
+                            src=video_url,
+                            style=me.Style(
+                                width="100%",
+                                max_width="480px" if state.aspect_ratio == "9:16" else "720px",
+                                border_radius=12,
+                                margin=me.Margin(top=8)
+                            ),
+                            #autoplay=True,
+                            #controls=True
                         )
-                        if state.aspect_ratio == "9:16":
-                            fit_style = me.Style(
-                                width="50%",
-                                border_radius=6,
-                            )
-                        print(f"state.aspect_ratio: {state.aspect_ratio}")
-                        video_url = state.result_video.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        )
-                        print(f"video_url: {video_url}")
-                        me.video(src=video_url, style=fit_style)
-                        me.text(state.timing)
+                        if state.timing:
+                            me.text(state.timing, style=me.Style(margin=me.Margin(top=10), font_size="0.9em"))
+                    
+                    # Display generated scene direction
+                    if state.generated_scene_direction and not state.is_loading:
+                         me.text("Generated Scene Direction:", style=me.Style(font_size="1.1em", font_weight="bold", margin=me.Margin(top=15, bottom=5)))
+                         me.text(state.generated_scene_direction, style=me.Style(white_space="pre-wrap", font_family="monospace", background_color=me.theme_var("sys-color-surface-container"), padding=me.Padding.all(10), border_radius=8))
+
+                    # Display error message if any
+                    if state.show_error_dialog and state.error_message and not state.is_loading:
+                         me.text("Error", style=me.Style(font_size="1.2em", font_weight="bold", color="red", margin=me.Margin(top=15, bottom=5)))
+                         me.text(state.error_message, style=me.Style(color="red", white_space="pre-wrap"))
+
+            # # Generated video
+            # with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
+            #     me.text("Generated Video")
+            #     me.box(style=me.Style(height=8))
+            #     with me.box(style=me.Style(height="100%")):
+            #         if state.is_loading:
+            #             me.progress_spinner()
+            #         elif state.result_video:
+            #             fit_style = me.Style(
+            #                 height="90%",
+            #                 border_radius=6,
+            #             )
+            #             if state.aspect_ratio == "9:16":
+            #                 fit_style = me.Style(
+            #                     width="50%",
+            #                     border_radius=6,
+            #                 )
+            #             print(f"state.aspect_ratio: {state.aspect_ratio}")
+            #             video_url = state.result_video.replace(
+            #                 "gs://",
+            #                 "https://storage.mtls.cloud.google.com/",
+            #             )
+            #             print(f"video_url: {video_url}")
+            #             me.video(src=video_url, style=fit_style)
+            #             me.text(state.timing)
 
 
 _BOX_STYLE = me.Style(
@@ -315,7 +368,8 @@ _BOX_STYLE = me.Style(
 def on_modifier_click(e: me.ClickEvent):
     """Handles click events for modifier content_buttons."""
     state = me.state(PageState)
-    modifier_key = e.key  # The key of the content_button that was clicked
+    #modifier_key = e.key  # The key of the content_button that was clicked
+    modifier_key = e.key.split("mod_btn_")[-1] # Extract original key
 
     if not modifier_key:
         print("Error: ClickEvent has no key associated with the content_button.")
@@ -377,16 +431,20 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
     state = me.state(PageState)
     state.reference_image_file = None
     state.reference_image_file_key += 1
-    state.reference_image_uri = None
-    state.reference_image_gcs = None
-    state.is_loading = False
-    state.result_video = None
+    state.reference_image_uri = ""
+    state.reference_image_gcs = ""
+    state.reference_image_mime_type = ""
+    state.result_video = ""
+    state.timing = ""
+    state.generated_scene_direction = "" # Clear generated scene direction
     state.video_length = 5
     state.aspect_ratio = "16:9"
-    state.is_loading = False
     state.auto_enhance_prompt = False
     state.modifier_array = []
     state.modifier_selected_states = {}
+    state.is_loading = False
+    state.show_error_dialog = False
+    state.error_message = ""
     yield
 
 
@@ -407,7 +465,7 @@ def on_click_motion_portraits(e: me.ClickEvent):
 
     # get scene direction
     print(f"Getting scene direction for {state.reference_image_uri} ...")
-    prompt = f"""Scene direction for a magical motion portrait for an approximately {state.video_length} second scene.
+    prompt = f"""Scene direction for a motion portrait for an approximately {state.video_length} second scene.
 
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
@@ -424,6 +482,11 @@ Do not describe the frame. There should be no lip movement like speaking, but th
 
 Utilize the following modifiers for the subject: {state.modifier_array}"""
         )
+
+    prompt += """
+
+Scene direction:
+"""
 
     scene_direction = generate_scene_direction(prompt, state.reference_image_gcs)
 

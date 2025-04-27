@@ -58,3 +58,17 @@ _BOX_STYLE_CENTER_DISTRIBUTED = me.Style(
     align_items="center",
     justify_content="space-between",
 )
+
+_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN = me.Style(
+    flex_basis="max(480px, calc(50% - 48px))",
+    # background="#fff",
+    background=me.theme_var("background"),
+    border_radius=12,
+    box_shadow=("0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"),
+    padding=me.Padding(top=16, left=16, right=16, bottom=16),
+    display="flex",
+    flex_direction="column",
+    align_items="center",
+    justify_content="space-between",
+    margin=me.Margin(top=20),
+)
