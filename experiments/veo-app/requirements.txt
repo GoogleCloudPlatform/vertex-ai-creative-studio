@@ -17,7 +17,7 @@ cachecontrol==0.14.2
     # via firebase-admin
 cachetools==5.5.2
     # via google-auth
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   httpcore
     #   httpx
@@ -50,7 +50,7 @@ executing==2.2.0
     # via stack-data
 fastapi==0.115.12
     # via veo-app
-firebase-admin==6.7.0
+firebase-admin==6.8.0
     # via veo-app
 flask==3.1.0
     # via mesop
@@ -66,7 +66,7 @@ google-api-core==2.24.2
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
-google-api-python-client==2.167.0
+google-api-python-client==2.168.0
     # via firebase-admin
 google-auth==2.39.0
     # via
@@ -82,7 +82,7 @@ google-auth==2.39.0
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.89.0
+google-cloud-aiplatform==1.90.0
     # via veo-app
 google-cloud-bigquery==3.31.0
     # via google-cloud-aiplatform
@@ -103,7 +103,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.11.0
+google-genai==1.12.1
     # via veo-app
 google-resumable-media==2.7.2
     # via
@@ -124,11 +124,11 @@ grpcio==1.71.0
     #   grpcio-status
 grpcio-status==1.71.0
     # via google-api-core
-h11==0.14.0
+h11==0.16.0
     # via
     #   httpcore
     #   uvicorn
-httpcore==1.0.8
+httpcore==1.0.9
     # via httpx
 httplib2==0.22.0
     # via
@@ -141,7 +141,7 @@ idna==3.10
     #   anyio
     #   httpx
     #   requests
-ipython==9.1.0
+ipython==9.2.0
     # via mediapy
 ipython-pygments-lexers==1.1.1
     # via ipython
@@ -231,7 +231,7 @@ pydantic==2.11.3
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.34.1
+pydantic-core==2.33.1
     # via pydantic
 pygments==2.19.1
     # via
