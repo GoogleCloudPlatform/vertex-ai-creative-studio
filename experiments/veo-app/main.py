@@ -16,17 +16,16 @@
 import os
 
 import mesop as me
+from components.page_scaffold import page_scaffold
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
-
-from components.page_scaffold import page_scaffold
 from pages.config import config_page_contents
 from pages.home import home_page_content
 from pages.imagen import imagen_content
 from pages.library import library_content
 from pages.lyria import lyria_content
-from pages.veo import veo_content
 from pages.portraits import motion_portraits_content
+from pages.veo import veo_content
 from state.state import AppState
 
 # from pages.gemini2 import gemini_page_content
@@ -66,6 +65,7 @@ def veo_page():
     """Veo Page"""
     veo_content(me.state(AppState))
 
+
 @me.page(
     path="/motion_portraits",
     title="Motion Portraits - GenMedia Creative Studio",
@@ -74,7 +74,6 @@ def veo_page():
 def motion_portrait_page():
     """Motion Portrait Page"""
     motion_portraits_content(me.state(AppState))
-
 
 
 @me.page(
