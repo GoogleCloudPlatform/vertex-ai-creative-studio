@@ -40,7 +40,10 @@ from tenacity import (
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import image_to_video
-from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED,_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN
+from pages.styles import (
+    _BOX_STYLE_CENTER_DISTRIBUTED,
+    _BOX_STYLE_CENTER_DISTRIBUTED_MARGIN,
+)
 
 client, model_id = GeminiModelSetup.init()
 MODEL_ID = model_id
@@ -111,14 +114,12 @@ def motion_portraits_content(app_state: me.state):
                         me.image(
                             src=output_url,
                             style=me.Style(
-                                height=200,
-                                border_radius=12,
-                                object_fit="contain"
+                                height=200, border_radius=12, object_fit="contain"
                             ),
                             key=str(state.reference_image_file_key),
                         )
                     else:
-                        #me.image(src=None, style=me.Style(height=200))
+                        # me.image(src=None, style=me.Style(height=200))
                         me.box(
                             style=me.Style(
                                 height=200,
@@ -126,15 +127,26 @@ def motion_portraits_content(app_state: me.state):
                                 display="flex",
                                 align_items="center",
                                 justify_content="center",
-                                background=me.theme_var("sys-color-surface-container-highest"),
+                                background=me.theme_var(
+                                    "sys-color-surface-container-highest"
+                                ),
                                 border_radius=12,
-                                border=me.Border.all(me.BorderSide(color=me.theme_var("sys-color-outline")))
+                                border=me.Border.all(
+                                    me.BorderSide(
+                                        color=me.theme_var("sys-color-outline")
+                                    )
+                                ),
                             )
                         )
 
                     # uploader controls
                     with me.box(
-                        style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=10),)
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=10,
+                            margin=me.Margin(top=10),
+                        )
                     ):
                         # me.button(label="Upload", type="flat", disabled=True)
                         me.uploader(
@@ -156,10 +168,13 @@ def motion_portraits_content(app_state: me.state):
                         flex_direction="column",
                         gap=15,
                         padding=me.Padding.all(12),
-                        flex_grow=1
+                        flex_grow=1,
                     )
                 ):
-                    me.text("Video options", style=me.Style(font_size="1.1em", font_weight="bold"))
+                    me.text(
+                        "Video options",
+                        style=me.Style(font_size="1.1em", font_weight="bold"),
+                    )
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
@@ -192,7 +207,10 @@ def motion_portraits_content(app_state: me.state):
                             on_change=on_change_auto_enhance_prompt,
                         )
 
-                    me.text("Style options", style=me.Style(font_size="1.1em", font_weight="bold"))
+                    me.text(
+                        "Style options",
+                        style=me.Style(font_size="1.1em", font_weight="bold"),
+                    )
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
@@ -202,7 +220,7 @@ def motion_portraits_content(app_state: me.state):
                             # Use me.content_button. We'll place an icon and text inside.
                             with me.content_button(
                                 key=f"mod_btn_{option['key']}",
-                                #key=option["key"],  # Crucial for identifying the button in the event handler
+                                # key=option["key"],  # Crucial for identifying the button in the event handler
                                 on_click=on_modifier_click,
                                 # Optional: Add some styling to make the buttons look more like selectable items
                                 style=me.Style(
@@ -265,7 +283,10 @@ def motion_portraits_content(app_state: me.state):
                                         ),
                                     )
                     if state.modifier_array:
-                        me.text(f"Active Modifiers: {', '.join(state.modifier_array)}", style=me.Style(margin=me.Margin(top=10), font_size="0.9em"))
+                        me.text(
+                            f"Active Modifiers: {', '.join(state.modifier_array)}",
+                            style=me.Style(margin=me.Margin(top=10), font_size="0.9em"),
+                        )
 
             with me.box(
                 style=me.Style(
@@ -274,7 +295,12 @@ def motion_portraits_content(app_state: me.state):
                     display="flex",
                 )
             ):
-                with me.content_button(on_click=on_click_motion_portraits, type="flat", key="generate_motion_portrait_button", disabled=state.is_loading or not state.reference_image_uri):
+                with me.content_button(
+                    on_click=on_click_motion_portraits,
+                    type="flat",
+                    key="generate_motion_portrait_button",
+                    disabled=state.is_loading or not state.reference_image_uri,
+                ):
                     with me.box(
                         style=me.Style(
                             display="flex",
@@ -293,38 +319,95 @@ def motion_portraits_content(app_state: me.state):
                 me.box(style=me.Style(height=24))
 
             # Generated video and prompt section
-            if state.is_loading or state.result_video or state.error_message or state.generated_scene_direction:
+            if (
+                state.is_loading
+                or state.result_video
+                or state.error_message
+                or state.generated_scene_direction
+            ):
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN):
                     if state.is_loading:
-                        me.text("Generating your moving portrait, please wait...", style=me.Style(font_size="1.1em", margin=me.Margin(bottom=10)))
+                        me.text(
+                            "Generating your moving portrait, please wait...",
+                            style=me.Style(
+                                font_size="1.1em", margin=me.Margin(bottom=10)
+                            ),
+                        )
                         me.progress_spinner(diameter=40)
                     elif state.result_video:
-                        me.text("Motion Portrait", style=me.Style(font_size="1.2em", font_weight="bold", margin=me.Margin(bottom=10)))
-                        video_url = state.result_video.replace("gs://", "https://storage.mtls.cloud.google.com/")
+                        me.text(
+                            "Motion Portrait",
+                            style=me.Style(
+                                font_size="1.2em",
+                                font_weight="bold",
+                                margin=me.Margin(bottom=10),
+                            ),
+                        )
+                        video_url = state.result_video.replace(
+                            "gs://", "https://storage.mtls.cloud.google.com/"
+                        )
                         print(f"Displaying result video: {video_url}")
                         me.video(
                             src=video_url,
                             style=me.Style(
                                 width="100%",
-                                max_width="480px" if state.aspect_ratio == "9:16" else "720px",
+                                max_width="480px"
+                                if state.aspect_ratio == "9:16"
+                                else "720px",
                                 border_radius=12,
-                                margin=me.Margin(top=8)
+                                margin=me.Margin(top=8),
                             ),
-                            #autoplay=True,
-                            #controls=True
+                            # autoplay=True,
+                            # controls=True
                         )
                         if state.timing:
-                            me.text(state.timing, style=me.Style(margin=me.Margin(top=10), font_size="0.9em"))
-                    
+                            me.text(
+                                state.timing,
+                                style=me.Style(
+                                    margin=me.Margin(top=10), font_size="0.9em"
+                                ),
+                            )
+
                     # Display generated scene direction
                     if state.generated_scene_direction and not state.is_loading:
-                         me.text("Generated Scene Direction:", style=me.Style(font_size="1.1em", font_weight="bold", margin=me.Margin(top=15, bottom=5)))
-                         me.text(state.generated_scene_direction, style=me.Style(white_space="pre-wrap", font_family="monospace", background_color=me.theme_var("sys-color-surface-container"), padding=me.Padding.all(10), border_radius=8))
+                        me.text(
+                            "Generated Scene Direction:",
+                            style=me.Style(
+                                font_size="1.1em",
+                                font_weight="bold",
+                                margin=me.Margin(top=15, bottom=5),
+                            ),
+                        )
+                        me.text(
+                            state.generated_scene_direction,
+                            style=me.Style(
+                                white_space="pre-wrap",
+                                font_family="monospace",
+                                background=me.theme_var("sys-color-surface-container"),
+                                padding=me.Padding.all(10),
+                                border_radius=8,
+                            ),
+                        )
 
                     # Display error message if any
-                    if state.show_error_dialog and state.error_message and not state.is_loading:
-                         me.text("Error", style=me.Style(font_size="1.2em", font_weight="bold", color="red", margin=me.Margin(top=15, bottom=5)))
-                         me.text(state.error_message, style=me.Style(color="red", white_space="pre-wrap"))
+                    if (
+                        state.show_error_dialog
+                        and state.error_message
+                        and not state.is_loading
+                    ):
+                        me.text(
+                            "Error",
+                            style=me.Style(
+                                font_size="1.2em",
+                                font_weight="bold",
+                                color="red",
+                                margin=me.Margin(top=15, bottom=5),
+                            ),
+                        )
+                        me.text(
+                            state.error_message,
+                            style=me.Style(color="red", white_space="pre-wrap"),
+                        )
 
             # # Generated video
             # with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
@@ -368,8 +451,8 @@ _BOX_STYLE = me.Style(
 def on_modifier_click(e: me.ClickEvent):
     """Handles click events for modifier content_buttons."""
     state = me.state(PageState)
-    #modifier_key = e.key  # The key of the content_button that was clicked
-    modifier_key = e.key.split("mod_btn_")[-1] # Extract original key
+    # modifier_key = e.key  # The key of the content_button that was clicked
+    modifier_key = e.key.split("mod_btn_")[-1]  # Extract original key
 
     if not modifier_key:
         print("Error: ClickEvent has no key associated with the content_button.")
@@ -436,7 +519,7 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
     state.reference_image_mime_type = ""
     state.result_video = ""
     state.timing = ""
-    state.generated_scene_direction = "" # Clear generated scene direction
+    state.generated_scene_direction = ""  # Clear generated scene direction
     state.video_length = 5
     state.aspect_ratio = "16:9"
     state.auto_enhance_prompt = False
@@ -452,20 +535,24 @@ def on_click_motion_portraits(e: me.ClickEvent):
     """Create the motion portrait"""
     state = me.state(PageState)
 
-    if not state.reference_image_file:
-        print("Unable to find uploaded image")
+    if not state.reference_image_gcs:
+        print("No reference image uploaded or GCS URI is missing.")
+        state.error_message = "Please upload a reference image first."
+        state.show_error_dialog = True
+        state.is_loading = False
+        yield
         return
 
     state.is_loading = True
-    state.show_error_dialog = False  # Reset error state before starting
+    state.show_error_dialog = False
     state.error_message = ""
-    state.result_video = ""  # Clear previous result
-    state.timing = ""  # Clear previous timing
+    state.result_video = ""
+    state.timing = ""
+    state.generated_scene_direction = ""
     yield
 
     # get scene direction
-    print(f"Getting scene direction for {state.reference_image_uri} ...")
-    prompt = f"""Scene direction for a motion portrait for an approximately {state.video_length} second scene.
+    base_prompt = f"""Scene direction for a motion portrait for an approximately {state.video_length} second scene.
 
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
@@ -475,41 +562,51 @@ Optionally, include is waving of hands and if necessary, and physical motion out
 
 Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
 
+    final_prompt_for_llm = base_prompt
     if state.modifier_array:
-        prompt = (
-            prompt
-            + f"""
-
-Utilize the following modifiers for the subject: {state.modifier_array}"""
+        modifiers_string = ", ".join(state.modifier_array)
+        final_prompt_for_llm += (
+            f"\n\nUtilize the following modifiers for the subject: {modifiers_string}."
         )
 
-    prompt += """
+    final_prompt_for_llm += "\n\nScene direction:\n"  # Guide for the LLM
 
-Scene direction:
-"""
-
-    scene_direction = generate_scene_direction(prompt, state.reference_image_gcs)
-
-    print(f"Lights, camera, action!:\n{scene_direction}")
-
-    aspect_ratio = state.aspect_ratio  # @param ["16:9", "9:16"]
-    seed = 120
-    sample_count = 1
-    rewrite_prompt = state.auto_enhance_prompt
-    if rewrite_prompt:
-        print("Default auto-enhance prompt is ON")
-    duration_seconds = state.video_length
-
-    # invoke i2v
-    start_time = time.time()  # Record the starting time
-    gcs_uri = ""
-    current_error_message = ""
-
-    print(f"I2V invoked. I see you have an image! {state.reference_image_gcs} ")
     try:
+        print(
+            f"Generating scene direction for {state.reference_image_gcs} with prompt:\n{final_prompt_for_llm}"
+        )
+        # The scene_direction returned here is what we'll use for the video model
+        scene_direction_for_video = generate_scene_direction(
+            final_prompt_for_llm,
+            state.reference_image_gcs,
+            state.reference_image_mime_type,
+        )
+        state.generated_scene_direction = (
+            scene_direction_for_video  # Store the generated direction
+        )
+        print(f"Generated Scene Direction (for video):\n{scene_direction_for_video}")
+        yield
+
+        print("Lights, camera, action!")
+
+        aspect_ratio = state.aspect_ratio  # @param ["16:9", "9:16"]
+        seed = 120
+        sample_count = 1
+        rewrite_prompt = state.auto_enhance_prompt
+        if rewrite_prompt:
+            print("Default auto-enhance prompt is ON")
+        duration_seconds = state.video_length
+
+        # invoke i2v
+        start_time = time.time()  # Record the starting time
+        gcs_uri = ""
+        current_error_message = ""
+
+        print(f"I2V invoked. I see you have an image! {state.reference_image_gcs} ")
+
         op = image_to_video(
             # state.veo_prompt_input,
-            scene_direction,
+            scene_direction_for_video,
             state.reference_image_gcs,
             seed,
             aspect_ratio,
@@ -518,133 +615,153 @@ Scene direction:
             rewrite_prompt,
             duration_seconds,
         )
-        print(f"Operation result: {op}")
+        print(f"I2V Operation result: {op}")
+        print_keys(op)  # Useful for debugging response structure
 
         # Check for explicit errors in response
-        if op.get("done") and op.get("error"):
-            current_error_message = op["error"].get("message", "Unknown API error")
-            print(f"API Error Detected: {current_error_message}")
-            # No GCS URI in this case
-            gcs_uri = ""
-        elif op.get("done") and op.get("response"):
-            response_data = op["response"]
-            print(f"Response: {response_data}")
-            print_keys(op["response"])
-
-            if response_data.get("raiMediaFilteredCount", 0) > 0 and response_data.get(
-                "raiMediaFilteredReasons"
-            ):
-                # Extract the first reason provided
-                filter_reason = response_data["raiMediaFilteredReasons"][0]
-                current_error_message = f"Content Filtered: {filter_reason}"
-                print(f"Filtering Detected: {current_error_message}")
-                gcs_uri = ""  # No GCS URI if content was filtered
-
-            else:
-                # Extract GCS URI from different possible locations
-                if (
-                    "generatedSamples" in response_data
-                    and response_data["generatedSamples"]
+        if op.get("done"):
+            if op.get("error"):
+                current_error_message = op["error"].get(
+                    "message", "Unknown API error during video generation."
+                )
+                print(f"API Error Detected: {current_error_message}")
+            elif op.get("response"):
+                response_data = op["response"]
+                print(f"Response: {response_data}")
+                print_keys(op["response"])
+                if response_data.get(
+                    "raiMediaFilteredCount", 0
+                ) > 0 and response_data.get("raiMediaFilteredReasons"):
+                    # Extract the first reason provided
+                    filter_reason = response_data["raiMediaFilteredReasons"][0]
+                    current_error_message = f"Content Filtered: {filter_reason}"
+                    print(f"Filtering Detected: {current_error_message}")
+                elif response_data.get("generatedSamples") and response_data[
+                    "generatedSamples"
+                ][0].get("video", {}).get("uri"):
+                    gcs_uri = response_data["generatedSamples"][0]["video"]["uri"]
+                elif response_data.get("videos") and response_data["videos"][0].get(
+                    "gcsUri"
                 ):
-                    print(f"Generated Samples: {response_data["generatedSamples"]}")
-                    gcs_uri = (
-                        response_data["generatedSamples"][0]
-                        .get("video", {})
-                        .get("uri", "")
-                    )
-                elif "videos" in response_data and response_data["videos"]:
-                    print(f"Videos: {response_data["videos"]}")
-                    gcs_uri = response_data["videos"][0].get("gcsUri", "")
-
-                if gcs_uri:
-                    file_name = gcs_uri.split("/")[-1]
-                    print("Video generated - use the following to copy locally")
-                    print(f"gsutil cp {gcs_uri} {file_name}")
-                    state.result_video = gcs_uri
+                    gcs_uri = response_data["videos"][0]["gcsUri"]
                 else:
-                    # Success reported, but no video URI found - treat as an error/unexpected state
+                    current_error_message = (
+                        "API reported success but no video URI was found."
+                    )
+                # else:
+                #     # Extract GCS URI from different possible locations
+                #     if (
+                #         "generatedSamples" in response_data
+                #         and response_data["generatedSamples"]
+                #     ):
+                #         print(f"Generated Samples: {response_data["generatedSamples"]}")
+                #         gcs_uri = (
+                #             response_data["generatedSamples"][0]
+                #             .get("video", {})
+                #             .get("uri", "")
+                #         )
+                #     elif "videos" in response_data and response_data["videos"]:
+                #         print(f"Videos: {response_data["videos"]}")
+                #         gcs_uri = response_data["videos"][0].get("gcsUri", "")
+
+                if gcs_uri:  # if GCS URI, set to state
+                    state.result_video = gcs_uri
+                    file_name = gcs_uri.split("/")[-1]
+                    print(
+                        f"Video generated: {gcs_uri}. To copy: gsutil cp {gcs_uri} {file_name}"
+                    )
+                elif not current_error_message:
                     current_error_message = "API reported success but no video URI was found in the response."
-                    print(f"Error: {current_error_message}")
-                    state.result_video = ""  # Ensure no video is shown
+            else:
+                # Success reported, but no video URI found - treat as an error/unexpected state
+                current_error_message = (
+                    "API operation completed but returned no error or response data."
+                )
 
         else:
             # Handle cases where 'done' is false or response structure is unexpected
-            current_error_message = (
-                "Unexpected API response structure or operation not done."
-            )
-            print(f"Error: {current_error_message}")
-            state.result_video = ""
-
-    # Catch specific exceptions you anticipate
-    except ValueError as err:
-        print(f"ValueError caught: {err}")
-        current_error_message = f"Input Error: {err}"
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTPError caught: {err}")
-        current_error_message = f"Network/API Error: {err}"
-    # Catch any other unexpected exceptions
-    except Exception as err:
-        print(f"Generic Exception caught: {type(err).__name__}: {err}")
-        current_error_message = f"An unexpected error occurred: {err}"
-
-    finally:
-        end_time = time.time()  # Record the ending time
-        execution_time = end_time - start_time  # Calculate the elapsed time
-        print(f"Execution time: {execution_time} seconds")  # Print the execution time
+            current_error_message = "Video generation operation did not complete or returned an unexpected status. API response structure or operation not done."
+        end_time = time.time()
+        execution_time = end_time - start_time
         state.timing = f"Generation time: {round(execution_time)} seconds"
 
-        #  If an error occurred, update the state to show the dialog
         if current_error_message:
             state.error_message = current_error_message
             state.show_error_dialog = True
-            # Ensure no result video is displayed on error
             state.result_video = ""
 
-        try:
-            add_video_metadata(
-                gcs_uri,
-                scene_direction,
-                aspect_ratio,
-                veo_model,
-                execution_time,
-                state.video_length,
-                state.reference_image_gcs,
-                rewrite_prompt,
-                error_message=current_error_message,
-                comment="motion portrait",
-            )
-        except Exception as meta_err:
-            # Handle potential errors during metadata storage itself
-            print(f"CRITICAL: Failed to store metadata: {meta_err}")
-            # Optionally, display another error or log this critical failure
-            if not state.show_error_dialog:  # Avoid overwriting primary error
-                state.error_message = f"Failed to store video metadata: {meta_err}"
+        if gcs_uri and not current_error_message:
+            try:
+                add_video_metadata(
+                    gcs_uri,
+                    scene_direction_for_video,
+                    aspect_ratio,
+                    veo_model,
+                    execution_time,
+                    state.video_length,
+                    state.reference_image_gcs,
+                    rewrite_prompt,
+                    error_message="",
+                    comment="motion portrait",
+                )
+            except Exception as meta_err:
+                print(f"CRITICAL: Failed to store metadata: {meta_err}")
+                additional_meta_error = f" (Metadata storage failed: {meta_err})"
+                state.error_message = (
+                    state.error_message or "Video generated but metadata failed."
+                ) + additional_meta_error
                 state.show_error_dialog = True
+        elif not gcs_uri and not current_error_message:
+            state.error_message = (
+                state.error_message
+                or "Video generation completed without error, but no video was produced."
+            )
+            state.show_error_dialog = True
 
-    state.is_loading = False
-    yield
+    except Exception as err:
+        print(
+            f"Exception during motion portrait generation: {type(err).__name__}: {err}"
+        )
+        state.error_message = f"An unexpected error occurred: {err}"
+        state.show_error_dialog = True
+        state.result_video = ""
+    finally:
+        state.is_loading = False
+        yield
+        print("Motion portrait generation process finished.")
     print("Cut! That's a wrap!")
 
 
 @retry(
-    wait=wait_exponential(
-        multiplier=1, min=1, max=10
-    ),  # Exponential backoff (1s, 2s, 4s... up to 10s)
-    stop=stop_after_attempt(3),  # Stop after 3 attempts
-    retry=retry_if_exception_type(Exception),  # Retry on all exceptions
-    reraise=True,  # re-raise the last exception if all retries fail
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
 )
-def generate_scene_direction(prompt: str, reference_image_gcs: str) -> str:
+def generate_scene_direction(
+    prompt: str, reference_image_gcs: str, image_mime_type: str
+) -> str:
     """Generate scene direction with Gemini."""
-    print(f"prompt: {prompt}")
-    print(f"reference_image_gcs: {reference_image_gcs}")
+    print(
+        f"Generating scene direction. Prompt length: {len(prompt)}, Image GCS: {reference_image_gcs}, MIME: {image_mime_type}"
+    )
+    if not reference_image_gcs:
+        raise ValueError(
+            "Reference image GCS URI cannot be empty for scene direction generation."
+        )
+    if not image_mime_type:  # Ensure mime_type is provided
+        print(
+            "Warning: image_mime_type is empty, defaulting to image/png. This might cause issues."
+        )
+        image_mime_type = "image/png"
+
     try:
         contents = types.Content(
             role="user",
             parts=[
                 types.Part.from_uri(
                     file_uri=reference_image_gcs,
-                    mime_type="image/png",
+                    mime_type=image_mime_type,
                 ),
                 types.Part.from_text(text=prompt),
             ],
@@ -652,12 +769,31 @@ def generate_scene_direction(prompt: str, reference_image_gcs: str) -> str:
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            config=GenerateContentConfig(
-                response_modalities=["TEXT"],
-            ),
+            config=GenerateContentConfig(),  # Simpler config
         )
-        print(f"success! {response.text}")
-        return response.text
+
+        # Robust response text extraction
+        if hasattr(response, "text") and response.text:
+            print(
+                f"Scene direction generated successfully (from .text): {response.text[:100]}..."
+            )
+            return response.text
+        elif (
+            response.candidates
+            and response.candidates[0].content.parts
+            and response.candidates[0].content.parts[0].text
+        ):
+            text_response = response.candidates[0].content.parts[0].text
+            print(
+                f"Scene direction generated successfully (from candidates): {text_response[:100]}..."
+            )
+            return text_response
+        else:
+            print(f"Unexpected response structure from Gemini: {response}")
+            raise ValueError(
+                "Failed to extract text from Gemini response for scene direction."
+            )
+
     except Exception as e:
-        print(f"error: {e}")
-        raise  # Re-raise the exception for tenacity to handle
+        print(f"Error in generate_scene_direction: {type(e).__name__} - {e}")
+        raise
