@@ -15,6 +15,7 @@
 import time
 import mesop as me
 
+from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import (
     page_scaffold,
@@ -43,6 +44,9 @@ class PageState:
     music_upload_uri: str = ""
     
     timing: str
+
+    show_error_dialog: bool = False
+    error_message: str = ""
 
 
 def lyria_content(app_state: me.state):
@@ -83,6 +87,18 @@ def lyria_content(app_state: me.state):
                     )
                 ):
                     me.audio(src=pagestate.music_upload_uri)
+
+            with dialog(is_open=pagestate.show_error_dialog):  # pylint: disable=not-context-manager
+                # Content within the dialog box
+                me.text(
+                    "Generation Error",
+                    type="headline-6",
+                    style=me.Style(color=me.theme_var("error")),
+                )
+                me.text(pagestate.error_message, style=me.Style(margin=me.Margin(top=16)))
+                # Use the dialog_actions component for the button
+                with dialog_actions():  # pylint: disable=not-context-manager
+                    me.button("Close", on_click=on_close_error_dialog, type="flat")
 
 
 @me.component
@@ -185,6 +201,8 @@ def on_click_lyria(e: me.ClickEvent):  # pylint: disable=unused-argument
     state = me.state(PageState)
     state.is_loading = True
     state.music_upload_uri = ""
+    state.show_error_dialog = False  # Reset error state
+    state.error_message = ""
     yield
 
     print(f"Let's make music!: {state.music_prompt_input}")
@@ -202,8 +220,8 @@ def on_click_lyria(e: me.ClickEvent):  # pylint: disable=unused-argument
         print(state.music_upload_uri)
 
     except ValueError as err:
-        state.modal_open = True
-        state.modal_message = str(err)
+        state.error_message = str(err)
+        state.show_error_dialog = True
     finally:
         end_time = time.time()  # Record the ending time
         execution_time = end_time - start_time  # Calculate the elapsed time
@@ -233,6 +251,15 @@ def clear_music(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.music_prompt_textarea_key += 1
     state.music_upload_uri = ""
     state.is_loading = False
+    state.show_error_dialog = False
+    state.error_message = ""
+
+
+def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
+    """Handler to close the error dialog."""
+    state = me.state(PageState)
+    state.show_error_dialog = False
+    yield
 
 
 _BOX_STYLE = me.Style(
