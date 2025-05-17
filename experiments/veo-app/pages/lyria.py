@@ -46,6 +46,9 @@ class PageState:
     show_error_dialog: bool = False
     error_message: str = ""
 
+    show_error_dialog: bool = False
+    error_message: str = ""
+
 
 def lyria_content(app_state: me.state):
     """Lyria Mesop Page"""
@@ -85,6 +88,18 @@ def lyria_content(app_state: me.state):
                     )
                 ):
                     me.audio(src=pagestate.music_upload_uri)
+
+            with dialog(is_open=pagestate.show_error_dialog):  # pylint: disable=not-context-manager
+                # Content within the dialog box
+                me.text(
+                    "Generation Error",
+                    type="headline-6",
+                    style=me.Style(color=me.theme_var("error")),
+                )
+                me.text(pagestate.error_message, style=me.Style(margin=me.Margin(top=16)))
+                # Use the dialog_actions component for the button
+                with dialog_actions():  # pylint: disable=not-context-manager
+                    me.button("Close", on_click=on_close_error_dialog, type="flat")
 
             with dialog(is_open=pagestate.show_error_dialog):  # pylint: disable=not-context-manager
                 # Content within the dialog box

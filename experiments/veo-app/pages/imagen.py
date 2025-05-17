@@ -164,6 +164,8 @@ def on_click_lyria(e: me.ClickEvent):  # pylint: disable=unused-argument
     state = me.state(PageState)
     state.is_loading = True
     state.music_upload_uri = ""
+    state.show_error_dialog = False  # Reset error state
+    state.error_message = ""
     yield
 
     print(f"Let's make music!: {state.music_prompt_input}")
