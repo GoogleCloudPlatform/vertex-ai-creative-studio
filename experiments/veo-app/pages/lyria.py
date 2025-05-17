@@ -13,22 +13,20 @@
 # limitations under the License.
 """ Lyria 2 mesop ui page """
 import time
+
 import mesop as me
 
+from common.metadata import add_music_metadata
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import (
-    page_scaffold,
     page_frame,
+    page_scaffold,
 )
-
-from models.lyria import generate_music_with_lyria
 from config.default import Default
-from common.metadata import add_music_metadata
-
-from models.gemini import rewriter
-
 from config.rewriters import MUSIC_REWRITER
+from models.gemini import rewriter
+from models.lyria import generate_music_with_lyria
 
 cfg = Default()
 
