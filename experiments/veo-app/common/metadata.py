@@ -138,7 +138,7 @@ def get_media_item_by_id(
         return None
 
 
-def add_music_metadata(model: str, gcsuri: str, prompt: str, generation_time: float):
+def add_music_metadata(model: str, gcsuri: str, prompt: str, original_prompt: str, rewritten_prompt: str, generation_time: float, error_message: str, audio_analysis: str):
     """Add Music metadata to Firestore persistence"""
     current_datetime = datetime.datetime.now()
 
@@ -148,11 +148,15 @@ def add_music_metadata(model: str, gcsuri: str, prompt: str, generation_time: fl
         {
             "gcsuri": gcsuri,
             "prompt": prompt,
+            "original_prompt": original_prompt,
+            "rewritten_prompt": rewritten_prompt,
+            # "duration"
             "model": model,
             # "duration": duration,
             "generation_time": generation_time,
             "mime_type": "audio/wav",
-            # "error_message": error_message,
+            "error_message": error_message,
+            "audio_analysis": audio_analysis,
             # "comment": comment,
             "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
         }

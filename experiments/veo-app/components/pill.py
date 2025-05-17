@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Pill mesop component"""
-
+from typing import List, Optional
 import mesop as me
 
 
@@ -36,7 +36,12 @@ def pill(label: str, pill_type: str):
     elif pill_type == "media_type_audio" or pill_type == "media_type_video":
         background_color = me.theme_var("inverse-primary")
         text_color = me.theme_var("on-surface-variant")
-
+    elif pill_type == "error_present":
+        background_color = me.theme_var("error-container")
+    elif pill_type == "genre":
+        background_color = me.theme_var("secondary-container")
+        text_color = me.theme_var("on-scecondary-container")
+    
 
     me.text(
         str(label),  # Ensure label is a string

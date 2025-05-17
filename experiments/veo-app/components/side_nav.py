@@ -166,6 +166,7 @@ def menu_item(
                 on_click=navigate_to if is_clickable else None,
                 style=content_style,
                 type="icon",
+                disabled=not is_clickable,
             ):
                 with me.tooltip(message=text):
                     me.icon(icon=icon)

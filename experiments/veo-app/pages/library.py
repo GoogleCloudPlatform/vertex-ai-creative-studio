@@ -22,7 +22,7 @@ import mesop as me
 
 # Imports from your project structure
 from common.metadata import (
-    get_total_media_count,
+    get_total_media_count, # This might need adjustment if we want truly accurate filtered counts server-side
     db,
     config,
     get_media_item_by_id,
@@ -52,26 +52,30 @@ class PageState:
     media_per_page: int = 9
     total_media: int = 0
     media_items: List[MediaItem] = field(default_factory=list)
-    key: int = 0
+    key: int = 0 # Used to force re-render of the media grid
     show_details_dialog: bool = False
     selected_media_item_id: Optional[str] = None
     dialog_instance_key: int = 0
     selected_values: list[str] = field(
-        default_factory=lambda: ["videos", "images", "music"]
-    )  # Default to all types
+        default_factory=lambda: ["all"]
+    )  # Default to "all" media types
+    error_filter_value: str = "all"  # New state for error filter: "all", "no_errors", "only_errors"
     initial_url_param_processed: bool = False
     url_item_not_found_message: Optional[str] = None
 
 
 def get_media_for_page(
-    page: int, media_per_page: int, filters: Optional[List[str]] = None
+    page: int,
+    media_per_page: int,
+    type_filters: Optional[List[str]] = None,
+    error_filter: str = "all", # "all", "no_errors", "only_errors"
 ) -> List[MediaItem]:
     """
     Helper function to get media for a specific page as MediaItem objects,
-    using Firestore doc.id. Includes basic filtering by mime_type.
+    including filtering by mime_type and error messages.
     """
     fetch_limit = (
-        1000  # Adjust as needed, or implement server-side cursors for true pagination
+        1000  # Max items to fetch for client-side filtering/pagination
     )
 
     try:
@@ -79,44 +83,53 @@ def get_media_for_page(
             "timestamp", direction=firestore.Query.DESCENDING
         )
 
-        # Basic client-side filtering based on selected_values (mime_type prefixes)
-        # For production, filtering should ideally be done server-side if possible.
-        # This example fetches a larger set and then filters.
-
         all_fetched_items: List[MediaItem] = []
-        for doc in query.limit(
-            fetch_limit
-        ).stream():  # Fetch a larger set for client-side filtering/pagination
+        for doc in query.limit(fetch_limit).stream():
             raw_item_data = doc.to_dict()
             if raw_item_data is None:
                 print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
                 continue
 
-            # Ensure mime_type is available for filtering
             mime_type = raw_item_data.get("mime_type", "")
+            error_message_present = bool(raw_item_data.get("error_message"))
 
-            # Client-side filter application
-            passes_filter = True
-            if filters:
-                passes_filter = False
-                if "videos" in filters and mime_type.startswith("video/"):
-                    passes_filter = True
-                elif "images" in filters and mime_type.startswith("image/"):
-                    passes_filter = True
-                elif "music" in filters and mime_type.startswith("audio/"):
-                    passes_filter = True
-
-            if not passes_filter:
+            # Apply type filters
+            passes_type_filter = False
+            if not type_filters or "all" in type_filters:
+                passes_type_filter = True
+            else:
+                if "videos" in type_filters and mime_type.startswith("video/"):
+                    passes_type_filter = True
+                elif "images" in type_filters and mime_type.startswith("image/"):
+                    passes_type_filter = True
+                elif "music" in type_filters and mime_type.startswith("audio/"):
+                    passes_type_filter = True
+            
+            if not passes_type_filter:
                 continue
 
+            # Apply error filter
+            passes_error_filter = False
+            if error_filter == "all":
+                passes_error_filter = True
+            elif error_filter == "no_errors" and not error_message_present:
+                passes_error_filter = True
+            elif error_filter == "only_errors" and error_message_present:
+                passes_error_filter = True
+            
+            if not passes_error_filter:
+                continue
+            
+            # Construct MediaItem if all filters pass
             timestamp_iso_str: Optional[str] = None
             raw_timestamp = raw_item_data.get("timestamp")
             if isinstance(raw_timestamp, datetime):
                 timestamp_iso_str = raw_timestamp.isoformat()
             elif isinstance(raw_timestamp, str):
-                timestamp_iso_str = raw_timestamp
-            elif hasattr(raw_timestamp, "isoformat"):
+                timestamp_iso_str = raw_timestamp # Assuming it's already ISO format
+            elif hasattr(raw_timestamp, "isoformat"): # For Firestore Timestamp objects
                 timestamp_iso_str = raw_timestamp.isoformat()
+
 
             try:
                 gen_time = (
@@ -166,49 +179,50 @@ def get_media_for_page(
             )
             all_fetched_items.append(media_item)
 
-        # Update total_videos based on the count of items that passed the filter
-        # This is not ideal as it means total_videos might change based on client-side filter of a limited fetch.
-        # A better approach is to get the count from Firestore with filters.
-        # For now, this will make pagination work with the client-filtered list.
-        # pagestate = me.state(PageState) # Cannot get state here
-        # pagestate.total_videos = len(all_fetched_items) # This needs to be handled carefully
-
+        # For pagination, slice the fully filtered list
         start_slice = (page - 1) * media_per_page
         end_slice = start_slice + media_per_page
         return all_fetched_items[start_slice:end_slice]
 
     except Exception as e:
         print(f"Error fetching media from Firestore: {e}")
+        # Optionally, you could re-raise or handle more gracefully
         return []
 
 
+def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = False):
+    """Helper to load media, update total count, and items. Used by filter changes and page changes."""
+    if is_filter_change:
+        pagestate.current_page = 1 # Reset to first page on any filter change
+
+    # Fetch all items matching current filters to correctly determine total_media for pagination
+    # This fetches up to 'fetch_limit' defined in get_media_for_page.
+    # For very large datasets, a server-side count with filters would be more performant.
+    all_matching_items = get_media_for_page(
+        page=1, # Fetch from page 1
+        media_per_page=1000, # Effectively fetch all matching items up to the internal limit
+        type_filters=pagestate.selected_values,
+        error_filter=pagestate.error_filter_value
+    )
+    pagestate.total_media = len(all_matching_items)
+
+    # Then fetch just the items for the current page
+    pagestate.media_items = get_media_for_page(
+        pagestate.current_page,
+        pagestate.media_per_page,
+        pagestate.selected_values,
+        pagestate.error_filter_value
+    )
+    pagestate.key += 1 # Force re-render of the grid
+
+
 def library_content(app_state: me.state):
+    """Library Content"""
     pagestate = me.state(PageState)
 
-    # Initial data loading and URL parameter processing
     if not pagestate.initial_url_param_processed:
-        # Fetch total count based on current filters (or all if no filters initially)
-        # For simplicity, get_total_media_count might need to accept filters too.
-        # Or, we fetch all and then filter, which is done in get_media_for_page now.
-
-        # Load initial page of media
-        # The get_media_for_page function now handles basic client-side filtering
-        current_media = get_media_for_page(
-            pagestate.current_page, pagestate.media_per_page, pagestate.selected_values
-        )
-
-        # To correctly set total_videos for pagination WITH client-side filtering,
-        # ideally, get_total_media_count would also accept filters.
-        # As a workaround for now, if filters are active, total_videos might be less accurate
-        # unless get_media_for_page fetched ALL items and then filtered.
-        # For this example, let's assume get_total_media_count gives total unfiltered,
-        # and pagination might be slightly off if filters reduce the item count significantly.
-        if (
-            not pagestate.media_items and pagestate.total_media == 0
-        ):  # Only set total_videos once initially
-            pagestate.total_media = get_total_media_count()
-
-        pagestate.media_items = current_media
+        # Load initial data respecting all filters
+        _load_media_and_update_state(pagestate, is_filter_change=True) # Treat initial load as a filter change for count
 
         query_params = me.query_params
         media_id_from_url = query_params.get("media_id")
@@ -217,7 +231,6 @@ def library_content(app_state: me.state):
             item_in_current_list = next(
                 (v for v in pagestate.media_items if v.id == media_id_from_url), None
             )
-
             if item_in_current_list:
                 pagestate.selected_media_item_id = media_id_from_url
                 pagestate.show_details_dialog = True
@@ -225,8 +238,14 @@ def library_content(app_state: me.state):
             else:
                 fetched_item = get_media_item_by_id(media_id_from_url)
                 if fetched_item:
+                    # Check if the fetched item matches current filters before adding
+                    # This is a simplified check; ideally, get_media_item_by_id would also consider filters
+                    # or we re-evaluate if it should be shown.
+                    # For now, we add it if found, but it might not match current filters.
                     if not any(v.id == fetched_item.id for v in pagestate.media_items):
-                        pagestate.media_items.insert(0, fetched_item)
+                         pagestate.media_items.insert(0, fetched_item) # Prepend for visibility
+                         # pagestate.total_media +=1 # Adjust if needed, though complex with filters
+
                     pagestate.selected_media_item_id = fetched_item.id
                     pagestate.show_details_dialog = True
                     pagestate.dialog_instance_key += 1
@@ -234,15 +253,16 @@ def library_content(app_state: me.state):
                     pagestate.url_item_not_found_message = (
                         f"Media item with ID '{media_id_from_url}' not found."
                     )
-
         pagestate.initial_url_param_processed = True
 
     total_pages = (
         (pagestate.total_media + pagestate.media_per_page - 1)
         // pagestate.media_per_page
-        if pagestate.media_per_page > 0
-        else 0
+        if pagestate.media_per_page > 0 and pagestate.total_media > 0
+        else 1 # Ensure at least 1 page if total_media is 0 to avoid division by zero or 0 pages
     )
+    if pagestate.total_media == 0: total_pages = 0 # Show 0 pages if no items
+
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
@@ -259,23 +279,35 @@ def library_content(app_state: me.state):
                     )
                 ):
                     me.text(pagestate.url_item_not_found_message)
-
-            with me.box():
+            
+            # Filter Toggles Container
+            with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(bottom=20))):
+                # Media Type Filter
                 me.button_toggle(
-                    value=pagestate.selected_values,
+                    value=pagestate.selected_values, # This is a list
                     buttons=[
-                        me.ButtonToggleButton(label="All", value="all"),  # Added "All"
+                        me.ButtonToggleButton(label="All Types", value="all"),
                         me.ButtonToggleButton(label="Images", value="images"),
                         me.ButtonToggleButton(label="Videos", value="videos"),
                         me.ButtonToggleButton(label="Music", value="music"),
                     ],
-                    multiple=True,  # Keep true if you want multiple selections, or false for single
-                    on_change=on_change_selected_filters,
-                    style=me.Style(margin=me.Margin(bottom=20)),
+                    multiple=True, 
+                    on_change=on_change_selected_type_filters,
+                )
+                # Error Message Filter
+                me.button_toggle(
+                    value=pagestate.error_filter_value, # This is a string
+                    buttons=[
+                        me.ButtonToggleButton(label="Show All", value="all"),
+                        me.ButtonToggleButton(label="No Errors", value="no_errors"),
+                        me.ButtonToggleButton(label="Only Errors", value="only_errors"),
+                    ],
+                    on_change=on_change_error_filter,
+                    # multiple=False is default for single value
                 )
 
             with me.box(
-                key=str(pagestate.key),
+                key=str(pagestate.key), # Refreshes the grid when key changes
                 style=me.Style(
                     display="grid",
                     grid_template_columns="repeat(auto-fill, minmax(300px, 1fr))",
@@ -284,18 +316,10 @@ def library_content(app_state: me.state):
                 ),
             ):
                 if pagestate.is_loading and not pagestate.show_details_dialog:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            justify_content="center",
-                            padding=me.Padding.all(20),
-                        )
-                    ):
+                    with me.box(style=me.Style(display="flex", justify_content="center", padding=me.Padding.all(20))):
                         me.progress_spinner()
                 elif not pagestate.media_items:
-                    with me.box(
-                        style=me.Style(padding=me.Padding.all(20), text_align="center")
-                    ):
+                    with me.box(style=me.Style(padding=me.Padding.all(20), text_align="center")):
                         me.text("No media items found for the selected filters.")
                 else:
                     for i, m_item in enumerate(pagestate.media_items):
@@ -330,11 +354,17 @@ def library_content(app_state: me.state):
                         timestamp_display_str = "N/A"
                         if m_item.timestamp:
                             try:
+                                # Ensure timestamp is a string before parsing
+                                ts_str = m_item.timestamp
+                                if isinstance(m_item.timestamp, datetime): # Should not happen if MediaItem.timestamp is str
+                                     ts_str = m_item.timestamp.isoformat()
+
                                 timestamp_display_str = datetime.fromisoformat(
-                                    m_item.timestamp
+                                    ts_str.replace("Z", "+00:00") # Handle Z for UTC
                                 ).strftime("%Y-%m-%d %H:%M")
-                            except (ValueError, TypeError):
-                                timestamp_display_str = m_item.timestamp
+                            except (ValueError, TypeError) as e_ts:
+                                # print(f"Timestamp parsing error for '{m_item.timestamp}': {e_ts}")
+                                timestamp_display_str = str(m_item.timestamp) # Fallback to string if parsing fails
 
                         item_duration_str = (
                             f"{m_item.duration} sec"
@@ -343,7 +373,8 @@ def library_content(app_state: me.state):
                         )
 
                         with me.box(
-                            key=str(i),
+                            key=str(i), # Use item ID if available and unique, otherwise index is fine for local list
+                            # key=m_item.id or str(i), # Prefer item ID for key if stable
                             on_click=on_media_item_click,
                             style=me.Style(
                                 padding=me.Padding.all(16),
@@ -380,9 +411,7 @@ def library_content(app_state: me.state):
                                 )
                             ):
                                 if media_type_group == "video":
-                                    pill(
-                                        "Video", "media_type_video"
-                                    )  # General type pill
+                                    pill("Video", "media_type_video")
                                     pill(
                                         "t2v" if not m_item.reference_image else "i2v",
                                         "gen_t2v"
@@ -393,7 +422,7 @@ def library_content(app_state: me.state):
                                         pill(m_item.aspect, "aspect")
                                     if m_item.duration is not None:
                                         pill(item_duration_str, "duration")
-                                    pill("24 fps", "fps")  # Assuming for video
+                                    pill("24 fps", "fps")
                                 elif media_type_group == "image":
                                     pill("Image", "media_type_image")
                                     if m_item.aspect:
@@ -406,7 +435,7 @@ def library_content(app_state: me.state):
                                 if (
                                     m_item.enhanced_prompt
                                     and media_type_group == "video"
-                                ):  # Assuming enhanced prompt is video specific
+                                ):
                                     with me.tooltip(message="Prompt was auto-enhanced"):
                                         me.icon(
                                             "auto_fix_normal",
@@ -414,6 +443,10 @@ def library_content(app_state: me.state):
                                                 color=me.theme_var("primary")
                                             ),
                                         )
+                                # Pill for error message
+                                if m_item.error_message:
+                                    pill("Error", "error_present",)
+
 
                             me.text(
                                 f'"{prompt_display_grid}"'
@@ -424,7 +457,7 @@ def library_content(app_state: me.state):
                                     font_style="italic"
                                     if prompt_display_grid
                                     else "normal",
-                                    min_height="40px",
+                                    min_height="40px", # Ensure consistent height
                                 ),
                             )
 
@@ -432,19 +465,20 @@ def library_content(app_state: me.state):
                             with me.box(
                                 style=me.Style(
                                     display="flex",
-                                    flex_direction="row",
+                                    flex_direction="row", # Changed to row for side-by-side potential
                                     gap=8,
-                                    align_items="center",
-                                    justify_content="center",
+                                    align_items="center", # Align items vertically in center
+                                    justify_content="center", # Center content horizontally
                                     margin=me.Margin(top=8, bottom=8),
-                                    min_height="150px",
+                                    min_height="150px", # Ensure consistent height for preview area
                                 )
                             ):
                                 if m_item.error_message:
+                                    # Display error message prominently if it exists, instead of media
                                     me.text(
                                         f"Error: {m_item.error_message}",
                                         style=me.Style(
-                                            width="100%",
+                                            width="100%", # Take full width of the preview area
                                             font_style="italic",
                                             font_size="10pt",
                                             margin=me.Margin.all(3),
@@ -457,17 +491,17 @@ def library_content(app_state: me.state):
                                                 )
                                             ),
                                             border_radius=5,
-                                            background=me.theme_var("errorcontainer"),
-                                            color=me.theme_var("onerrorcontainer"),
+                                            background=me.theme_var("error-container"), # Corrected theme var
+                                            color=me.theme_var("on-error-container"), # Corrected theme var
                                         ),
                                     )
-                                else:
+                                else: # Only show media preview if no error
                                     if media_type_group == "video" and item_url:
                                         me.video(
                                             src=item_url,
                                             style=me.Style(
-                                                width="100%",
-                                                height="150px",
+                                                width="100%", # Take full width
+                                                height="150px", # Fixed height for consistency
                                                 border_radius=6,
                                                 object_fit="cover",
                                             ),
@@ -477,19 +511,19 @@ def library_content(app_state: me.state):
                                             src=item_url,
                                             alt_text=m_item.prompt or "Generated Image",
                                             style=me.Style(
-                                                max_width="100%",
-                                                max_height="150px",
-                                                height="auto",
+                                                max_width="100%", # Ensure it doesn't overflow
+                                                max_height="150px", # Max height for consistency
+                                                height="auto", # Maintain aspect ratio
                                                 border_radius=6,
-                                                object_fit="contain",
+                                                object_fit="contain", # Use contain to see whole image
                                             ),
                                         )
                                     elif media_type_group == "audio" and item_url:
                                         me.audio(
                                             src=item_url,
-                                            # style=me.Style(width="100%"),
+                                            # style=me.Style(width="100%"), # Audio player width
                                         )
-                                    else:
+                                    else: # Fallback if no URL or unknown type (and no error)
                                         me.text(
                                             f"{media_type_group.capitalize() if media_type_group else 'Media'} not available.",
                                             style=me.Style(
@@ -501,14 +535,14 @@ def library_content(app_state: me.state):
                                             ),
                                         )
 
-                                if (
-                                    media_type_group == "video"
-                                ):  # Show reference images only for video
+                                # Reference images for video (only if no error)
+                                if media_type_group == "video" and not m_item.error_message:
                                     with me.box(
                                         style=me.Style(
                                             display="flex",
-                                            flex_direction="column",
+                                            flex_direction="column", # Stack reference images
                                             gap=5,
+                                            # margin=me.Margin(left=8) # Add some space if side-by-side with video
                                         )
                                     ):
                                         if m_item.reference_image:
@@ -519,7 +553,7 @@ def library_content(app_state: me.state):
                                             me.image(
                                                 src=ref_img_url,
                                                 style=me.Style(
-                                                    height="70px",
+                                                    height="70px", # Smaller reference images
                                                     width="auto",
                                                     border_radius=4,
                                                     object_fit="contain",
@@ -539,7 +573,7 @@ def library_content(app_state: me.state):
                                                     object_fit="contain",
                                                 ),
                                             )
-
+                            # Generation time
                             if m_item.generation_time is not None:
                                 me.text(
                                     f"Generated in {round(m_item.generation_time)} seconds.",
@@ -548,19 +582,18 @@ def library_content(app_state: me.state):
                                         color=me.theme_var("onsurfacevariant"),
                                     ),
                                 )
-
+            # Dialog for Media Details
             library_dialog_style = me.Style(
-                max_width="80vw", width="80vw", min_width="600px"
+                max_width="80vw", width="80vw", min_width="600px" # Responsive width
             )
-
-            # pylint: disable=not-context-manager
-            with dialog(
+            with dialog( # pylint: disable=not-context-manager
                 key=str(pagestate.dialog_instance_key),
                 is_open=pagestate.show_details_dialog,
                 dialog_style=library_dialog_style,
             ):
                 item_to_display: Optional[MediaItem] = None
                 if pagestate.selected_media_item_id:
+                    # Try to find in current list first
                     item_to_display = next(
                         (
                             v
@@ -569,6 +602,10 @@ def library_content(app_state: me.state):
                         ),
                         None,
                     )
+                    # If not found (e.g., direct URL access to an item not on current page/filters)
+                    # This case is partially handled by initial load, but good to have a fallback.
+                    # if not item_to_display:
+                    # item_to_display = get_media_item_by_id(pagestate.selected_media_item_id)
 
                 if item_to_display:
                     item = item_to_display
@@ -589,13 +626,13 @@ def library_content(app_state: me.state):
                             flex_direction="column",
                             gap=12,
                             width="100%",
-                            max_width="900px",
-                            height="auto",
-                            max_height="80vh",
-                            overflow_y="auto",
+                            max_width="900px", # Max width for content inside dialog
+                            height="auto", # Auto height based on content
+                            max_height="80vh", # Max viewport height
+                            overflow_y="auto", # Scroll if content exceeds max height
                             padding=me.Padding.all(24),
                         )
-                    ):  # Increased padding
+                    ):
                         me.text(
                             "Media Details",
                             style=me.Style(
@@ -603,11 +640,10 @@ def library_content(app_state: me.state):
                                 font_weight="bold",
                                 margin=me.Margin(bottom=16),
                                 color=me.theme_var("on-surface-variant"),
-                                flex_shrink=0,
+                                flex_shrink=0, # Prevent title from shrinking
                             ),
-                        )  # Adjusted title style
+                        )
 
-                        # Media Preview in Dialog
                         item_display_url = (
                             item.gcsuri.replace(
                                 "gs://", "https://storage.mtls.cloud.google.com/"
@@ -615,19 +651,19 @@ def library_content(app_state: me.state):
                             if item.gcsuri
                             else ""
                         )
-                        if dialog_media_type_group == "video" and item_display_url:
+                        if dialog_media_type_group == "video" and item_display_url and not item.error_message:
                             me.video(
                                 src=item_display_url,
                                 style=me.Style(
                                     width="100%",
                                     max_height="40vh",
                                     border_radius=8,
-                                    background="#000",
-                                    display="block",
+                                    background="#000", # Background for video player
+                                    display="block", # Ensure it takes block space
                                     margin=me.Margin(bottom=16),
                                 ),
                             )
-                        elif dialog_media_type_group == "image" and item_display_url:
+                        elif dialog_media_type_group == "image" and item_display_url and not item.error_message:
                             me.image(
                                 src=item_display_url,
                                 alt_text=item.prompt or "Image",
@@ -639,36 +675,45 @@ def library_content(app_state: me.state):
                                     margin=me.Margin(bottom=16),
                                 ),
                             )
-                        elif dialog_media_type_group == "audio" and item_display_url:
+                        elif dialog_media_type_group == "audio" and item_display_url and not item.error_message:
                             me.audio(
                                 src=item_display_url,
                                 # style=me.Style(width="100%", margin=me.Margin(top=8, bottom=16))
                             )
-
+                        
                         if item.error_message:
                             me.text(
                                 f"Error: {item.error_message}",
                                 style=me.Style(
-                                    color=me.theme_var("error"), font_style="italic"
+                                    color=me.theme_var("error"), font_style="italic",
+                                    padding=me.Padding.all(8),
+                                    background=me.theme_var("error-container"),
+                                    border_radius=4,
+                                    margin=me.Margin(bottom=10)
                                 ),
                             )
+
                         me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
                         if item.enhanced_prompt:
                             me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
-
-                        dialog_timestamp_str = "N/A"
+                        
+                        dialog_timestamp_str_detail = "N/A"
                         if item.timestamp:
                             try:
-                                dialog_timestamp_str = datetime.fromisoformat(
-                                    item.timestamp
-                                ).strftime("%Y-%m-%d %H:%M")
-                            except (ValueError, TypeError):
-                                dialog_timestamp_str = item.timestamp
-                        me.text(f"Generated: {dialog_timestamp_str}")
+                                ts_str_detail = item.timestamp
+                                if isinstance(item.timestamp, datetime):
+                                     ts_str_detail = item.timestamp.isoformat()
+                                dialog_timestamp_str_detail = datetime.fromisoformat(
+                                    ts_str_detail.replace("Z", "+00:00") 
+                                ).strftime("%Y-%m-%d %H:%M:%S %Z") # More detailed timestamp
+                            except Exception:
+                                dialog_timestamp_str_detail = str(item.timestamp)
+                        me.text(f"Generated: {dialog_timestamp_str_detail}")
+
 
                         if item.generation_time is not None:
                             me.text(
-                                f"Generation Time: {round(item.generation_time)} seconds"
+                                f"Generation Time: {round(item.generation_time, 2)} seconds"
                             )
 
                         if (
@@ -684,7 +729,7 @@ def library_content(app_state: me.state):
                             if item.duration is not None:
                                 me.text(f"Duration: {item.duration} seconds")
 
-                        if dialog_media_type_group == "video":  # Video specific details
+                        if dialog_media_type_group == "video":
                             if item.reference_image:
                                 ref_url = item.reference_image.replace(
                                     "gs://", "https://storage.mtls.cloud.google.com/"
@@ -692,7 +737,7 @@ def library_content(app_state: me.state):
                                 me.text(
                                     "Reference Image:",
                                     style=me.Style(
-                                        font_weight="medium", margin=me.Margin(top=8)
+                                        font_weight="500", margin=me.Margin(top=8) # medium is not a valid value
                                     ),
                                 )
                                 me.image(
@@ -711,7 +756,7 @@ def library_content(app_state: me.state):
                                 me.text(
                                     "Last Reference Image:",
                                     style=me.Style(
-                                        font_weight="medium", margin=me.Margin(top=8)
+                                        font_weight="500", margin=me.Margin(top=8)
                                     ),
                                 )
                                 me.image(
@@ -723,10 +768,10 @@ def library_content(app_state: me.state):
                                         margin=me.Margin(top=4),
                                     ),
                                 )
-
+                        
                         with me.content_button(
                             on_click=on_click_set_permalink,
-                            key=item.id,
+                            key=item.id or "", # Ensure key is not None
                         ):
                             with me.box(
                                 style=me.Style(
@@ -741,19 +786,19 @@ def library_content(app_state: me.state):
 
                         if item.raw_data:
                             with me.expansion_panel(
-                                key="raw_metadata_panel",
+                                key="raw_metadata_panel_dialog", # Unique key for dialog panel
                                 title="Firestore Metadata",
-                                description=item.id,
+                                description=item.id or "N/A",
                                 icon="dataset",
                             ):
                                 try:
                                     json_string = json.dumps(
-                                        item.raw_data, indent=2, default=str
+                                        item.raw_data, indent=2, default=str # Use default=str for non-serializable
                                     )
                                     me.markdown(f"```json\n{json_string}\n```")
                                 except Exception as e_json:
                                     print(
-                                        f"Error serializing raw_data to JSON: {e_json}"
+                                        f"Error serializing raw_data to JSON in dialog: {e_json}"
                                     )
                                     me.text(
                                         "Could not display raw data (serialization error)."
@@ -763,11 +808,11 @@ def library_content(app_state: me.state):
                 else:
                     with me.box(style=me.Style(padding=me.Padding.all(16))):
                         me.text("No media item selected or found for the given ID.")
-                # pylint: disable=not-context-manager
-
+                
                 with dialog_actions():  # pylint: disable=not-context-manager
                     me.button("Close", on_click=on_close_details_dialog, type="flat")
 
+            # Pagination controls
             if total_pages > 1:
                 with me.box(
                     style=me.Style(
@@ -780,7 +825,7 @@ def library_content(app_state: me.state):
                 ):
                     me.button(
                         "Previous",
-                        key="-1",
+                        key="-1", # Key for direction
                         on_click=handle_page_change,
                         disabled=pagestate.current_page == 1 or pagestate.is_loading,
                         type="stroked",
@@ -788,7 +833,7 @@ def library_content(app_state: me.state):
                     me.text(f"Page {pagestate.current_page} of {total_pages}")
                     me.button(
                         "Next",
-                        key="1",
+                        key="1", # Key for direction
                         on_click=handle_page_change,
                         disabled=pagestate.current_page == total_pages
                         or pagestate.is_loading,
@@ -798,21 +843,21 @@ def library_content(app_state: me.state):
 
 def on_click_set_permalink(e: me.ClickEvent):
     """set the permalink from dialog"""
-    me.query_params["media_id"] = e.key
+    if e.key: # Ensure key is not None or empty
+      me.query_params["media_id"] = e.key
 
 
 def on_media_item_click(e: me.ClickEvent):
     pagestate = me.state(PageState)
     try:
-        selected_index = int(e.key)
+        # Assuming e.key is the index of the item in the currently displayed pagestate.media_items
+        selected_index = int(e.key) # The key for the media item box is its index 'i'
         if 0 <= selected_index < len(pagestate.media_items):
             clicked_item = pagestate.media_items[selected_index]
-            if clicked_item.id is None:
-                print(f"WARNING: Clicked item at index {selected_index} has a None ID.")
             pagestate.selected_media_item_id = clicked_item.id
             pagestate.show_details_dialog = True
-            pagestate.dialog_instance_key += 1
-            pagestate.url_item_not_found_message = None
+            pagestate.dialog_instance_key += 1 
+            pagestate.url_item_not_found_message = None # Clear any old not found message
         else:
             print(f"Error: Invalid index {selected_index} for media item click.")
     except ValueError:
@@ -823,8 +868,11 @@ def on_media_item_click(e: me.ClickEvent):
 def on_close_details_dialog(e: me.ClickEvent):
     pagestate = me.state(PageState)
     pagestate.show_details_dialog = False
-    pagestate.selected_media_item_id = None
-    pagestate.url_item_not_found_message = None
+    pagestate.selected_media_item_id = None 
+    pagestate.url_item_not_found_message = None # Clear message when dialog is closed by user
+    # Optionally, clear media_id from URL params if desired
+    # if "media_id" in me.query_params:
+    #    del me.query_params["media_id"]
     yield
 
 
@@ -834,68 +882,64 @@ def handle_page_change(e: me.ClickEvent):
         yield
         return
 
-    if pagestate.total_media == 0:
-        pagestate.total_media = get_total_media_count()
-
     pagestate.is_loading = True
-    yield
+    yield # Show loading spinner
+
     direction = int(e.key)
     new_page = pagestate.current_page + direction
 
-    current_total_pages = (
-        (pagestate.total_media + pagestate.media_per_page - 1)
-        // pagestate.media_per_page
-        if pagestate.media_per_page > 0
-        else 0
-    )
+    # No need to recalculate total_pages here if total_media is up-to-date
+    # It's calculated at the start of library_content
 
-    if 1 <= new_page <= current_total_pages:
+    if 1 <= new_page <= ((pagestate.total_media + pagestate.media_per_page - 1) // pagestate.media_per_page if pagestate.media_per_page > 0 and pagestate.total_media > 0 else 1):
         pagestate.current_page = new_page
+        # Fetch only the items for the new page with current filters
         pagestate.media_items = get_media_for_page(
-            pagestate.current_page, pagestate.media_per_page, pagestate.selected_values
+            pagestate.current_page,
+            pagestate.media_per_page,
+            pagestate.selected_values,
+            pagestate.error_filter_value
         )
-        pagestate.key += 1
+        pagestate.key += 1 # Refresh grid
         pagestate.url_item_not_found_message = None
+    
     pagestate.is_loading = False
     yield
 
 
-def on_change_selected_filters(e: me.ButtonToggleChangeEvent):
+def on_change_selected_type_filters(e: me.ButtonToggleChangeEvent):
     pagestate = me.state(PageState)
     new_filters = e.values
-    # Handle "All" filter: if "all" is selected, or if no specific type is selected, show all.
-    # If specific types are selected, "all" should be ignored or deselected.
-    if "all" in new_filters and len(new_filters) > 1:
+    
+    if not new_filters: # If all are deselected
+        pagestate.selected_values = ["all"] # Default to "all"
+    elif "all" in new_filters and len(new_filters) > 1:
+        # If "all" is selected along with specific types, prioritize specific types
         pagestate.selected_values = [val for val in new_filters if val != "all"]
-    elif not new_filters:  # If everything is deselected, default to "all"
+    elif "all" in new_filters and len(new_filters) == 1:
         pagestate.selected_values = ["all"]
     else:
         pagestate.selected_values = new_filters
 
     pagestate.url_item_not_found_message = None
-    pagestate.current_page = 1  # Reset to first page on filter change
     pagestate.is_loading = True
-    yield  # Allow UI to update (e.g., show spinner)
+    yield
 
-    # Refetch data with new filters
-    # The total count might change based on filters, so we need to be careful.
-    # For a simple client-side filter as implemented in get_media_for_page,
-    # get_total_media_count would ideally also take filters.
-    # For now, we'll refetch the first page and the total count (unfiltered).
-    # This might lead to pagination inaccuracies if filters drastically reduce item count.
+    _load_media_and_update_state(pagestate, is_filter_change=True)
+    
+    pagestate.is_loading = False
+    yield
 
-    # pagestate.total_videos = get_total_media_count() # Or a filtered count if available
+def on_change_error_filter(e: me.ButtonToggleChangeEvent):
+    """Handles changes to the error message filter."""
+    pagestate = me.state(PageState)
+    pagestate.error_filter_value = e.value # This is a single string value
+    
+    pagestate.url_item_not_found_message = None
+    pagestate.is_loading = True
+    yield
 
-    # Fetching all items and then filtering for total_videos (if client-side filtering is primary)
-    # This is inefficient for large datasets.
-    all_items_for_filter_count = get_media_for_page(
-        1, 9999, pagestate.selected_values
-    )  # Fetch all matching
-    pagestate.total_media = len(all_items_for_filter_count)
+    _load_media_and_update_state(pagestate, is_filter_change=True)
 
-    pagestate.media_items = get_media_for_page(
-        pagestate.current_page, pagestate.media_per_page, pagestate.selected_values
-    )
-    pagestate.key += 1
     pagestate.is_loading = False
     yield
