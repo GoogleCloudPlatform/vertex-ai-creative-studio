@@ -22,6 +22,21 @@
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
         "PROJECT_ID": "ghchinoy-genai-sa"
       }
+    },
+    "lyria-go": {
+      "command": "mcp-lyria-go",
+      "env": {
+        "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
+        "PROJECT_ID": "music-generation-434117",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "avtool-go": {
+      "command": "mcp-avtool-go",
+      "env": {
+        "PROJECT_ID": "ghchinoy-genai-sa",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
     }
   }
 }

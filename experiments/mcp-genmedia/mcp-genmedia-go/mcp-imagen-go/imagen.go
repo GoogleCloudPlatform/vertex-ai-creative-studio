@@ -39,7 +39,7 @@ var (
 	transport         string
 )
 
-const version = "1.4.2" // Incremented version for GCS download implementation
+const version = "1.4.3" // Incremented version for GCS download implementation
 
 // formatBytes converts a size in bytes to a human-readable string (KB, MB, GB).
 func formatBytes(bytes int64) string {
@@ -211,19 +211,19 @@ func main() {
 // imagenGenerationHandler invokes Imagen text to image generation
 func imagenGenerationHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// --- 1. Parse Parameters ---
-	prompt, ok := request.Params.Arguments["prompt"].(string)
+	prompt, ok := request.GetArguments()["prompt"].(string)
 	if !ok {
 		return &mcp.CallToolResult{Content: []mcp.Content{mcp.TextContent{Type: "text", Text: "Error: prompt must be a string and is required"}}}, nil
 	}
 
-	model, ok := request.Params.Arguments["model"].(string)
+	model, ok := request.GetArguments()["model"].(string)
 	if !ok || model == "" {
 		log.Printf("Model not provided or empty, using default: imagen-3.0-generate-002")
 		model = "imagen-3.0-generate-002"
 	}
 
 	var numberOfImages int32 = 1
-	numImagesArg, ok := request.Params.Arguments["num_images"]
+	numImagesArg, ok := request.GetArguments()["num_images"]
 	if ok {
 		if numImagesFloat, okFloat := numImagesArg.(float64); okFloat {
 			numberOfImages = int32(numImagesFloat)
@@ -238,14 +238,14 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		numberOfImages = 4
 	}
 
-	aspectRatio, ok := request.Params.Arguments["aspect_ratio"].(string)
+	aspectRatio, ok := request.GetArguments()["aspect_ratio"].(string)
 	if !ok || aspectRatio == "" {
 		log.Printf("Aspect ratio not provided or empty, using default: 1:1")
 		aspectRatio = "1:1"
 	}
 
 	gcsOutputURI := ""
-	if uri, ok := request.Params.Arguments["gcs_bucket_uri"].(string); ok && strings.TrimSpace(uri) != "" {
+	if uri, ok := request.GetArguments()["gcs_bucket_uri"].(string); ok && strings.TrimSpace(uri) != "" {
 		gcsOutputURI = strings.TrimSpace(uri)
 		if !strings.HasPrefix(gcsOutputURI, "gs://") {
 			gcsOutputURI = "gs://" + gcsOutputURI
@@ -258,7 +258,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	}
 
 	outputDir := ""
-	if dir, ok := request.Params.Arguments["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
+	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
 		outputDir = strings.TrimSpace(dir)
 	}
 	attemptLocalSave := outputDir != ""

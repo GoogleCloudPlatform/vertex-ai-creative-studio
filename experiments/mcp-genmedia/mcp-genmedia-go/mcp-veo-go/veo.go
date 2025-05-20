@@ -316,12 +316,12 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 }
 
 func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	prompt, ok := request.Params.Arguments["prompt"].(string)
+	prompt, ok := request.GetArguments()["prompt"].(string)
 	if !ok || strings.TrimSpace(prompt) == "" {
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required for text-to-video"), nil
 	}
 
-	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.Params.Arguments)
+	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments())
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -351,7 +351,7 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 }
 
 func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	imageURI, ok := request.Params.Arguments["image_uri"].(string)
+	imageURI, ok := request.GetArguments()["image_uri"].(string)
 	if !ok || strings.TrimSpace(imageURI) == "" {
 		return mcp.NewToolResultError("image_uri must be a non-empty string (GCS URI) and is required for image-to-video"), nil
 	}
@@ -360,7 +360,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 	}
 
 	var mimeType string
-	if mt, ok := request.Params.Arguments["mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+	if mt, ok := request.GetArguments()["mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
 		mimeType = strings.ToLower(strings.TrimSpace(mt))
 		if mimeType != "image/jpeg" && mimeType != "image/png" {
 			log.Printf("Unsupported MIME type provided: %s. Only 'image/jpeg' and 'image/png' are supported.", mimeType)
@@ -377,11 +377,11 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 	}
 
 	prompt := ""
-	if promptArg, ok := request.Params.Arguments["prompt"].(string); ok {
+	if promptArg, ok := request.GetArguments()["prompt"].(string); ok {
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.Params.Arguments)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments())
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}

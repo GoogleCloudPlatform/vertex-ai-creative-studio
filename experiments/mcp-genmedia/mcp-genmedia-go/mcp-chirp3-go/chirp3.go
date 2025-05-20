@@ -31,7 +31,7 @@ var (
 	port                string
 )
 
-const version = "1.3.8" // Version increment for pronunciation feature
+const version = "1.3.4" // Version increment for breaking changes
 
 const (
 	timeFormatForFilename = "20060102-150405"
@@ -309,9 +309,9 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 		log.Printf("chirpTTSHandler: Incoming context (ctx) is active upon entry.")
 	}
 
-	log.Printf("Handling chirp_tts request with arguments: %v", request.Params.Arguments)
+	log.Printf("Handling chirp_tts request with arguments: %v", request.GetArguments())
 
-	text, ok := request.Params.Arguments["text"].(string)
+	text, ok := request.GetArguments()["text"].(string)
 	if !ok || strings.TrimSpace(text) == "" {
 		errMsg := "text parameter must be a non-empty string and is required"
 		contentItems = append(contentItems, mcp.TextContent{Type: "text", Text: errMsg})
@@ -319,8 +319,8 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	}
 
 	// Handle custom pronunciations
-	pronunciationsParam, _ := request.Params.Arguments["pronunciations"] // This will be []interface{} or nil
-	pronunciationEncodingStr, _ := request.Params.Arguments["pronunciation_encoding"].(string)
+	pronunciationsParam, _ := request.GetArguments()["pronunciations"] // This will be []interface{} or nil
+	pronunciationEncodingStr, _ := request.GetArguments()["pronunciation_encoding"].(string)
 	if pronunciationEncodingStr == "" { // Apply default if not provided
 		pronunciationEncodingStr = "ipa"
 	}
@@ -337,7 +337,7 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	}
 
 	var selectedVoice *texttospeechpb.Voice
-	voiceNameParam, voiceNameProvided := request.Params.Arguments["voice_name"].(string)
+	voiceNameParam, voiceNameProvided := request.GetArguments()["voice_name"].(string)
 
 	if voiceNameProvided && strings.TrimSpace(voiceNameParam) != "" {
 		voiceNameParam = strings.TrimSpace(voiceNameParam)
@@ -375,13 +375,13 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 		}
 	}
 
-	filenamePrefix, _ := request.Params.Arguments["output_filename_prefix"].(string)
+	filenamePrefix, _ := request.GetArguments()["output_filename_prefix"].(string)
 	if strings.TrimSpace(filenamePrefix) == "" {
 		filenamePrefix = "chirp_audio"
 	}
 
 	outputDir := ""
-	if dir, ok := request.Params.Arguments["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
+	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
 		outputDir = strings.TrimSpace(dir)
 	}
 	attemptLocalSave := outputDir != ""
@@ -510,7 +510,7 @@ func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*
 	}
 	log.Println("Handling list_chirp_voices request.")
 
-	languageParam, langProvided := request.Params.Arguments["language"].(string)
+	languageParam, langProvided := request.GetArguments()["language"].(string)
 	if !langProvided || strings.TrimSpace(languageParam) == "" {
 		return mcp.NewToolResultError("'language' parameter must be provided and non-empty."), nil
 	}
