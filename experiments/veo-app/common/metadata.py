@@ -48,6 +48,8 @@ class MediaItem:
     duration: Optional[float] = None
     error_message: Optional[str] = None
     mime_type: Optional[str] = None
+    rewritten_prompt: Optional[str] = None
+    model: Optional[str] = None
     raw_data: Optional[Dict] = field(
         default_factory=dict
     )  # To store the raw Firestore document
@@ -98,11 +100,11 @@ def get_media_item_by_id(
             except (ValueError, TypeError):
                 item_duration = None
 
-            # This assumes MediaItem class is defined in a scope accessible here.
-            # If not, this function should return raw_item_data (dict) and the
-            # calling code (library.py) would construct the MediaItem instance.
             media_item = MediaItem(
                 id=doc.id,
+                model=str(raw_item_data.get("model"))
+                if raw_item_data.get("model") is not None
+                else None,
                 aspect=str(raw_item_data.get("aspect"))
                 if raw_item_data.get("aspect") is not None
                 else None,
@@ -127,6 +129,9 @@ def get_media_item_by_id(
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None
                 else None,
+                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
+                if raw_item_data.get("rewritten_prompt") is not None
+                else None,
                 raw_data=raw_item_data,
             )
             return media_item
@@ -138,7 +143,16 @@ def get_media_item_by_id(
         return None
 
 
-def add_music_metadata(model: str, gcsuri: str, prompt: str, original_prompt: str, rewritten_prompt: str, generation_time: float, error_message: str, audio_analysis: str):
+def add_music_metadata(
+    model: str,
+    gcsuri: str,
+    prompt: str,
+    original_prompt: str,
+    rewritten_prompt: str,
+    generation_time: float,
+    error_message: str,
+    audio_analysis: str,
+):
     """Add Music metadata to Firestore persistence"""
     current_datetime = datetime.datetime.now()
 

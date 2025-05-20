@@ -423,26 +423,38 @@ def library_content(app_state: me.state):
                                     if m_item.duration is not None:
                                         pill(item_duration_str, "duration")
                                     pill("24 fps", "fps")
+                                    if (
+                                        m_item.enhanced_prompt
+                                        and media_type_group == "video"
+                                    ):
+                                        with me.tooltip(message="Prompt was auto-enhanced"):
+                                            me.icon(
+                                                "auto_fix_normal",
+                                                style=me.Style(
+                                                    color=me.theme_var("primary")
+                                                ),
+                                            )
+                                    
                                 elif media_type_group == "image":
                                     pill("Image", "media_type_image")
                                     if m_item.aspect:
                                         pill(m_item.aspect, "aspect")
+                                        
                                 elif media_type_group == "audio":
                                     pill("Audio", "media_type_audio")
                                     if m_item.duration is not None:
                                         pill(item_duration_str, "duration")
 
-                                if (
-                                    m_item.enhanced_prompt
-                                    and media_type_group == "video"
-                                ):
-                                    with me.tooltip(message="Prompt was auto-enhanced"):
-                                        me.icon(
-                                            "auto_fix_normal",
-                                            style=me.Style(
-                                                color=me.theme_var("primary")
-                                            ),
-                                        )
+                                    if m_item.rewritten_prompt is not None:
+                                        with me.tooltip(message="Custom prompt rewriter"):
+                                            me.icon(
+                                                "auto_fix_normal",
+                                                style=me.Style(
+                                                    color=me.theme_var("primary")
+                                                ),
+                                            )
+
+                                
                                 # Pill for error message
                                 if m_item.error_message:
                                     pill("Error", "error_present",)
@@ -609,6 +621,7 @@ def library_content(app_state: me.state):
 
                 if item_to_display:
                     item = item_to_display
+
                     dialog_mime_type = (
                         item.raw_data.get("mime_type", "") if item.raw_data else ""
                     )
@@ -715,6 +728,9 @@ def library_content(app_state: me.state):
                             me.text(
                                 f"Generation Time: {round(item.generation_time, 2)} seconds"
                             )
+                        
+                        if item.model is not None:
+                            me.text(f"Model: {item.model}")
 
                         if (
                             dialog_media_type_group == "video"
