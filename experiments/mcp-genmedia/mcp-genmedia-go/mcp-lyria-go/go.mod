@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	cloud.google.com/go/aiplatform v1.88.0
 	cloud.google.com/go/storage v1.54.0
-	github.com/mark3labs/mcp-go v0.30.1-0.20250525140725-243a292c219a
+	github.com/mark3labs/mcp-go v0.30.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	google.golang.org/api v0.234.0
 	google.golang.org/protobuf v1.36.6
