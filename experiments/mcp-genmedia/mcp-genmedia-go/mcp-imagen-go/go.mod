@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	cloud.google.com/go/storage v1.54.0
 	github.com/mark3labs/mcp-go v0.30.1
-	github.com/rs/cors v1.11.0
+	github.com/rs/cors v1.11.1
 	google.golang.org/genai v1.7.0
 )
 

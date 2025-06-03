@@ -5,7 +5,7 @@ go 1.23.5
 require (
 	cloud.google.com/go/texttospeech v1.13.0
 	github.com/mark3labs/mcp-go v0.30.1
-	github.com/rs/cors v1.11.0
+	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.25.0
 )
 
