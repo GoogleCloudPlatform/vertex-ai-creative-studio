@@ -204,7 +204,7 @@ parso==0.8.4
     # via jedi
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-pillow==11.2.1
+pillow==11.3.0
     # via
     #   matplotlib
     #   mediapy
