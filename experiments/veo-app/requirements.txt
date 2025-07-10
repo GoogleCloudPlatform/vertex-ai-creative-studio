@@ -216,7 +216,7 @@ pathspec==0.12.1
     # via black
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-pillow==11.2.1
+pillow==11.3.0
     # via
     #   matplotlib
     #   mediapy
