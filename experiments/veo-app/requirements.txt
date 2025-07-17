@@ -294,7 +294,7 @@ requests==2.32.4
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.12.3
+ruff==0.12.4
     # via veo-app
 shapely==2.1.1
     # via google-cloud-aiplatform
