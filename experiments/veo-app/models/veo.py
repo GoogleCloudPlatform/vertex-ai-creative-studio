@@ -42,11 +42,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if not model_config:
         raise GenerationError(f"Unsupported VEO model version: {request.model_version_id}")
 
-    PERSON_GENERATION_MAP = {
-        "Allow (All ages)": "allow_all",
-        "Allow (Adults only)": "allow_adult",
-        "Don't Allow": "dont_allow",
-    }
+    # Use the module-level PERSON_GENERATION_MAP constant
 
     # --- Prepare Generation Configuration ---
     enhance_prompt_for_api = (
