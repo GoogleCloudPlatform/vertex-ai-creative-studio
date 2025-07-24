@@ -35,10 +35,10 @@ client = genai.Client(
 
 # Map for person generation options
 PERSON_GENERATION_MAP = {
-        "Allow (All ages)": "allow_all",
-        "Allow (Adults only)": "allow_adult",
-        "Don't Allow": "dont_allow",
-    }
+    "Allow (All ages)": "allow_all",
+    "Allow (Adults only)": "allow_adult",
+    "Don't Allow": "dont_allow",
+}
 
 def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     """Generate a video based on a request object using the genai SDK.
