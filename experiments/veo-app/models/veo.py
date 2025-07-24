@@ -42,6 +42,12 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if not model_config:
         raise GenerationError(f"Unsupported VEO model version: {request.model_version_id}")
 
+    PERSON_GENERATION_MAP = {
+        "Allow (All ages)": "allow_all",
+        "Allow (Adults only)": "allow_adult",
+        "Don't Allow": "dont_allow",
+    }
+
     # --- Prepare Generation Configuration ---
     enhance_prompt_for_api = (
         True if request.model_version_id.startswith("3.") else request.enhance_prompt
@@ -53,6 +59,9 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         "enhance_prompt": enhance_prompt_for_api,
         "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
         "resolution": request.resolution,
+        "person_generation": PERSON_GENERATION_MAP.get(
+            request.person_generation, "allow_all"
+        ),
     }
     if request.negative_prompt:
         gen_config_args["negative_prompt"] = request.negative_prompt

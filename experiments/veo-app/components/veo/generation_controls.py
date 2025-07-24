@@ -91,6 +91,28 @@ def generation_controls():
             on_selection_change=on_selection_change_model,
         )
 
+        # Person Generation Selector
+        me.select(
+            label="person generation",
+            appearance="outline",
+            options=[
+                me.SelectOption(label="Allow (All ages)", value="Allow (All ages)"),
+                me.SelectOption(
+                    label="Allow (Adults only)", value="Allow (Adults only)"
+                ),
+                me.SelectOption(label="Don't Allow", value="Don't Allow"),
+            ],
+            value=state.person_generation,
+            on_selection_change=on_selection_change_person_generation,
+        )
+
+
+def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
+    """Handles changes to the person generation setting."""
+    state = me.state(PageState)
+    state.person_generation = e.value
+    yield
+
 
 def on_selection_change_length(e: me.SelectSelectionChangeEvent):
     """Adjust the video duration length in seconds based on user event"""

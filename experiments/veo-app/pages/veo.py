@@ -188,6 +188,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         resolution=state.resolution,
         enhance_prompt=state.auto_enhance_prompt,
         model_version_id=state.veo_model,
+        person_generation=state.person_generation,
         reference_image_gcs=state.reference_image_gcs,
         last_reference_image_gcs=state.last_reference_image_gcs,
         reference_image_mime_type=state.reference_image_mime_type,

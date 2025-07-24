@@ -144,7 +144,7 @@ def generate_images(input_txt: str):
         print(
             f"generated image: {idx} size: {len(img._as_base64_string())} at {img._gcs_uri}"
         )
-        state.image_output.append(img._gcs_uri)
+        state.image_output.append(img._gcs_uri) # type: ignore
 
 
 def random_prompt_generator(e: me.ClickEvent):

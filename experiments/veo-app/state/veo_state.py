@@ -64,3 +64,5 @@ class PageState:
     error_message: str = ""
     result_video: str
     timing: str
+
+    person_generation: str = "Allow (All ages)"
