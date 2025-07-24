@@ -33,6 +33,12 @@ client = genai.Client(
     vertexai=True, project=config.VEO_PROJECT_ID, location=config.LOCATION,
 )
 
+# Map for person generation options
+PERSON_GENERATION_MAP = {
+        "Allow (All ages)": "allow_all",
+        "Allow (Adults only)": "allow_adult",
+        "Don't Allow": "dont_allow",
+    }
 
 def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     """Generate a video based on a request object using the genai SDK.
@@ -42,9 +48,8 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if not model_config:
         raise GenerationError(f"Unsupported VEO model version: {request.model_version_id}")
 
-    # Use the module-level PERSON_GENERATION_MAP constant
 
-    # --- Prepare Generation Configuration ---
+    # Prepare Generation Configuration
     enhance_prompt_for_api = (
         True if request.model_version_id.startswith("3.") else request.enhance_prompt
     )
@@ -62,7 +67,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if request.negative_prompt:
         gen_config_args["negative_prompt"] = request.negative_prompt
 
-    # --- Prepare Image and Video Inputs ---
+    # Prepare Image and Video Inputs
     image_input = None
     # Check for interpolation (first and last frame)
     if request.reference_image_gcs and request.last_reference_image_gcs:
@@ -88,7 +93,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     gen_config = types.GenerateVideosConfig(**gen_config_args)
 
-    # --- Call the API ---
+    # Call the API
     try:
         operation = client.models.generate_videos(
             model=model_config.model_name,
