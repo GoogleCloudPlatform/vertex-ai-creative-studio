@@ -94,9 +94,9 @@ def infinite_scroll_chooser_button(
             if button_label:
                 me.text(button_label)
 
-    dialog_style = me.Style(width="95vw", height="80vh", display="flex", flex_direction="column")
+    dialog_style = me.Style(width="75vw", height="80vh", display="flex", flex_direction="column")
 
-    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):  # pylint: disable=not-context-manager
         with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)):
             me.text("Select an Image from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):

@@ -189,6 +189,52 @@ This approach makes the configuration easier to read, modify (even for non-devel
 web: gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 -k uvicorn.workers.UvicornWorker main:app
 ```
 
+### 5. Bridging FastAPI to Mesop State & Avoiding Module Load Errors
+
+**The Problem:** The application crashes on startup or navigation with a `NameError: name 'AppState' is not defined`, or user-specific data (like the current user's email) is not correctly passed from a FastAPI middleware to the Mesop UI state.
+
+**The Cause:** This is caused by a combination of two subtle but critical issues:
+1.  **Circular Imports / Import-Time Side Effects:** A page or component imports a module (e.g., `config/default.py`) that performs file I/O or other complex logic at the module level (i.e., not inside a function). This interferes with Mesop's module loading process, leading to partially initialized modules and the `NameError`.
+2.  **Incorrect Context Passing:** Attempts to pass data from a FastAPI middleware to the Mesop state by directly modifying Mesop's internal state or using incorrect context objects will fail because of the boundary between the ASGI (FastAPI) and WSGI (Mesop) applications.
+
+**The Solution: The Middleware-to-Environ-to-State Pattern**
+
+This is the established, robust pattern for this application:
+
+1.  **One-Way Dependencies:** Ensure `main.py` is the root of the dependency tree. It can import from any other module, but **no other module should ever import from `main.py`**.
+2.  **Centralize State:** The global `AppState` should be defined in a single, dedicated file (`state/state.py`). All other modules that need access to the global state should import it from this file.
+3.  **Defer Configuration Loading:** In configuration files like `config/default.py`, wrap any logic that reads files or performs I/O in a function (e.g., `get_welcome_page_config()`). Call this function only when the data is needed inside a page or component, not at the module level.
+4.  **Use the ASGI Scope:** In your FastAPI middleware, place user-specific data into the `request.scope` dictionary using standard, uppercase environment variable keys (e.g., `request.scope["MESOP_USER_EMAIL"] = ...`).
+5.  **Initialize State from `environ`:** In the `__init__` method of your `AppState` class (`state/state.py`), import `request` from `flask` and read the user data from the `request.environ` dictionary. The `WSGIMiddleware` automatically bridges the keys from the ASGI `scope` to the WSGI `environ`.
+
+**Example:**
+
+**`main.py` (Middleware):**
+```python
+@app.middleware("http")
+async def set_request_context(request: Request, call_next):
+    user_email = request.headers.get("X-Goog-Authenticated-User-Email", "anonymous@google.com")
+    # ... strip prefix ...
+    request.scope["MESOP_USER_EMAIL"] = user_email
+    # ...
+    response = await call_next(request)
+    return response
+```
+
+**`state/state.py` (State Initialization):**
+```python
+from flask import request
+import mesop as me
+
+@me.stateclass
+class AppState:
+    # ... fields ...
+    def __init__(self):
+        if "MESOP_USER_EMAIL" in request.environ:
+            self.user_email = request.environ["MESOP_USER_EMAIL"]
+        # ...
+```
+
 ### 5. Avoiding Circular Imports and Import-Time Side Effects
 
 **The Problem:** The application fails to start or crashes during navigation with a `NameError: name 'AppState' is not defined`, even though the import statement for `AppState` appears correct.

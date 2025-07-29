@@ -23,6 +23,8 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from google.cloud import storage
+import datetime
 
 from app_factory import app
 from components.page_scaffold import page_scaffold
@@ -40,6 +42,7 @@ from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.veo import veo_content
 from pages.vto import vto
 from pages.about import about_page_content
+from pages.doodle import doodle_page
 from state.state import AppState
 
 
@@ -79,6 +82,7 @@ async def set_request_context(request: Request, call_next):
     request.scope["MESOP_SESSION_ID"] = session_id
 
     response = await call_next(request)
+    response.headers["Content-Security-Policy"] = "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; object-src 'none'; base-uri 'self'; trusted-types angular angular#unsafe-bypass lit-html highlight.js;"
     response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
     return response
 
@@ -197,6 +201,31 @@ def character_consistency_page():
 def about_page():
     """About Page"""
     about_page_content()
+
+
+@me.page(
+    path="/doodle",
+    title="Doodle Pad - GenMedia Creative Studio",
+)
+def doodle_page_entry():
+    """Doodle Page Entry Point"""
+    doodle_page()
+
+
+@app.get("/api/get_signed_url")
+def get_signed_url(gcs_uri: str):
+    """Generates a signed URL for a GCS object."""
+    storage_client = storage.Client()
+    bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=datetime.timedelta(minutes=15),
+        method="GET",
+    )
+    return {"signed_url": signed_url}
 
 
 @app.get("/")

@@ -64,7 +64,8 @@ def image_output():
                             final_img_src = img_uri
                             if img_uri.startswith("gs://"):
                                 final_img_src = img_uri.replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                    "gs://",
+                                    "https://storage.mtls.cloud.google.com/",
                                 )
 
                             me.image(

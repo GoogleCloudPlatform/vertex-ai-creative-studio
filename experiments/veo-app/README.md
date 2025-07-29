@@ -56,6 +56,42 @@ export PROJECT_ID=$(gcloud config get project)
 gcloud storage mb -l us-central gs://${PROJECT_ID}-assets
 ```
 
+#### CORS Configuration
+
+To allow the application to display images and other assets from your GCS bucket, you must configure Cross-Origin Resource Sharing (CORS) on the bucket. This is a security measure that tells the browser it's safe to load resources from a different domain.
+
+1.  **Create a `cors.json` file** with the following content. This configuration allows access from your local development environment and your deployed Cloud Run services.
+
+    ```json
+    [
+      {
+        "origin": [
+          "http://0.0.0.0:8080",
+          "https://your-app-name-....run.app" 
+        ],
+        "method": ["GET"],
+        "responseHeader": ["Content-Type"],
+        "maxAgeSeconds": 3600
+      }
+    ]
+    ```
+
+2.  **Apply the configuration** to your bucket using the `gcloud` command-line tool:
+
+    ```bash
+    gcloud storage buckets update gs://your-bucket-name --cors-file=./cors.json
+    ```
+
+#### Troubleshooting CORS
+
+If you are still seeing CORS errors in your browser's developer console after applying the configuration, you can verify the current CORS settings for your bucket with the following command:
+
+```bash
+gcloud storage buckets describe gs://your-bucket-name --format="json(cors_config)"
+```
+
+This will print the current CORS configuration. Ensure that your application's origin (e.g., `http://0.0.0.0:8080`) is listed in the `origin` array. Note that it may take a minute or two for the changes to propagate after you apply them.
+
 
 ### Cloud Firestore
 

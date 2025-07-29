@@ -72,6 +72,13 @@
       "group": "workflows"
     },
     {
+      "id": 56,
+      "display": "Doodle Pad",
+      "icon": "edit",
+      "route": "/doodle",
+      "group": "workflows"
+    },
+    {
       "id": 60,
       "display": "Library",
       "icon": "perm_media",

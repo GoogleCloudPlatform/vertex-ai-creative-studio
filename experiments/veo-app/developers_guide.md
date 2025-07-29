@@ -428,6 +428,8 @@ Here is how to use it on a page:
 
 - **Generator Functions:** When working with generator functions (those that use `yield`), make sure to include a `yield` statement after updating the state to ensure that the UI is updated.
 
+- **CORS Configuration for GCS:** To allow the browser to load images from your Google Cloud Storage bucket, you must configure Cross-Origin Resource Sharing (CORS) on the bucket. See the main `README.md` for instructions on how to create the `cors.json` file, apply it to your bucket, and troubleshoot the configuration.
+
 ## Key Takeaways from the Veo Model Refactor
 
 - **SDK Type Specificity:** The `google-genai` SDK requires different `types` for different kinds of image-based video generation. Using the wrong type will result in a Pydantic validation error. The key is to be precise:

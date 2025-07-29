@@ -14,7 +14,6 @@
 
 import mesop as me
 
-
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.infinite_scroll_chooser_button import (
     infinite_scroll_chooser_button,
