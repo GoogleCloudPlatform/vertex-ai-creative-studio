@@ -76,7 +76,8 @@
       "display": "Doodle Pad",
       "icon": "edit",
       "route": "/doodle",
-      "group": "workflows"
+      "group": "workflows",
+      "feature_flag": "DOODLE_ENABLED"
     },
     {
       "id": 60,

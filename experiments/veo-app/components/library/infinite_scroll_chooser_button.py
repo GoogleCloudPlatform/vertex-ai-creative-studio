@@ -26,10 +26,11 @@ from components.library.infinite_scroll_library import infinite_scroll_library
 @me.stateclass
 class State:
     """Local mesop state for the infinite scroll chooser button."""
+
     show_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)
+    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=invalid-field-call
     current_page: int = 1
     has_more_items: bool = True
 
@@ -54,7 +55,9 @@ def infinite_scroll_chooser_button(
         state.has_more_items = True
         yield
 
-        items = get_media_for_page(state.current_page, 20, ["images"], sort_by_timestamp=True)
+        items = get_media_for_page(
+            state.current_page, 20, ["images"], sort_by_timestamp=True
+        )
         state.media_items = items
         state.is_loading = False
         if not items:
@@ -70,7 +73,9 @@ def infinite_scroll_chooser_button(
         state.current_page += 1
         yield
 
-        new_items = get_media_for_page(state.current_page, 20, ["images"], sort_by_timestamp=True)
+        new_items = get_media_for_page(
+            state.current_page, 20, ["images"], sort_by_timestamp=True
+        )
         if new_items:
             state.media_items.extend(new_items)
         else:
@@ -89,15 +94,23 @@ def infinite_scroll_chooser_button(
         yield
 
     with me.content_button(on_click=open_dialog, type=button_type, key=key):
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=8, align_items="center"
+            )
+        ):
             me.icon("photo_library")
             if button_label:
                 me.text(button_label)
 
-    dialog_style = me.Style(width="75vw", height="80vh", display="flex", flex_direction="column")
+    dialog_style = me.Style(
+        width="75vw", height="80vh", display="flex", flex_direction="column"
+    )
 
     with dialog(is_open=state.show_dialog, dialog_style=dialog_style):  # pylint: disable=not-context-manager
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)):
+        with me.box(
+            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+        ):
             me.text("Select an Image from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
                 if state.is_loading and not state.media_items:
@@ -126,7 +139,11 @@ def infinite_scroll_chooser_button(
                         on_load_more=handle_load_more,
                         on_image_selected=handle_image_selected,
                     )
-            with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=24))):
+            with me.box(
+                style=me.Style(
+                    display="flex", justify_content="flex-end", margin=me.Margin(top=24)
+                )
+            ):
                 me.button(
                     "Cancel",
                     on_click=lambda e: setattr(state, "show_dialog", False),

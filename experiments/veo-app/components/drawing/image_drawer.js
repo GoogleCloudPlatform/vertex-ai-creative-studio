@@ -1,3 +1,19 @@
+/**
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { LitElement, html, css } from 'https://esm.sh/lit';
 
 export class ImageDrawer extends LitElement {
@@ -5,6 +21,7 @@ export class ImageDrawer extends LitElement {
     imageUrl: { type: String },
     penColor: { type: String },
     penWidth: { type: Number },
+    saveEvent: { type: String },
     isDrawing: { state: true },
     lastX: { state: true },
     lastY: { state: true },
@@ -116,6 +133,15 @@ export class ImageDrawer extends LitElement {
       this.loadImageAndDraw();
   }
 
+  saveCanvas() {
+    const dataUrl = this.getResultAsDataUrl();
+    if (!this.saveEvent) {
+      console.error("Mesop event handler ID for saveEvent is not set.");
+      return;
+    }
+    this.dispatchEvent(new MesopEvent(this.saveEvent, { value: dataUrl }));
+  }
+
   render() {
     return html`
       <div class="controls">
@@ -138,7 +164,8 @@ export class ImageDrawer extends LitElement {
         >
         <span>${this.penWidth}px</span>
 
-        <button @click=${this.clearDrawing}>Clear</button>
+        <button @click=${this.clearDrawing}>Reset</button>
+        <button @click=${this.saveCanvas}>Save</button>
       </div>
 
       <canvas id="drawing-canvas"></canvas>

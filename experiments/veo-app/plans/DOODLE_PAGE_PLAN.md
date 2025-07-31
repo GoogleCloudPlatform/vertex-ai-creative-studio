@@ -21,26 +21,32 @@ This document outlines the plan to create a new page in the application that all
 
 This will be a multi-phase implementation.
 
-**Phase 1: Create the "Doodle" Page and Lit Component**
+**Phase 1: Create the "Doodle" Page and Lit Component (Complete)**
 
-1.  **Create `pages/doodle.py`:** I will create a new page file. This will be the main container for our new feature.
-2.  **Create `components/drawing/` Directory:** I will create a new directory to house the drawing component's files.
-3.  **Create `components/drawing/image_drawer.js`:** I will save the Lit component code you provided into this new file.
-4.  **Create `components/drawing/image_drawer.py`:** I will create the Python wrapper for the Lit component, following the patterns in the integration guide. This will define the component's API for Mesop.
-5.  **Register the New Page:** I will add the new `/doodle` page to `main.py` and `config/navigation.json` so it's accessible.
+1.  **Create `pages/doodle.py`:** A new page file was created to house the feature.
+2.  **Create `components/drawing/` Directory:** A new directory was created for the component's files.
+3.  **Create `components/drawing/image_drawer.js`:** The Lit component was created and refined to use standard, browser-compatible JavaScript.
+4.  **Create `components/drawing/image_drawer.py`:** The Python wrapper for the Lit component was created.
+5.  **Register the New Page:** The new `/doodle` page was added to `main.py` and `config/navigation.json`.
 
-**Phase 2: Implement the Image Selection and Display**
+**Phase 2: Implement Image Selection and Display (Complete)**
 
-1.  **Add the Chooser Button:** In `pages/doodle.py`, I will add the `infinite_scroll_chooser_button`.
-2.  **Handle the Selection Event:** I will create an event handler that, when an image is selected, updates the page's state with the GCS URI of the selected image.
-3.  **Pass Data to the Component:** I will pass the selected image's public URL to the `imageUrl` property of our new `image-drawer` component. At this point, you should be able to see an image from your library appear in the canvas, ready to be drawn on.
+1.  **Add the Chooser Button:** The `infinite_scroll_chooser_button` was added to the doodle page.
+2.  **Handle Image Loading:** The component now correctly fetches a GCS Signed URL via a new FastAPI endpoint (`/api/get_signed_url`) to handle CORS issues when loading the image data into the canvas.
 
-**Phase 3: Implement the Save Functionality (JS -> Python)**
+**Phase 3: Implement the Save Functionality (Next Steps)**
 
-1.  **Add a "Save" Button:** In `pages/doodle.py`, I will add a Mesop `me.button` next to the drawing canvas.
-2.  **Create a Save Event Handler:** The `on_click` handler for this button will be the key. It will need to trigger a JavaScript call. We can do this by using `me.call_js_function`.
-3.  **Implement the JS->Python Bridge:** The `me.call_js_function` will call a small JavaScript function that gets the `image-drawer` element, calls its public `getResultAsDataUrl()` method, and then dispatches a *new* `MesopEvent` containing the Base64 data.
-4.  **Handle the Data Event:** A Python event handler will catch this new event, receive the Base64 data, decode it, and save it to GCS and Firestore.
+1.  **Add a "Save" Button:** Add a Mesop `me.button` to the doodle page UI.
+2.  **Implement JS->Python Bridge:**
+    *   The "Save" button's `on_click` handler will use `me.call_js_function` to execute a small JavaScript function.
+    *   This JavaScript function will find our `<image-drawer>` element and call its public `getResultAsDataUrl()` method.
+    *   It will then dispatch a new `MesopEvent` (e.g., `doodle-save-event`) and put the Base64 data URL into the event's value.
+3.  **Create a Python Event Handler:** Create a new Python function in `pages/doodle.py` to handle this `doodle-save-event`.
+4.  **Process and Persist the Data:** This handler will:
+    *   Receive the Base64 data URL from the event.
+    *   Decode the Base64 string into raw image bytes.
+    *   Use the `common/storage.py` module to upload the bytes to a new folder in GCS (e.g., `doodles/`).
+    *   Use the `common/metadata.py` module to create a new `MediaItem` in Firestore, logging the new doodle, its source image, and the user who created it.
 
 ### 3. Testing Plan
 

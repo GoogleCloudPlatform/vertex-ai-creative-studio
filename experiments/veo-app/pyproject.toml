@@ -20,6 +20,7 @@ dependencies = [
     "ruff>=0.1.0", # Using a general version, can be pinned
     "black>=25.1.0",
     "pytest>=8.4.1",
+    "google-cloud-storage>=2.19.0",
 ]
 
 [tool.ruff]

@@ -123,7 +123,19 @@ Here is the flow:
 
 3.  **Mesop State Initialization:** The `AppState` class in `state/state.py` has a custom `__init__` method. When Mesop creates a new user session, this method is called. It reads the user information directly from the `request.environ` dictionary, correctly initializing the state for the current user.
 
-This pattern is robust, secure, and correctly separates the concerns of the FastAPI server and the Mesop UI framework.
+### Local Development and Service Account Impersonation
+
+When running the application locally, you may encounter errors when trying to perform actions that require a service account with specific IAM permissions (e.g., generating signed URLs for GCS). This is because your local Application Default Credentials (ADC) are based on your user account, which may not have the necessary permissions.
+
+To resolve this, you should configure your local ADC to impersonate the service account that your application uses when deployed. This allows your local server to act *as* the service account and perform the necessary actions.
+
+**Command to Enable Impersonation:**
+
+```bash
+gcloud auth application-default login --impersonate-service-account=<SERVICE_ACCOUNT_EMAIL>
+```
+
+Replace `<SERVICE_ACCOUNT_EMAIL>` with the email address of the service account used by your deployed application. The Google Cloud client libraries in your Python application will automatically pick up these new credentials without any code changes.
 
 ### Avoiding Circular Imports and Import-Time Side Effects
 

@@ -17,6 +17,7 @@ import inspect
 import os
 import uuid
 
+import google.auth
 import mesop as me
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.wsgi import WSGIMiddleware
@@ -224,6 +225,7 @@ def get_signed_url(gcs_uri: str):
         version="v4",
         expiration=datetime.timedelta(minutes=15),
         method="GET",
+        service_account_email=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
     )
     return {"signed_url": signed_url}
 
