@@ -10,7 +10,7 @@ require (
 	cloud.google.com/go/vertexai v0.15.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	google.golang.org/api v0.243.0
-	google.golang.org/genai v1.16.0
+	google.golang.org/genai v1.19.0
 )
 
 require (
