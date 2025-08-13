@@ -2,7 +2,7 @@ module github.com/ghchinoy/babel
 
 go 1.23.2
 
-toolchain go1.24.6
+toolchain go1.25.0
 
 require (
 	cloud.google.com/go/storage v1.56.0

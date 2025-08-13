@@ -108,6 +108,8 @@ github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedi
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250807233550-c2dc0a2c5682/go.mod h1:Hid6mkANgn60dfAxsBtcqSfltXLmoNgQpAu9ONmt8wg=
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250808054713-e1d1b6388bed h1:CNQM7HKWZhGKZBU9rkVIgfrYn94hrnle+lJ2L3TUiQ4=
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250808054713-e1d1b6388bed/go.mod h1:Hid6mkANgn60dfAxsBtcqSfltXLmoNgQpAu9ONmt8wg=
+github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250813160143-bb817709b409 h1:yX9nZfaYtuyjYttD89Gyn95TyTH9FVTPbdjIcXGMe0c=
+github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250813160143-bb817709b409/go.mod h1:Hid6mkANgn60dfAxsBtcqSfltXLmoNgQpAu9ONmt8wg=
 github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPnH1Wvgk=
 github.com/bahlo/generic-list-go v0.2.0/go.mod h1:2KvAjgMlE5NNynlg/5iLrrCCZ2+5xWbdbCW3pNTGyYg=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
