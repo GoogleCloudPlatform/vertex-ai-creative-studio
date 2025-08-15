@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.116.1
     # via google-adk
-google-adk==1.10.0
+google-adk==1.11.0
     # via adk-genmedia-agent
 google-api-core==2.25.1
     # via
