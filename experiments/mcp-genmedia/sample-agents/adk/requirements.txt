@@ -94,7 +94,7 @@ google-cloud-secret-manager==2.24.0
     # via google-adk
 google-cloud-speech==2.33.0
     # via google-adk
-google-cloud-storage==3.2.0
+google-cloud-storage==3.3.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
