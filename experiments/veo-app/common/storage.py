@@ -73,7 +73,9 @@ def store_to_gcs(
         raise ValueError(
             "GCS bucket name is not configured. Please set GENMEDIA_BUCKET environment variable or provide bucket_name."
         )
-    print(f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}")
+    print(
+        f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}"
+    )
     client = storage.Client(project=cfg.PROJECT_ID)
     bucket = client.get_bucket(actual_bucket_name)
     destination_blob_name = f"{folder}/{file_name}"
@@ -86,10 +88,35 @@ def store_to_gcs(
         blob.upload_from_string(contents, content_type=mime_type)
     else:
         blob.upload_from_string(contents, content_type=mime_type)
-    return f"gs://{actual_bucket_name}/{destination_blob_name}"  # Return full gsutil URI
+    return (
+        f"gs://{actual_bucket_name}/{destination_blob_name}"  # Return full gsutil URI
+    )
+
 
 def download_from_gcs(gcs_uri: str) -> bytes:
     """Downloads a file from a GCS URI and returns its content as bytes."""
     client = storage.Client(project=cfg.PROJECT_ID)
     blob = storage.Blob.from_string(gcs_uri, client=client)
     return blob.download_as_bytes()
+
+
+def download_from_gcs_as_string(gcs_uri: str):
+    """Downloads a file from a GCS URI and returns its content as a string."""
+    client = storage.Client(project=cfg.PROJECT_ID)
+    blob = storage.Blob.from_string(gcs_uri, client=client)
+    return blob.download_as_string()
+
+
+def list_files_in_bucket(bucket_name, prefix=None):
+    """Lists all blobs (files) in the specified GCS bucket, optionally filtered by a prefix."""
+    client = storage.Client(project=cfg.PROJECT_ID)
+    bucket = client.get_bucket(bucket_name)
+
+    # List blobs, optionally with a prefix to emulate a "folder"
+    blobs = bucket.list_blobs(prefix=prefix)
+
+    file_names = []
+    for blob in blobs:
+        file_names.append(blob.name)
+
+    return file_names

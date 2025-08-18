@@ -42,6 +42,7 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
+from pages.shop_the_look import workflows_content_retail_look
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
 from pages.test_index import page as test_index_page
@@ -265,6 +266,15 @@ def recontextualize_page():
 def character_consistency_page():
     """Character Consistency Page"""
     character_consistency_page_content()
+
+
+@me.page(
+    path="/shop_the_look",
+    title="GenMedia Creative Studio - Shop the Look",
+)
+def shop_the_look_page():
+    """Shop the Look Page"""
+    workflows_content_retail_look()
 
 
 @me.page(

@@ -75,6 +75,7 @@
       "id": 56,
       "display": "Shop the Look",
       "icon": "shopping_bag",
+      "route": "/shop_the_look",
       "group": "workflows"
     },
     {

@@ -21,6 +21,11 @@ from typing import Dict, Optional
 import requests
 from google.cloud.aiplatform import telemetry
 from google.genai import types
+from models.shop_the_look_models import (
+    GeneratedImageAccuracyWrapper,
+    CatalogRecord,
+    ArticleDescriptionWrapper,
+)
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -39,6 +44,9 @@ from models.character_consistency_models import (
 )
 from models.model_setup import (
     GeminiModelSetup,
+)
+from models.shop_the_look_models import (
+    BestImageAccuracy,
 )
 
 
@@ -61,15 +69,24 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> lis
     )
 
     gcs_uris = []
-    if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-        print(f"generate_image_from_prompt_and_images: {len(response.candidates[0].content.parts)} parts")
+    if (
+        response.candidates
+        and response.candidates[0].content
+        and response.candidates[0].content.parts
+    ):
+        print(
+            f"generate_image_from_prompt_and_images: {len(response.candidates[0].content.parts)} parts"
+        )
         for i, part in enumerate(response.candidates[0].content.parts):
             if hasattr(part, "text"):
                 print(f"generate_image_from_prompt_and_images (text): {part.text}")
             if hasattr(part, "inline_data") and part.inline_data:
                 # Default to "image/png" if mime_type is missing
                 mime_type = "image/png"
-                if hasattr(part.inline_data, "mime_type") and part.inline_data.mime_type:
+                if (
+                    hasattr(part.inline_data, "mime_type")
+                    and part.inline_data.mime_type
+                ):
                     mime_type = part.inline_data.mime_type
                 gcs_uri = store_to_gcs(
                     folder="character_consistency_candidates",
@@ -587,3 +604,129 @@ def select_best_image(
         model=model, contents=prompt_parts, config=config
     )
     return BestImage.model_validate_json(response.text)
+
+
+def select_best_image_with_description(
+    real_image_bytes_list: list[bytes],
+    generated_image_bytes_list: list[bytes],
+    generated_image_gcs_uris: list[str],
+    real_photo_description: str,
+    ai_photo_description: str,
+) -> BestImageAccuracy:
+    """Selects the best generated image by comparing it against a set of real
+    images.
+    """
+    model = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="application/json",
+        response_schema=BestImageAccuracy.model_json_schema(),
+        temperature=cfg.TEMP_BEST_IMAGE_SELECTION,
+    )
+
+    prompt_parts = [
+        "Please analyze the following images. The first set of images are photos of {}. The second set of images are AI-generated images of a model wearing the articles of clothing.".format(
+            real_photo_description
+        ),
+        "Your task is to select the generated image that best represents the {} from the real photos.".format(
+            ai_photo_description
+        ),
+        "For each generated image, provide the analysis of True or False indicating if the generated image is accurate with overall reasoning. The single image you choose as the best should set best_image value to True.",
+        "\n--- REAL IMAGES ---",
+    ]
+
+    for image_bytes in real_image_bytes_list:
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    prompt_parts.append("\n--- GENERATED IMAGES ---")
+
+    for i, image_bytes in enumerate(generated_image_bytes_list):
+        prompt_parts.append(f"Image path: {generated_image_gcs_uris[i]}")
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    response = client.models.generate_content(
+        model=model, contents=prompt_parts, config=config
+    )
+    return BestImageAccuracy.model_validate_json(response.text)
+
+
+def final_image_critic(
+    article_image_bytes_list: list[bytes],
+    article_image_gcs_uris: list[str],
+    generated_image_bytes_list: list[bytes],
+) -> GeneratedImageAccuracyWrapper:
+    """Selects the best generated image by comparing it against a set of real
+    images. Provide feedback on accuracy.
+    """
+    model = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="application/json",
+        response_schema=GeneratedImageAccuracyWrapper.model_json_schema(),
+        temperature=cfg.TEMP_BEST_IMAGE_SELECTION,
+    )
+
+    prompt_parts = [
+        "The first set of images are photos of apparel items. The generated image is AI-generated image of a model wearing the apparel items.",
+        "Your task is to determine if the AI-generated image reaslistically depicts all apparel items from the real photos.",
+        "Provide the analysis of True or False, indicating if the generated image is accurate with overall reasoning. In addition provide detailed reasoning for each apparel item.",
+        "\n--- APAREL IMAGES ---",
+    ]
+
+    for i, image_bytes in enumerate(article_image_bytes_list):
+        prompt_parts.append(f"Image path: {article_image_gcs_uris[i]}")
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    prompt_parts.append("\n--- GENERATED IMAGE ---")
+
+    for i, image_bytes in enumerate(generated_image_bytes_list):
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    response = client.models.generate_content(
+        model=model, contents=prompt_parts, config=config
+    )
+    return GeneratedImageAccuracyWrapper.model_validate_json(response.text)
+
+
+def describe_images_and_look(
+    look_articles: list[CatalogRecord],
+) -> ArticleDescriptionWrapper:
+    """Describe the overall aestetic of an outfit in addition to describing
+    each article seperately.
+    """
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="application/json",
+        response_schema=ArticleDescriptionWrapper.model_json_schema(),
+        temperature=cfg.TEMP_BEST_IMAGE_SELECTION,
+    )
+    model = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+
+    prompt_parts = [
+        "The following images of {} are articles of clothing to be worn as an outfit.".format(
+            ",".join(i.article_type for i in look_articles)
+        ),
+        "Your task is describe each article of clothing in a style of a product catalog, within 3 sentences each.",
+        "Also, you also should generate a description of the entire outfit as look_description when all articles are worn together as an outfit.",
+        "\n--- ARTICLE IMAGES ---",
+    ]
+
+    for a in look_articles:
+        prompt_parts.append(f"Article Image Path {a.clothing_image_path}")
+        prompt_parts.append(
+            types.Part.from_uri(file_uri=a.clothing_image_path, mime_type="image/png")
+        )
+
+    response = client.models.generate_content(
+        model=model, contents=prompt_parts, config=config
+    )
+
+    return ArticleDescriptionWrapper.model_validate_json(response.text)

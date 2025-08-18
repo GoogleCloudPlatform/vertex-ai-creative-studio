@@ -15,12 +15,56 @@
 from typing import Optional
 from dotenv import load_dotenv
 from google import genai
+from google.cloud import aiplatform
+
 from config.default import Default
 
 import vertexai
 
 
 load_dotenv(override=True)
+
+
+class VtoModelSetup:
+    """Vto Model Setup"""
+
+    def __init__(
+        self: object,
+    ) -> None:
+        self._video_model = None
+        self._prediction_endpoint = None
+        self._fetch_endpoint = None
+
+    @staticmethod
+    def init(
+        project_id: Optional[str] = None,
+        location: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ):
+        """initializes vto model"""
+
+        config = Default()
+
+        if not project_id:
+            project_id = config.VEO_PROJECT_ID
+        if not location:
+            location = config.LOCATION
+        if not model_id:
+            model_id = config.VTO_MODEL_ID
+        if None in [project_id, location, model_id]:
+            raise ValueError("All parameters must be set.")
+
+        vertexai.init(project=project_id, location=Default.LOCATION)
+
+        aiplatform.init(project=f"{project_id}", location=f"{location}")
+        api_regional_endpoint = f"{location}-aiplatform.googleapis.com"
+        client_options = {"api_endpoint": api_regional_endpoint}
+        client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
+        # model_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/virtual-try-on-exp-05-31"
+        model_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model_id}"
+        print(f"Prediction client initiated on project {project_id} in {location}.")
+
+        return client, model_endpoint
 
 
 class VeoModelSetup:
@@ -61,6 +105,7 @@ class VeoModelSetup:
 
 class GeminiModelSetup:
     """Gemini model setup"""
+
     @staticmethod
     def init(
         project_id: Optional[str] = None,
@@ -75,11 +120,12 @@ class GeminiModelSetup:
         if not effective_project_id or not effective_location:
             raise ValueError("Project ID and Location must be set for Gemini client.")
 
-        print(f"Initiating Gemini client for project {effective_project_id} in {effective_location}")
+        print(
+            f"Initiating Gemini client for project {effective_project_id} in {effective_location}"
+        )
         client = genai.Client(
-            vertexai=config.INIT_VERTEX, # This assumes vertexai backend is desired.
+            vertexai=config.INIT_VERTEX,  # This assumes vertexai backend is desired.
             project=effective_project_id,
             location=effective_location,
         )
         return client
-

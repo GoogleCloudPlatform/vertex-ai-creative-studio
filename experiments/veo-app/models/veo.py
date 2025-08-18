@@ -14,7 +14,7 @@
 
 import os
 import time
-
+import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -24,13 +24,19 @@ from config.default import Default
 from config.veo_models import get_veo_model_config
 from models.requests import VideoGenerationRequest
 
+import google.auth
+import google.auth.transport.requests
+
+
 config = Default()
 
 
 load_dotenv(override=True)
 
 client = genai.Client(
-    vertexai=True, project=config.VEO_PROJECT_ID, location=config.LOCATION,
+    vertexai=True,
+    project=config.VEO_PROJECT_ID,
+    location=config.LOCATION,
 )
 
 # Map for person generation options
@@ -40,14 +46,16 @@ PERSON_GENERATION_MAP = {
     "Don't Allow": "dont_allow",
 }
 
+
 def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     """Generate a video based on a request object using the genai SDK.
     This function handles text-to-video, image-to-video, and interpolation.
     """
     model_config = get_veo_model_config(request.model_version_id)
     if not model_config:
-        raise GenerationError(f"Unsupported VEO model version: {request.model_version_id}")
-
+        raise GenerationError(
+            f"Unsupported VEO model version: {request.model_version_id}"
+        )
 
     # Prepare Generation Configuration
     enhance_prompt_for_api = (
@@ -140,3 +148,137 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     except Exception as e:
         print(f"An unexpected error occurred in generate_video: {e}")
         raise GenerationError(f"An unexpected error occurred: {e}") from e
+
+
+t2v_video_model = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{config.VEO_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_MODEL_ID}"
+t2v_prediction_endpoint = f"{t2v_video_model}:predictLongRunning"
+fetch_endpoint = f"{t2v_video_model}:fetchPredictOperation"
+t2v_video_model_exp = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{config.VEO_EXP_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_EXP_MODEL_ID}"
+t2v_prediction_endpoint_exp = f"{t2v_video_model_exp}:predictLongRunning"
+fetch_endpoint_exp = f"{t2v_video_model_exp}:fetchPredictOperation"
+
+
+def compose_videogen_request(
+    prompt,
+    image_uri,
+    gcs_uri,
+    seed,
+    aspect_ratio,
+    sample_count,
+    enable_prompt_rewriting,
+    duration_seconds,
+    last_image_uri,
+):
+    """Create a JSON Request for Veo"""
+    enhance_prompt = "no"
+    if enable_prompt_rewriting:
+        enhance_prompt = "yes"
+
+    instance = {"prompt": prompt}
+    if image_uri:
+        instance["image"] = {"gcsUri": image_uri, "mimeType": "png"}
+    if last_image_uri:
+        instance["lastFrame"] = {"gcsUri": last_image_uri, "mimeType": "png"}
+    request = {
+        "instances": [instance],
+        "parameters": {
+            "storageUri": gcs_uri,
+            "sampleCount": sample_count,
+            "seed": seed,
+            "aspectRatio": aspect_ratio,
+            # "enablePromptRewriting": enable_prompt_rewriting,
+            "durationSeconds": duration_seconds,
+            "enhancePrompt": enhance_prompt,
+        },
+    }
+    print(f"VEO REQUEST IS {request}")
+    return request
+
+
+def send_request_to_google_api(api_endpoint, data=None):
+    """
+    Sends an HTTP request to a Google API endpoint.
+
+    Args:
+        api_endpoint: The URL of the Google API endpoint.
+        data: (Optional) Dictionary of data to send in the request body (for POST, PUT, etc.).
+
+    Returns:
+        The response from the Google API.
+    """
+
+    # Get access token calling API
+    creds, project = google.auth.default()
+    auth_req = google.auth.transport.requests.Request()
+    creds.refresh(auth_req)
+    access_token = creds.token
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(api_endpoint, headers=headers, json=data)
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_operation(fetch_endpoint, lro_name):
+    """Long Running Operation fetch"""
+    print(f"fetching from: {fetch_endpoint}")
+    request = {"operationName": lro_name}
+    # The generation usually takes 2 minutes. Loop 30 times, around 5 minutes.
+    for i in range(60):
+        resp = send_request_to_google_api(fetch_endpoint, request)
+        if "done" in resp and resp["done"]:
+            print("FOUND RESPONSE")
+            print(resp)
+            return resp
+        time.sleep(10)
+
+
+def image_to_video(
+    prompt,
+    image_gcs,
+    seed,
+    aspect_ratio,
+    sample_count,
+    output_gcs,
+    enable_pr,
+    duration_seconds,
+    model,
+):
+    image_gcs_new = image_gcs.replace(
+        "gs://",
+        "https://storage.mtls.cloud.google.com/",
+    )
+
+    """Image to video"""
+    req = compose_videogen_request(
+        prompt,
+        image_gcs,
+        output_gcs,
+        seed,
+        aspect_ratio,
+        sample_count,
+        enable_pr,
+        duration_seconds,
+        None,
+    )
+
+    print(f"REQUEST {image_gcs}")
+
+    prediction_endpoint = t2v_prediction_endpoint
+    fetch_ep = fetch_endpoint
+    # model = "3.0"
+    if model == "3.0":
+        prediction_endpoint = t2v_prediction_endpoint_exp
+        fetch_ep = fetch_endpoint_exp
+    print(f"Fetch EP: {fetch_ep}")
+    print(req)
+    print(prediction_endpoint)
+    print(fetch_ep)
+
+    resp = send_request_to_google_api(prediction_endpoint, req)
+    print(resp)
+    return fetch_operation(fetch_ep, resp["name"])
