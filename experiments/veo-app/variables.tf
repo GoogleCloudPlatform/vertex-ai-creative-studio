@@ -71,3 +71,15 @@ variable "edit_images_enabled" {
   type = bool
   default = true
 }
+
+variable "enable_data_deletion" {
+  description = "Whether to allow force destroy on storage buckets. Should be false in production."
+  type        = bool
+  default     = false # Default to safe
+}
+
+variable "initial_user" {
+  description = "Email address of initial user that will be granted access to Creative Studio in IAP"
+  type = string
+  nullable = true
+}
