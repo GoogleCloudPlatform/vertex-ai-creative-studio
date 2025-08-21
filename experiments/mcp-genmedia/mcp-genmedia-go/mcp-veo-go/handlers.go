@@ -20,7 +20,6 @@ import (
 	"log"
 	"strings"
 
-	
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"google.golang.org/genai"
@@ -39,7 +38,7 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required for text-to-video"), nil
 	}
 
-	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments())
+	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments(), appConfig)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -114,7 +113,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments())
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments(), appConfig)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -142,7 +141,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		log.Printf("Incoming i2v context for image_uri \"%s\" was already canceled: %v", imageURI, ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
-		log.Printf("Handling Veo i2v request: ImageURI=\"%s\", MimeType=\"%s\", Prompt=\"%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds", imageURI, mimeType, prompt, gcsBucket, outputDir, modelName, numberOfVideos, finalAspectRatio, durationSecs)
+		log.Printf("Handling Veo i2v request: ImageURI=\"%%s\", MimeType=\"%%s\", Prompt=\"%%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds", imageURI, mimeType, prompt, gcsBucket, outputDir, modelName, numberOfVideos, finalAspectRatio, durationSecs)
 	}
 
 	inputImage := &genai.Image{

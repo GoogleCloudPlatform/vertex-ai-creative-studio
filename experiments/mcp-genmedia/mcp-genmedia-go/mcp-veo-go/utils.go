@@ -37,7 +37,7 @@ func inferMimeTypeFromURI(uri string) string {
 }
 
 // parseCommonVideoParams extracts and validates video generation parameters from the request arguments.
-func parseCommonVideoParams(args map[string]interface{}) (string, string, string, string, int32, int32, error) {
+func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, error) {
 	// Model
 	modelInput, ok := args["model"].(string)
 	if !ok || modelInput == "" {
@@ -54,6 +54,9 @@ func parseCommonVideoParams(args map[string]interface{}) (string, string, string
 	gcsBucket, _ := args["bucket"].(string)
 	if gcsBucket != "" {
 		gcsBucket = common.EnsureGCSPathPrefix(gcsBucket)
+	} else if appConfig.GenmediaBucket != "" {
+		gcsBucket = fmt.Sprintf("gs://%s/veo_outputs/", appConfig.GenmediaBucket)
+		log.Printf("Handler: 'bucket' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
 	}
 
 	// Output Directory

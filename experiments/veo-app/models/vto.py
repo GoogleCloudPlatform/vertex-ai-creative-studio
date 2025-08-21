@@ -19,10 +19,11 @@ import uuid
 from google import genai
 from google.api_core.exceptions import GoogleAPIError
 from google.cloud import aiplatform
+from google.cloud.aiplatform.gapic import PredictResponse
 
 from common.storage import store_to_gcs
 from config.default import Default
-from models.model_setup import GeminiModelSetup
+from models.model_setup import GeminiModelSetup, VtoModelSetup
 
 cfg = Default()
 
@@ -97,7 +98,6 @@ def generate_vto_image(
     if base_steps == 0:
         base_steps = 32
 
-
     parameters = {
         "sampleCount": sample_count,
         "baseSteps": base_steps,
@@ -139,3 +139,50 @@ def generate_vto_image(
     except Exception as e:
         logging.error("An unexpected error occurred during VTO image generation: %s", e)
         raise
+
+
+def call_virtual_try_on(
+    person_image_bytes=None,
+    product_image_bytes=None,
+    person_image_uri=None,
+    product_image_uri=None,
+    sample_count=1,
+    prompt=None,
+    product_description=None,
+) -> PredictResponse:
+    instances = []
+    if person_image_uri and product_image_uri:
+        instance = {
+            "personImage": {"image": {"gcsUri": person_image_uri}},
+            "productImages": [{"image": {"gcsUri": product_image_uri}}],
+        }
+    elif person_image_bytes and product_image_bytes:
+        instance = {
+            "personImage": {"image": {"bytesBase64Encoded": person_image_bytes}},
+            "productImages": [{"image": {"bytesBase64Encoded": product_image_bytes}}],
+        }
+    else:
+        raise ValueError(
+            "Both person_image_bytes and product_image_bytes or both person_image_uri and product_image_uri must be set."
+        )
+    # if prompt:
+    #     instance["prompt"] = prompt
+
+    # if product_description is not None and product_description != "":
+    #     instance["productImages"][0]["productConfig"] = {
+    #         "productDescription": product_description
+    #     }
+
+    instances.append(instance)
+    parameters = {
+        "storageUri": f"gs://{cfg.GENMEDIA_BUCKET}/vto",
+        "sampleCount": sample_count,
+    }
+
+    client, model_endpoint = VtoModelSetup.init()
+
+    response = client.predict(
+        endpoint=model_endpoint, instances=instances, parameters=parameters
+    )
+
+    return response

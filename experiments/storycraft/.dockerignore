@@ -1,0 +1,21 @@
+# add git-ignore syntax here of things you don't want copied into docker image
+
+.git
+.results
+scripts
+*Dockerfile*
+node_modules
+.env
+npm-debug.log
+docker-compose*
+.dockerignore
+.git
+.gitignore
+README.md
+LICENSE
+.vscode
+.next
+*.swp
+# ignore any ipynb and py files
+**/*.ipynb
+**/*.ipynb_checkpoints

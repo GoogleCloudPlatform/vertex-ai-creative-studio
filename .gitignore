@@ -10,3 +10,5 @@ local/
 recaps/
 
 .aider*
+
+.commit.txt

@@ -32,7 +32,7 @@ fastapi==0.116.1
     # via babel-web (pyproject.toml)
 fastapi-cli==0.0.8
     # via babel-web (pyproject.toml)
-flask==3.1.1
+flask==3.1.2
     # via
     #   babel-web (pyproject.toml)
     #   mesop

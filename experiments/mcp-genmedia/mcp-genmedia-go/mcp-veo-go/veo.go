@@ -40,7 +40,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.9.0" // Feat: Generate descriptive filenames for downloaded videos.
+	version     = "1.10.0" // Fix: Honor GENMEDIA_BUCKET env var
 )
 
 // init handles command-line flags and initial logging setup.

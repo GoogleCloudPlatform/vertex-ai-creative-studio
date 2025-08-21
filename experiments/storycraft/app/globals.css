@@ -1,0 +1,83 @@
+/**
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 14% 97%;
+    --foreground: 217 19% 27%;
+    --card: 0 0% 100%;
+    --card-foreground: 217 19% 27%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 19% 27%;
+    --primary: 201 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 17 36% 78%;
+    --muted-foreground: 217 19% 27%;
+    --accent: 352 89% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 17 36% 78%;
+    --input: 17 36% 78%;
+    --ring: 201 100% 42%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 217 19% 27%;
+    --foreground: 0 0% 100%;
+    --card: 217 19% 27%;
+    --card-foreground: 0 0% 100%;
+    --popover: 217 19% 27%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 201 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 17 36% 78%;
+    --secondary-foreground: 217 19% 27%;
+    --muted: 217 19% 40%;
+    --muted-foreground: 0 0% 100%;
+    --accent: 352 89% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 19% 40%;
+    --input: 217 19% 40%;
+    --ring: 201 100% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+

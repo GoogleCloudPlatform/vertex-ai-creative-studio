@@ -55,7 +55,9 @@ class Default:
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
-    GEMINI_IMAGE_GEN_MODEL: str = os.environ.get("GEMINI_IMAGE_GEN_MODEL", "gemini-2.0-flash-preview-image-generation")
+    GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
+        "GEMINI_IMAGE_GEN_MODEL", "gemini-2.0-flash-preview-image-generation"
+    )
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash"
     )
@@ -83,12 +85,19 @@ class Default:
 
     VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-001")
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
-        "VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-001",
+        "VEO_EXP_FAST_MODEL_ID",
+        "veo-3.0-fast-generate-001",
     )
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 
     # VTO
     VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-preview-08-04")
+    GENMEDIA_VTO_MODEL_COLLECTION_NAME: str = os.environ.get(
+        "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model"
+    )
+    GENMEDIA_VTO_CATALOG_COLLECTION_NAME: str = os.environ.get(
+        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME", "genmedia-vto-catalog"
+    )
 
     # Temperatures for Character Consistency Workflow
     # Low temp for factual, structured output. Increasing may break JSON parsing.
@@ -102,9 +111,12 @@ class Default:
 
     # Character Consistency
     CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
-    CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get("CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001")
-    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get("CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID)
-
+    CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get(
+        "CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001"
+    )
+    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get(
+        "CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID
+    )
 
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
@@ -121,7 +133,8 @@ class Default:
     MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-001"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
     MODEL_IMAGEN_PRODUCT_RECONTEXT: str = os.environ.get(
-        "MODEL_IMAGEN_PRODUCT_RECONTEXT", "imagen-product-recontext-preview-06-30",
+        "MODEL_IMAGEN_PRODUCT_RECONTEXT",
+        "imagen-product-recontext-preview-06-30",
     )
 
     IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get(

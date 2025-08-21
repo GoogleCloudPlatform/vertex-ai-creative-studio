@@ -35,3 +35,9 @@
 
 ## VeoStart
 /experiments/VeoStart/ @GoogleCloudPlatform/google-cloud-aaie @WafaeBakkali
+
+## Storycraft
+/experiments/storycraft/ @GoogleCloudPlatform/google-cloud-aaie @mblanc
+
+## Countdown workflow
+/experiments/countdown-workflow/ @GoogleCloudPlatform/google-cloud-aaie @cnemri

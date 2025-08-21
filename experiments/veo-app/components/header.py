@@ -22,6 +22,7 @@ def header(
     icon: str,
     show_info_button: bool = False,
     on_info_click: typing.Callable[..., None] | None = None,
+    current_status: str = None,
 ):
     """Header component."""
     with me.box(
@@ -33,7 +34,10 @@ def header(
     ):
         with me.box(
             style=me.Style(
-                display="flex", flex_direction="row", gap=5, align_items="baseline",
+                display="flex",
+                flex_direction="row",
+                gap=5,
+                align_items="baseline",
             ),
         ):
             me.icon(icon=icon)
@@ -50,3 +54,15 @@ def header(
                 style=me.Style(margin=me.Margin(left="auto")),
             ), me.tooltip(message="About this page"):
                 me.icon(icon="info_outline")
+
+        if current_status and len(current_status) > 0:
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    justify_content="flex-end",
+                    align_items="top",
+                )
+            ):
+
+                me.text(current_status)
