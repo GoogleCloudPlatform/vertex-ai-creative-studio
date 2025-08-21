@@ -720,9 +720,9 @@ def describe_images_and_look(
     ]
 
     for a in look_articles:
-        prompt_parts.append(f"Article Image Path {a.clothing_image_path}")
+        prompt_parts.append(f"Article Image Path {a.clothing_image}")
         prompt_parts.append(
-            types.Part.from_uri(file_uri=a.clothing_image_path, mime_type="image/png")
+            types.Part.from_uri(file_uri=a.clothing_image, mime_type="image/png")
         )
 
     response = client.models.generate_content(

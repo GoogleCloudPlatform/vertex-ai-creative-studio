@@ -30,6 +30,8 @@ class Tab:
     selected: bool = False
     disabled: bool = False
     icon: str | None = None
+    tab_width: str = "100%"
+    visible: bool = True
 
 
 def load(e: me.LoadEvent):
@@ -82,7 +84,6 @@ def tab_header(tabs: list[Tab], on_tab_click: Callable):
     with me.box(
         style=me.Style(
             display="flex",
-            width="100%",
             border=me.Border(
                 bottom=me.BorderSide(
                     width=1, style="solid", color=me.theme_var("outline-variant")
@@ -91,14 +92,19 @@ def tab_header(tabs: list[Tab], on_tab_click: Callable):
         )
     ):
         for index, tab in enumerate(tabs):
-            with me.box(
-                key=f"tab-{index}",
-                on_click=on_tab_click,
-                style=make_tab_style(tab.selected, tab.disabled),
-            ):
-                if tab.icon:
-                    me.icon(tab.icon)
-                me.text(tab.label)
+            if tab.visible:
+                with me.box(
+                    key=f"tab-{index}",
+                    on_click=on_tab_click,
+                    style=make_tab_style(
+                        tab.selected,
+                        tab.disabled,
+                        tab.tab_width,
+                    ),
+                ):
+                    if tab.icon:
+                        me.icon(tab.icon)
+                    me.text(tab.label)
 
 
 @me.component
@@ -110,7 +116,7 @@ def tab_content(tabs: list[Tab]):
                 tab.content()
 
 
-def make_tab_style(selected: bool, disabled: bool) -> me.Style:
+def make_tab_style(selected: bool, disabled: bool, tab_width: str) -> me.Style:
     """Makes the styles for the tab based on selected/disabled state."""
     style = make_default_tab_style()
     if disabled:
@@ -122,6 +128,7 @@ def make_tab_style(selected: bool, disabled: bool) -> me.Style:
             bottom=me.BorderSide(width=2, style="solid", color=me.theme_var("primary"))
         )
         style.cursor = "default"
+    style.width = tab_width
     return style
 
 

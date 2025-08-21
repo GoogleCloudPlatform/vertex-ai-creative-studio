@@ -14,10 +14,12 @@
 
 # TODO add metdata to firestore for VTO image in addition to the video output
 
+import base64
 import concurrent.futures
 import csv
 import datetime
 import time
+import uuid
 
 import requests
 import mesop as me
@@ -78,8 +80,8 @@ class PageState:
     # I2V reference Image
     reference_image_file_clothing: me.UploadedFile = None
     reference_image_file_key_clothing: int = 0
-    reference_image_gcs_clothing: str
-    reference_image_uri_clothing: str
+    reference_image_gcs_clothing: list[str] = field(default_factory=list)
+    reference_image_uri_clothing: list[str] = field(default_factory=list)
 
     reference_image_file_model: me.UploadedFile = None
     reference_image_file_key_model: int = 0
@@ -123,11 +125,15 @@ class PageState:
     final_critic: GeneratedImageAccuracyWrapper = None
     tryon_started: bool = False
     articles: list[CatalogRecord] = field(default_factory=list)
+    retry_counter: int = 0
+    max_retry: str = "3"
+    upload_everyone: bool = False
 
 
 @me.component
 def tab_config():
     state = me.state(PageState)
+    state.models = load_model_data()
     vto_enterprise_config()
 
 
@@ -353,14 +359,14 @@ def stl_model_select():
                     # on_click=on_click_upload_image,
                 ):
                     me.uploader(
-                        label="Upload Model Image",
+                        label="",
                         accepted_file_types=["image/jpeg", "image/png"],
                         on_upload=on_click_upload_image,
                         type="flat",
                         color="primary",
                         style=me.Style(
                             position="relative",
-                            margin=me.Margin(left=7, top=7),
+                            # margin=me.Margin(left=7, top=7),
                             cursor="pointer",
                             width="200px",  # Consider using max_width or responsive units
                             height="200px",
@@ -387,12 +393,35 @@ def stl_model_select():
                         style=me.Style(
                             color="black",
                             position="absolute",
-                            top="5px",
-                            left="5px",
-                            width="50px",
-                            height="50px",
-                            font_size="50px",
+                            top="35px",
+                            left="35px",
+                            width="35px",
+                            height="35px",
+                            font_size="35px",
                         ),  # Consider using max_width or responsive units
+                    ),
+                    me.icon(
+                        "person_outline",
+                        style=me.Style(
+                            color="black",
+                            position="absolute",
+                            top="50px",
+                            left="55px",
+                            width="100px",
+                            height="100px",
+                            font_size="100px",
+                        ),  # Consider using max_width or responsive units
+                    ),
+                    me.text(
+                        text="Add Model",
+                        style=me.Style(
+                            position="absolute",
+                            # width="100%",
+                            text_align="center",
+                            bottom="45px",
+                            left="55px",
+                            font_size="20px",
+                        ),
                     ),
 
             for model in state.models:
@@ -406,7 +435,7 @@ def stl_model_select():
                     )
                 ):
                     with me.box(
-                        key=f"gs://{config.GENMEDIA_BUCKET}/uploads/models/{model.model_image}",
+                        key=f"{model.model_image}",
                         style=me.Style(
                             position="relative",
                             height="100%",
@@ -428,55 +457,21 @@ def stl_model_select():
                         #     ),
                         # )
                         me.image(
-                            src=f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/models/{model.model_image}",
+                            src=model.model_image.replace(
+                                "gs://",
+                                "https://storage.mtls.cloud.google.com/",
+                            ),
                             style=me.Style(
-                                width="200px",  # Consider using max_width or responsive units
-                                height="200px",
+                                # width="200px",  # Consider using max_width or responsive units
+                                # height="200px",
                                 object_fit="cover",
                                 border_radius="5px",
                                 box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                                max_height="200px",
+                                height="auto",
                             ),
                         )
 
-    # with me.box(
-    #     style=me.Style(
-    #         display="flex",
-    #         flex_direction="row",
-    #         gap=10,
-    #         align_items="center",
-    #     )
-    # ):
-    #     for model in state.models:
-    #         if model.primary_view == "1":
-    #             with me.box(
-    #                 style=me.Style(
-    #                     display="flex-wrap",
-    #                     flex_direction="column",
-    #                     gap=5,
-    #                     align_items="left",
-    #                 )
-    #             ):
-    #                 me.button(
-    #                     f"{model.model_name}",
-    #                     key=f"gs://{config.GENMEDIA_BUCKET}/uploads/models/{model.model_image}",
-    #                     type="flat",
-    #                     style=me.Style(
-    #                         width=300,
-    #                         border_radius=5,
-    #                         object_fit="contain",
-    #                     ),
-    #                     on_click=on_model_click,
-    #                 )
-    #                 me.image(
-    #                     src=f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/models/{model.model_image}",
-    #                     style=me.Style(
-    #                         height=200,
-    #                         width=300,
-    #                         border_radius=12,
-    #                         object_fit="contain",
-    #                     ),
-    #                     key=str(state.reference_image_file_key_model),
-    #                 )
     return me
 
 
@@ -517,7 +512,10 @@ def stl_result():
                     ),
                 )
                 me.image(
-                    src=state.before_image_uri,
+                    src=state.before_image_uri.replace(
+                        "gs://",
+                        "https://storage.mtls.cloud.google.com/",
+                    ),
                     style=me.Style(
                         width="200px",  # Consider using max_width or responsive units
                         height="200px",
@@ -610,16 +608,16 @@ def stl_result():
                 flex_grow=1,
             )
         ):
-            if state.tryon_started:
-                me.text(
-                    text="Your Look",
-                    type="headline-4",
-                    style=me.Style(
-                        width="100%",
-                        text_align="center",
-                        margin=me.Margin(bottom=20),
-                    ),
-                )
+
+            me.text(
+                text="Your Look",
+                type="headline-4",
+                style=me.Style(
+                    width="100%",
+                    text_align="center",
+                    margin=me.Margin(bottom=20),
+                ),
+            )
             if state.look_description:
                 me.text(
                     state.look_description,
@@ -629,20 +627,33 @@ def stl_result():
                     ),
                 )
 
-                for item in state.articles:
-                    # if item.look_id == state.look:
-                    if item.selected:
+            for item in state.articles:
+                # if item.look_id == state.look:
+                if item.selected:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=0,
+                            align_items="center",
+                            margin=me.Margin(top=5),
+                        )
+                    ):
                         with me.box(
                             style=me.Style(
                                 display="flex",
-                                flex_direction="row",
-                                gap=0,
+                                flex_direction=(
+                                    "row" if item.ai_description else "column"
+                                ),
                                 align_items="center",
-                                margin=me.Margin(top=5),
+                                # justify_content="space-between",
+                                width="100%",
                             )
                         ):
-                            img = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/apparel/{item.item_id}"
-                            # img = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/{item.item_id}"
+                            img = item.clothing_image.replace(
+                                "gs://",
+                                "https://storage.mtls.cloud.google.com/",
+                            )
                             me.image(
                                 src=img,
                                 style=me.Style(
@@ -699,7 +710,7 @@ def stl_result():
                         with me.box(
                             style=me.Style(
                                 display="flex",
-                                flex_direction="row",
+                                flex_direction="column",
                                 position="relative",
                                 height="100%",
                             )
@@ -728,13 +739,33 @@ def stl_result():
                                         "error",
                                         style=me.Style(
                                             color="red",
-                                            width="100px",
-                                            height="100px",
+                                            width="50px",
+                                            height="50px",
                                             font_size=(
                                                 "25px" if state.result_video else "50px"
                                             ),
                                         ),
                                     )
+                                    if not state.is_loading:
+                                        with me.tooltip(
+                                            message="Retry",
+                                        ):
+                                            with me.box(
+                                                on_click=on_click_manual_retry,
+                                            ):
+                                                me.icon(
+                                                    "refresh",
+                                                    style=me.Style(
+                                                        color="black",
+                                                        width="50px",
+                                                        height="50px",
+                                                        font_size=(
+                                                            "25px"
+                                                            if state.result_video
+                                                            else "50px"
+                                                        ),
+                                                    ),
+                                                )
                     me.image(
                         src=state.result_image.replace(
                             "gs://",
@@ -805,7 +836,10 @@ def stl_result():
                                     )
             else:
                 me.image(
-                    src=state.before_image_uri,
+                    src=state.before_image_uri.replace(
+                        "gs://",
+                        "https://storage.mtls.cloud.google.com/",
+                    ),
                     style=me.Style(
                         margin=me.Margin(left=10),
                         width="500px",  # Consider using max_width or responsive units
@@ -816,97 +850,6 @@ def stl_result():
                         opacity=".1",
                     ),
                 )
-
-    if state.retry_progression_images:
-        with me.expansion_panel(
-            key="retry_progression",
-            title="Retry",
-            description="Image Progression",
-            icon="checkroom",
-            disabled=False,
-            expanded=state.normal_accordion["retry_progression"],
-            hide_toggle=False,
-            # on_toggle=on_accordion_toggle,
-            style=me.Style(
-                margin=me.Margin(top=10),
-            ),
-        ):
-            for p in state.retry_progression_images:
-                with me.box():
-                    with me.box(
-                        style=me.Style(
-                            height="100%",
-                            display="flex",
-                            flex_direction="row",
-                        )
-                    ):
-                        for img in p.progression_images:
-                            image_url = img.image_path.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            )
-
-                            with me.box(
-                                style=me.Style(
-                                    position="relative",
-                                    height="100%",
-                                )
-                            ):
-                                with me.tooltip(
-                                    message=str(img.reasoning),
-                                ):
-                                    if img.best_image and img.accurate:
-                                        me.icon(
-                                            "check_circle",
-                                            style=me.Style(
-                                                color="green",
-                                                position="absolute",
-                                                top="1px",
-                                                left="15px",
-                                            ),
-                                        )
-                                    elif img.best_image and not img.accurate:
-                                        me.icon(
-                                            "check_circle",
-                                            style=me.Style(
-                                                color="red",
-                                                position="absolute",
-                                                top="1px",
-                                                left="15px",
-                                            ),
-                                        )
-                                    elif img.accurate:
-                                        me.icon(
-                                            "check_circle",
-                                            style=me.Style(
-                                                color="#999",
-                                                position="absolute",
-                                                top="1px",
-                                                left="15px",
-                                            ),
-                                        )
-                                    else:
-                                        me.icon(
-                                            "error",
-                                            style=me.Style(
-                                                color="red",
-                                                position="absolute",
-                                                top="1px",
-                                                left="15px",
-                                            ),
-                                        )
-                                me.image(
-                                    src=image_url,
-                                    style=me.Style(
-                                        margin=me.Margin(left=10),
-                                        width="200px",  # Consider using max_width or responsive units
-                                        height="200px",
-                                        object_fit="cover",
-                                        border_radius="5px",
-                                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
-                                        # opacity=("1" if img.best_image else ".5"),
-                                    ),
-                                )
 
     # Progression Images
     if state.progression_images:
@@ -1019,29 +962,138 @@ def stl_result():
                                 ),
                             )
 
+    if state.retry_progression_images:
+        with me.expansion_panel(
+            key="retry_progression",
+            title="Retry",
+            description="Image Progression",
+            icon="checkroom",
+            disabled=False,
+            expanded=state.normal_accordion["retry_progression"],
+            hide_toggle=False,
+            # on_toggle=on_accordion_toggle,
+            style=me.Style(
+                margin=me.Margin(top=10),
+            ),
+        ):
+            for p in state.retry_progression_images:
+                with me.box():
+                    with me.box(
+                        style=me.Style(
+                            height="100%",
+                            display="flex",
+                            flex_direction="row",
+                        )
+                    ):
+                        for img in p.progression_images:
+                            image_url = img.image_path.replace(
+                                "gs://",
+                                "https://storage.mtls.cloud.google.com/",
+                            )
+
+                            with me.box(
+                                style=me.Style(
+                                    position="relative",
+                                    height="100%",
+                                )
+                            ):
+                                with me.tooltip(
+                                    message=str(img.reasoning),
+                                ):
+                                    if img.best_image and img.accurate:
+                                        me.icon(
+                                            "check_circle",
+                                            style=me.Style(
+                                                color="green",
+                                                position="absolute",
+                                                top="1px",
+                                                left="15px",
+                                            ),
+                                        )
+                                    elif img.best_image and not img.accurate:
+                                        me.icon(
+                                            "check_circle",
+                                            style=me.Style(
+                                                color="red",
+                                                position="absolute",
+                                                top="1px",
+                                                left="15px",
+                                            ),
+                                        )
+                                    elif img.accurate:
+                                        me.icon(
+                                            "check_circle",
+                                            style=me.Style(
+                                                color="#999",
+                                                position="absolute",
+                                                top="1px",
+                                                left="15px",
+                                            ),
+                                        )
+                                    else:
+                                        me.icon(
+                                            "error",
+                                            style=me.Style(
+                                                color="red",
+                                                position="absolute",
+                                                top="1px",
+                                                left="15px",
+                                            ),
+                                        )
+                                me.image(
+                                    src=image_url,
+                                    style=me.Style(
+                                        margin=me.Margin(left=10),
+                                        width="200px",  # Consider using max_width or responsive units
+                                        height="200px",
+                                        object_fit="cover",
+                                        border_radius="5px",
+                                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                                        # opacity=("1" if img.best_image else ".5"),
+                                    ),
+                                )
     return me
+
+
+def on_click_manual_retry(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.retry_counter -= 1
+
+    new_event = e
+    new_event.key = "retry"
+    yield from on_click_vto_look(new_event)
 
 
 def article_on_click(e: me.ClickEvent):
     state = me.state(PageState)
-    selected_type = e.key.split("/")[0]
+    selected_type = e.key.split("_")[-1]
+    selected_id = e.key.split("_")[-2]
+
     selected = False
     for item in state.articles:
-        if item.item_id == e.key:
+        print(f"comparing {item.item_id} to {selected_id}")
+        if item.item_id == selected_id:
             item.selected = not item.selected
             selected = item.selected
 
     for item in state.articles:
-        item_type = item.item_id.split("/")[0]
-        if item.item_id != e.key:
-            if selected_type == "shoe" and item_type == "shoe":
+        if item.item_id != selected_id:
+            if selected_type == "shoe" and item.article_type == "shoe":
                 item.available_to_select = not selected
-            elif selected_type == "dress" and item_type in ["dress", "top", "bottom"]:
+                item.selected = False
+            elif selected_type == "dress" and item.article_type in [
+                "dress",
+                "top",
+                "bottom",
+            ]:
                 item.available_to_select = not selected
-            elif selected_type == "top" and item_type in ["dress", "top"]:
+                item.selected = False
+            elif selected_type == "top" and item.article_type in ["dress", "top"]:
                 item.available_to_select = not selected
-            elif selected_type == "bottom" and item_type in ["dress", "bottom"]:
+                item.selected = False
+            elif selected_type == "bottom" and item.article_type in ["dress", "bottom"]:
                 item.available_to_select = not selected
+                item.selected = False
 
     yield
 
@@ -1064,35 +1116,282 @@ def stl_look_select():
             # style=me.Style(width="100%", text_align="center"),
         )
     with me.box():
-        # with me.box(
-        #     style=me.Style(
-        #         height="100%",
-        #         display="flex",
-        #         flex_direction="row",
-        #     )
-        # ):
-        #     for item in state.articles:
-        #         me.text("HELLO")
-
-        # with me.box(
-        #     style=me.Style(
-        #         display="flex-wrap",
-        #         flex_direction="row",
-        #         gap=5,
-        #         align_items="flex",
-        #         width="100%",
-        #     )
-        # ):
         with me.box(
             style=me.Style(
                 height="100%",
-                width="75%",
+                width="100%",
                 display="flex",
                 flex_direction="row",
                 flex_wrap="wrap",
             )
         ):
-            current_look = None
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="left",
+                    # margin=me.Margin(left=10),
+                )
+            ):
+                with me.box(
+                    style=me.Style(
+                        position="relative",
+                        height="100%",
+                        cursor="pointer",
+                    ),
+                    key="apparel",
+                    # on_click=on_click_upload_image,
+                ):
+                    me.uploader(
+                        label="",
+                        accepted_file_types=["image/jpeg", "image/png"],
+                        on_upload=on_click_upload_image,
+                        type="flat",
+                        color="primary",
+                        style=me.Style(
+                            position="relative",
+                            cursor="pointer",
+                            width="150px",  # Consider using max_width or responsive units
+                            height="150px",
+                            object_fit="cover",
+                            border_radius="5px",
+                            box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                            background="#FFFFFF",
+                            margin=me.Margin(left=10, top=10),
+                        ),
+                        key="top",
+                        multiple=True,
+                    )
+                    me.icon(
+                        "add",
+                        style=me.Style(
+                            color="black",
+                            position="absolute",
+                            top="20px",
+                            left="30px",
+                            width="30px",
+                            height="30px",
+                            font_size="30px",
+                        ),  # Consider using max_width or responsive units
+                    ),
+                    me.icon(
+                        "apparel",
+                        style=me.Style(
+                            color="black",
+                            position="absolute",
+                            top="45px",
+                            left="55px",
+                            width="50px",
+                            height="50px",
+                            font_size="50px",
+                        ),  # Consider using max_width or responsive units
+                    ),
+                    me.text(
+                        text="Add Top",
+                        style=me.Style(
+                            position="absolute",
+                            # width="100%",
+                            text_align="center",
+                            bottom="35px",
+                            left="45px",
+                            font_size="20px",
+                        ),
+                    ),
+            with me.box(
+                style=me.Style(
+                    position="relative",
+                    height="100%",
+                    cursor="pointer",
+                ),
+                key="apparel",
+                # on_click=on_click_upload_image,
+            ):
+                me.uploader(
+                    label="",
+                    accepted_file_types=["image/jpeg", "image/png"],
+                    on_upload=on_click_upload_image,
+                    type="flat",
+                    color="primary",
+                    style=me.Style(
+                        position="relative",
+                        cursor="pointer",
+                        width="150px",  # Consider using max_width or responsive units
+                        height="150px",
+                        object_fit="cover",
+                        border_radius="5px",
+                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                        background="#FFFFFF",
+                        margin=me.Margin(left=10, top=10),
+                    ),
+                    key="bottom",
+                    multiple=True,
+                )
+                me.icon(
+                    "add",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="20px",
+                        left="30px",
+                        width="30px",
+                        height="30px",
+                        font_size="30px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.icon(
+                    "styler",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="45px",
+                        left="55px",
+                        width="50px",
+                        height="50px",
+                        font_size="50px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.text(
+                    text="Add Bottom",
+                    style=me.Style(
+                        position="absolute",
+                        # width="100%",
+                        text_align="center",
+                        bottom="35px",
+                        left="30px",
+                        font_size="20px",
+                    ),
+                ),
+
+            with me.box(
+                style=me.Style(
+                    position="relative",
+                    height="100%",
+                    cursor="pointer",
+                ),
+                key="apparel",
+                # on_click=on_click_upload_image,
+            ):
+                me.uploader(
+                    label="",
+                    accepted_file_types=["image/jpeg", "image/png"],
+                    on_upload=on_click_upload_image,
+                    type="flat",
+                    color="primary",
+                    style=me.Style(
+                        position="relative",
+                        cursor="pointer",
+                        width="150px",  # Consider using max_width or responsive units
+                        height="150px",
+                        object_fit="cover",
+                        border_radius="5px",
+                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                        background="#FFFFFF",
+                        margin=me.Margin(left=10, top=10),
+                    ),
+                    key="dress",
+                    multiple=True,
+                )
+                me.icon(
+                    "add",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="20px",
+                        left="30px",
+                        width="30px",
+                        height="30px",
+                        font_size="30px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.icon(
+                    "girl",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="35px",
+                        left="45px",
+                        width="70px",
+                        height="70px",
+                        font_size="70px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.text(
+                    text="Add Dress",
+                    style=me.Style(
+                        position="absolute",
+                        # width="100%",
+                        text_align="center",
+                        bottom="35px",
+                        left="35px",
+                        font_size="20px",
+                    ),
+                ),
+
+            with me.box(
+                style=me.Style(
+                    position="relative",
+                    height="100%",
+                    cursor="pointer",
+                ),
+                key="apparel",
+                # on_click=on_click_upload_image,
+            ):
+                me.uploader(
+                    label="",
+                    accepted_file_types=["image/jpeg", "image/png"],
+                    on_upload=on_click_upload_image,
+                    type="flat",
+                    color="primary",
+                    style=me.Style(
+                        position="relative",
+                        cursor="pointer",
+                        width="150px",  # Consider using max_width or responsive units
+                        height="150px",
+                        object_fit="cover",
+                        border_radius="5px",
+                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                        background="#FFFFFF",
+                        margin=me.Margin(left=10, top=10),
+                    ),
+                    key="shoe",
+                    multiple=True,
+                )
+                me.icon(
+                    "add",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="20px",
+                        left="30px",
+                        width="30px",
+                        height="30px",
+                        font_size="30px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.icon(
+                    "steps",
+                    style=me.Style(
+                        color="black",
+                        position="absolute",
+                        top="45px",
+                        left="55px",
+                        width="50px",
+                        height="50px",
+                        font_size="50px",
+                    ),  # Consider using max_width or responsive units
+                ),
+                me.text(
+                    text="Add Shoe",
+                    style=me.Style(
+                        position="absolute",
+                        # width="100%",
+                        text_align="center",
+                        bottom="35px",
+                        left="35px",
+                        font_size="20px",
+                    ),
+                ),
 
             for item in state.articles:
                 with me.box(
@@ -1104,15 +1403,18 @@ def stl_look_select():
                         # margin=me.Margin(left=10),
                     )
                 ):
-                    img = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/apparel/{item.item_id}"
-
+                    img = item.clothing_image.replace(
+                        "gs://",
+                        "https://storage.mtls.cloud.google.com/",
+                    )
+                    print(f"item.clothing_image {item.clothing_image}")
                     with me.box(
-                        key=item.item_id,
+                        key=f"{item.item_id}_{item.article_type}",
                         style=me.Style(
                             position="relative",
                             height="100%",
-                            display=("block" if item.available_to_select else "none"),
-                            margin=me.Margin(left=10),
+                            # display=("block" if item.available_to_select else "none"),
+                            margin=me.Margin(left=10, top=10),
                             cursor="pointer",
                         ),
                         on_click=article_on_click,
@@ -1136,7 +1438,11 @@ def stl_look_select():
                                 object_fit="cover",
                                 border_radius="5px",
                                 box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
-                                opacity=("1" if item.selected else ".3"),
+                                opacity=(
+                                    "1"
+                                    if (item.available_to_select or item.selected)
+                                    else ".3"
+                                ),
                             ),
                         )
     with me.box(
@@ -1155,55 +1461,17 @@ def stl_look_select():
                 height=40,
                 border_radius=5,
                 cursor="pointer",
+                margin=me.Margin(left=5, top=10),
             ),
             on_click=on_continue_click,
         )
-
-        # for item in state.catalog:
-        #     if item.model_group == state.selected_model.model_group:
-        #         if not current_look or current_look != item.look_id:
-        #             with me.box(
-        #                 style=me.Style(
-        #                     display="flex",
-        #                     flex_direction="row",
-        #                     gap=5,
-        #                     align_items="center",
-        #                 )
-        #             ):
-        #                 me.button(
-        #                     f"{item.look_id}",
-        #                     key=f"{item.look_id}",
-        #                     type="flat",
-        #                     style=me.Style(
-        #                         width=75,
-        #                         height=75,
-        #                         border_radius=5,
-        #                     ),
-        #                     on_click=on_look_button_click,
-        #                 )
-        #                 for i2 in state.catalog:
-        #                     if i2.look_id == item.look_id:
-        #                         img = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/uploads/{i2.item_id}"
-        #                         me.image(
-        #                             src=img,
-        #                             style=me.Style(
-        #                                 width="75px",  # Consider using max_width or responsive units
-        #                                 height="75px",
-        #                                 object_fit="contain",
-        #                                 border_radius="12px",
-        #                                 box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
-        #                             ),
-        #                         )
-        #     current_look = item.look_id
 
 
 def on_model_click(e: me.ClickEvent):
     state = me.state(PageState)
     state.reference_image_gcs_model = e.key
-    state.before_image_uri = e.key.replace(
-        "gs://",
-        "https://storage.mtls.cloud.google.com/",
-    )
+    state.before_image_uri = e.key
+    print(f"state.before_image_uri {state.before_image_uri}")
     for m in state.models:
         if m.model_image in e.key:
             state.selected_model = m
@@ -1233,6 +1501,11 @@ def on_config_generate_videos(event: me.CheckboxChangeEvent):
     state.generate_video = event.checked
 
 
+def on_config_upload_everyone(event: me.CheckboxChangeEvent):
+    state = me.state(PageState)
+    state.upload_everyone = event.checked
+
+
 def on_veo_version_change(e: me.SelectSelectionChangeEvent):
     s = me.state(PageState)
     s.veo_model = e.value
@@ -1243,276 +1516,435 @@ def on_sample_count_change(e: me.SelectSelectionChangeEvent):
     s.vto_sample_count = e.value
 
 
+def max_retry_change(e: me.SelectSelectionChangeEvent):
+    s = me.state(PageState)
+    s.max_retry = e.value
+
+
 def on_blur_veo_prompt(e: me.InputBlurEvent):
     """Veo prompt blur event"""
     me.state(PageState).veo_prompt_input = e.value
 
 
 # End Config Events
+def article_on_delete(e: me.ClickEvent):
+    state = me.state(PageState)
+    # selected_type = e.key.split("-")[-1]
+    # selected_id = e.key.split("-")[-2]
+    file_to_delete = e.key.split("/")[
+        -1
+    ]  # e.key.replace("https://storage.mtls.cloud.google.com/", "gs://")
+    print(f"deleting {file_to_delete}")
+    state.current_status = f"Deleting article {file_to_delete}"
+    try:
+        app_state = me.state(AppState)
+        current_datetime = datetime.datetime.now()
+        doc_ref = db.collection(config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME).document(
+            file_to_delete
+        )
+
+        doc_ref.delete()
+        load_article_data()
+        state.current_status = ""
+        yield
+    except:
+        print(f"Model data  delete failure: {file_to_delete} cannot be stored")
+
+
+def model_on_delete(e: me.ClickEvent):
+    state = me.state(PageState)
+    # selected_type = e.key.split("-")[-1]
+    # selected_id = e.key.split("-")[-2]
+    file_to_delete = e.key.split("/")[
+        -1
+    ]  # e.key.replace("https://storage.mtls.cloud.google.com/", "gs://")
+    print(f"deleting {file_to_delete}")
+    state.current_status = f"Deleting model {file_to_delete}"
+    try:
+        app_state = me.state(AppState)
+        current_datetime = datetime.datetime.now()
+        doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).document(
+            file_to_delete
+        )
+
+        doc_ref.delete()
+        state.models = load_model_data()
+        state.current_status = ""
+        yield
+    except:
+        print(f"Model data  delete failure: {file_to_delete} cannot be stored")
 
 
 def vto_enterprise_config():
     state = me.state(PageState)
-    with me.box(
-        style=me.Style(
-            # flex_basis="450px",
-            flex_basis="max(480px, calc(40% - 48px))",
-            display="flex",
-            flex_direction="column",
-            align_items="stretch",
-            justify_content="space-between",
-            gap=10,
-            margin=me.Margin(top=10),
-        )
-    ):
+    app_state = me.state(AppState)
+    # with me.box(
+    #     style=me.Style(
+    #         # flex_basis="450px",
+    #         flex_basis="max(480px, calc(40% - 48px))",
+    #         display="flex",
+    #         flex_direction="column",
+    #         align_items="stretch",
+    #         justify_content="space-between",
+    #         gap=10,
+    #         margin=me.Margin(top=10),
+    #     )
+    # ):
+    with me.box():
         with me.box(
             style=me.Style(
+                height="100%",
+                width="100%",
                 display="flex",
                 flex_direction="row",
-                gap=5,
-                align_items="top",
-                width="100%",
+                flex_wrap="wrap",
             )
         ):
-            me.select(
-                label="VTO Sample Count",
-                options=[
-                    me.SelectOption(label="1 image", value="1"),
-                    me.SelectOption(label="2 images", value="2"),
-                    me.SelectOption(label="3 images", value="3"),
-                    me.SelectOption(label="4 images", value="4"),
-                ],
-                on_selection_change=on_sample_count_change,
-                style=me.Style(width=140),
-                multiple=False,
-                appearance="outline",
-                value=state.vto_sample_count,
-            )
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="row",
-                gap=5,
-                align_items="top",
-                width="100%",
-            )
-        ):
-            me.select(
-                label="Veo Version",
-                options=[
-                    me.SelectOption(label="Veo 3", value="3.0"),
-                    me.SelectOption(label="Veo 2", value="2.0"),
-                ],
-                on_selection_change=on_veo_version_change,
-                style=me.Style(width=140),
-                multiple=False,
-                appearance="outline",
-                value=state.veo_model,
-            )
 
-        me.native_textarea(
-            autosize=True,
-            min_rows=10,
-            max_rows=13,
-            placeholder="video creation instructions",
-            style=me.Style(
-                padding=me.Padding(top=16, left=16),
-                background=me.theme_var("secondary-container"),
-                outline="none",
-                width="100%",
-                overflow_y="auto",
-                border=me.Border.all(
-                    me.BorderSide(style="none"),
+            me.text(
+                f"Logged in as {app_state.user_email}",
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    width="100%",
+                    margin=me.Margin(bottom=10, top=10),
                 ),
-                color=me.theme_var("foreground"),
-                flex_grow=1,
-            ),
-            on_blur=on_blur_veo_prompt,
-            # key=str(state.veo_prompt_textarea_key),
-            value=state.veo_prompt_input,
-        )
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="row",
-                gap=5,
-                align_items="top",
-                width="100%",
             )
-        ):
-            me.checkbox(
-                "Generate alternate views",
-                checked=state.generate_alternate_views,
-                on_change=on_config_generate_alt_views,
-            )
-            me.checkbox(
-                "Generate videos (in addition)",
-                checked=state.generate_video,
-                on_change=on_config_generate_videos,
-            )
-
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="row",
-                gap=5,
-                align_items="top",
-                width="100%",
-            )
-        ):
             with me.box(
                 style=me.Style(
                     display="flex",
-                    flex_direction="column",
+                    flex_direction="row",
                     gap=5,
-                    align_items="center",
+                    align_items="top",
                     width="100%",
                 )
             ):
-                me.uploader(
-                    label="Upload Model Image",
-                    accepted_file_types=["image/jpeg", "image/png"],
-                    on_upload=on_click_upload_image,
-                    type="flat",
-                    color="primary",
-                    style=me.Style(
-                        font_weight="bold",
-                        width="200px",
-                    ),
-                    key="model",
-                    multiple=True,
+                me.text(
+                    text="VTO",
+                    type="headline-6",
                 )
-                if state.reference_image_uri_model:
-                    output_url = state.reference_image_uri_model
-                    me.image(
-                        src=output_url,
-                        style=me.Style(
-                            height=300,
-                            border_radius=12,
-                        ),
-                        key=str(state.reference_image_file_key_model),
-                    )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                )
+            ):
+                me.checkbox(
+                    "Upload model/clothing for all access?",
+                    checked=state.upload_everyone,
+                    on_change=on_config_upload_everyone,
+                )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                )
+            ):
+                me.select(
+                    label="VTO Sample Count",
+                    options=[
+                        me.SelectOption(label="1 image", value="1"),
+                        me.SelectOption(label="2 images", value="2"),
+                        me.SelectOption(label="3 images", value="3"),
+                        me.SelectOption(label="4 images", value="4"),
+                    ],
+                    on_selection_change=on_sample_count_change,
+                    style=me.Style(width=180),
+                    multiple=False,
+                    appearance="outline",
+                    value=state.vto_sample_count,
+                )
+                me.select(
+                    label="Max Auto Retry",
+                    options=[
+                        me.SelectOption(label="1 times", value="1"),
+                        me.SelectOption(label="2 times", value="2"),
+                        me.SelectOption(label="3 times", value="3"),
+                        me.SelectOption(label="4 times", value="4"),
+                    ],
+                    on_selection_change=max_retry_change,
+                    style=me.Style(width=180),
+                    multiple=False,
+                    appearance="outline",
+                    value=state.max_retry,
+                )
 
             with me.box(
                 style=me.Style(
                     display="flex",
-                    flex_direction="column",
+                    flex_direction="row",
                     gap=5,
-                    align_items="center",
+                    align_items="top",
                     width="100%",
                 )
             ):
-                me.uploader(
-                    label="Upload Top",
-                    accepted_file_types=["image/jpeg", "image/png"],
-                    on_upload=on_click_upload_image,
-                    type="flat",
-                    color="primary",
-                    style=me.Style(
-                        font_weight="bold",
-                        width="200px",
-                    ),
-                    key="top",
-                    multiple=True,
+                me.text(
+                    text="VEO",
+                    type="headline-6",
                 )
-                me.uploader(
-                    label="Upload Bottom",
-                    accepted_file_types=["image/jpeg", "image/png"],
-                    on_upload=on_click_upload_image,
-                    type="flat",
-                    color="primary",
-                    style=me.Style(
-                        font_weight="bold",
-                        width="200px",
-                    ),
-                    key="bottom",
-                    multiple=True,
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
                 )
-                me.uploader(
-                    label="Upload Shoe",
-                    accepted_file_types=["image/jpeg", "image/png"],
-                    on_upload=on_click_upload_image,
-                    type="flat",
-                    color="primary",
-                    style=me.Style(
-                        font_weight="bold",
-                        width="200px",
-                    ),
-                    key="shoe",
-                    multiple=True,
+            ):
+                me.select(
+                    label="Version",
+                    options=[
+                        me.SelectOption(label="Veo 3", value="3.0"),
+                        me.SelectOption(label="Veo 2", value="2.0"),
+                    ],
+                    on_selection_change=on_veo_version_change,
+                    style=me.Style(width=140),
+                    multiple=False,
+                    appearance="outline",
+                    value=state.veo_model,
                 )
-                me.uploader(
-                    label="Upload Dress",
-                    accepted_file_types=["image/jpeg", "image/png"],
-                    on_upload=on_click_upload_image,
-                    type="flat",
-                    color="primary",
-                    style=me.Style(
-                        font_weight="bold",
-                        width="200px",
-                    ),
-                    key="dress",
-                    multiple=True,
+                me.checkbox(
+                    "Generate videos (in addition)",
+                    checked=state.generate_video,
+                    on_change=on_config_generate_videos,
                 )
-                if state.reference_image_uri_model:
-                    output_url = state.reference_image_uri_model
-                    me.image(
-                        src=output_url,
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                )
+            ):
+                me.text(
+                    text="Base Prompt",
+                    style=me.Style(
+                        font_size="12px",
+                    ),
+                )
+            me.native_textarea(
+                autosize=True,
+                min_rows=10,
+                max_rows=13,
+                placeholder="Base prompt",
+                style=me.Style(
+                    padding=me.Padding(top=16, left=16),
+                    background=me.theme_var("secondary-container"),
+                    outline="none",
+                    width="1200px",
+                    overflow_y="auto",
+                    border=me.Border.all(
+                        me.BorderSide(style="none"),
+                    ),
+                    color=me.theme_var("foreground"),
+                    flex_grow=1,
+                ),
+                on_blur=on_blur_veo_prompt,
+                # key=str(state.veo_prompt_textarea_key),
+                value=state.veo_prompt_input,
+            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                    margin=me.Margin(top=10),
+                )
+            ):
+                me.text(
+                    text="Apparel",
+                    type="headline-6",
+                )
+            if state.articles:
+                for item in state.articles:
+                    with me.box(
                         style=me.Style(
-                            height=300,
-                            border_radius=12,
-                        ),
-                        key=str(state.reference_image_file_key_model),
-                    )
-            # with me.box(
-            #     style=me.Style(
-            #         display="flex",
-            #         flex_direction="column",
-            #         gap=5,
-            #         align_items="center",
-            #         width="100%",
-            #     )
-            # ):
-            #     me.uploader(
-            #         label="Upload Catalog CSV",
-            #         accepted_file_types=["text/csv"],
-            #         on_upload=on_click_upload_catalog,
-            #         type="flat",
-            #         color="primary",
-            #         style=me.Style(
-            #             font_weight="bold",
-            #             width="200px",
-            #         ),
-            #     )
+                            display="flex",
+                            flex_direction="row",
+                            gap=5,
+                            align_items="left",
+                        )
+                    ):
+                        img = item.clothing_image.replace(
+                            "gs://",
+                            "https://storage.mtls.cloud.google.com/",
+                        )
+                        print(f"item.clothing_image {item.clothing_image}")
+                        with me.box(
+                            key=f"{item.item_id}-{item.article_type}",
+                            style=me.Style(
+                                position="relative",
+                                height="100%",
+                                margin=me.Margin(left=10, top=10),
+                            ),
+                        ):
+                            with me.box(
+                                key=f"{img}",
+                                on_click=article_on_delete,
+                                style=me.Style(
+                                    cursor="pointer",
+                                ),
+                            ):
+                                me.icon(
+                                    "delete",
+                                    style=me.Style(
+                                        color="red",
+                                        position="absolute",
+                                        top="5px",
+                                        left="5px",
+                                        height="30px",
+                                        width="30px",
+                                        font_size="30px",
+                                    ),
+                                )
 
-            # with me.box(
-            #     style=me.Style(
-            #         display="flex",
-            #         flex_direction="column",
-            #         gap=5,
-            #         align_items="center",
-            #         width="100%",
-            #     )
-            # ):
-            #     me.uploader(
-            #         label="Upload Model CSV",
-            #         accepted_file_types=["text/csv"],
-            #         on_upload=on_click_upload_models,
-            #         type="flat",
-            #         color="primary",
-            #         style=me.Style(
-            #             font_weight="bold",
-            #             width="200px",
-            #         ),
-            #     )
+                            me.image(
+                                src=img,
+                                style=me.Style(
+                                    width="150px",  # Consider using max_width or responsive units
+                                    height="150px",
+                                    object_fit="cover",
+                                    border_radius="5px",
+                                    box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                                ),
+                            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                )
+            ):
+                for item in state.reference_image_uri_clothing:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=5,
+                            align_items="left",
+                        )
+                    ):
+                        with me.box(
+                            key=f"{item}",
+                            style=me.Style(
+                                position="relative",
+                                height="100%",
+                                margin=me.Margin(left=7, top=7),
+                                cursor="pointer",
+                            ),
+                        ):
+                            me.image(
+                                src=f"{item}",
+                                style=me.Style(
+                                    width="200px",  # Consider using max_width or responsive units
+                                    height="200px",
+                                    object_fit="cover",
+                                    border_radius="5px",
+                                    box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                                ),
+                            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
+                    align_items="top",
+                    width="100%",
+                    margin=me.Margin(top=10),
+                )
+            ):
+                me.text(
+                    text="Models",
+                    type="headline-6",
+                )
+            print(state.models)
+            if state.models:
+                for model in state.models:
+
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=5,
+                            align_items="left",
+                        )
+                    ):
+                        img = model.model_image.replace(
+                            "gs://",
+                            "https://storage.mtls.cloud.google.com/",
+                        )
+                        print(f"model.model_image {model.model_image}")
+                        with me.box(
+                            style=me.Style(
+                                position="relative",
+                                height="100%",
+                                margin=me.Margin(left=10, top=10),
+                            ),
+                        ):
+                            with me.box(
+                                key=f"{img}",
+                                on_click=model_on_delete,
+                                style=me.Style(
+                                    cursor="pointer",
+                                ),
+                            ):
+                                me.icon(
+                                    "delete",
+                                    style=me.Style(
+                                        color="red",
+                                        position="absolute",
+                                        top="5px",
+                                        left="5px",
+                                        height="30px",
+                                        width="30px",
+                                        font_size="30px",
+                                    ),
+                                )
+
+                            me.image(
+                                src=img,
+                                style=me.Style(
+                                    width="150px",  # Consider using max_width or responsive units
+                                    height="150px",
+                                    object_fit="cover",
+                                    border_radius="5px",
+                                    box_shadow="0 2px 4px rgba(0,0,0,0.1)",  # Use theme shadow if available
+                                ),
+                            )
+
     return me
 
 
 def build_tab_nav():
     state = me.state(PageState)
+    app_state = me.state(AppState)
+
+    visible = (
+        True
+        if app_state.user_email in ["andrewturner@google.com", "rouzbeha@google.com"]
+        else True
+    )
     tabs = [
-        Tab(label="Config", icon="settings", content=tab_config),
         Tab(label="Shop the Look", icon="apparel", content=tab_stl),
+        Tab(
+            label="Config",
+            icon="settings",
+            content=tab_config,
+            tab_width="100px",
+            visible=visible,
+        ),
     ]
     for index, tab in enumerate(tabs):
         tab.selected = state.selected_tab_index == index
@@ -1536,6 +1968,58 @@ def on_tab_click(e: me.ClickEvent):
     state.selected_tab_index = int(tab_index)
 
 
+def store_model_data(file_path):
+    # try:
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+    current_datetime = datetime.datetime.now()
+    file_name_only = file_path.split("/")[-1]
+    doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME)
+
+    upload_user = "everyone" if state.upload_everyone else app_state.user_email
+
+    new_doc_data = {
+        "model_group": "0",
+        "model_id": file_name_only,
+        "model_image": file_path,
+        "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
+        "upload_user": upload_user,
+    }
+
+    update_time, doc_ref = doc_ref.add(new_doc_data)
+
+    # except:
+    #     print(f"Model data failure: {file_path} cannot be stored")
+
+
+def store_article_data(file_path, article_category):
+    # try:
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+    current_datetime = datetime.datetime.now()
+    file_name_only = file_path.split("/")[-1]
+    doc_ref = db.collection(config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME)
+
+    upload_user = "everyone" if state.upload_everyone else app_state.user_email
+
+    new_doc_data = {
+        "item_id": file_name_only,
+        "article_type": article_category,
+        "model_group": "0",
+        "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
+        "ai_description": None,
+        "selected": False,
+        "available_to_select": True,
+        "clothing_image": file_path,
+        "upload_user": upload_user,
+    }
+
+    update_time, doc_ref = doc_ref.add(new_doc_data)
+
+    # except:
+    #     print(f"Article data failure: {file_path} cannot be stored")
+
+
 def on_click_upload_image(e: me.UploadEvent):
     """Upload image to GCS"""
     state = me.state(PageState)
@@ -1544,28 +2028,38 @@ def on_click_upload_image(e: me.UploadEvent):
         state.current_status = f"Uploading {i + 1} of {len(e.files)}"
         state.reference_image_file_clothing = e.file
         yield
+        filename_uuid = str(uuid.uuid4())
+        file_ext = file.name.split(".")[-1]
+        filename = f"{filename_uuid}.{file_ext}"
+
         if e.key == "model":
+            file_path = f"gs://{config.GENMEDIA_BUCKET}/uploads/models/{filename}"
             gcs_url = store_to_gcs(
                 "uploads/models",
-                file.name.lower(),
+                filename.lower(),
                 file.mime_type,
                 file.getvalue(),
             )
-            # state.reference_image_gcs_model = f"gs://{gcs_url}"
-            # state.reference_image_uri_model = (
-            #     f"https://storage.cloud.google.com/{gcs_url}"
-            # )
+            store_model_data(file_path)
         else:
+            file_path = (
+                f"gs://{config.GENMEDIA_BUCKET}/uploads/apparel/{e.key}/{filename}"
+            )
             gcs_url = store_to_gcs(
                 f"uploads/apparel/{e.key}",
-                file.name.lower(),
+                filename.lower(),
                 file.mime_type,
                 file.getvalue(),
             )
-            state.reference_image_gcs_clothing = f"gs://{gcs_url}"
-            state.reference_image_uri_clothing = (
-                f"https://storage.cloud.google.com/{gcs_url}"
+            state.reference_image_gcs_clothing.append(f"{gcs_url}")
+            state.reference_image_uri_clothing.append(
+                gcs_url.replace(
+                    "gs://",
+                    "https://storage.mtls.cloud.google.com/",
+                )
             )
+            article_type = gcs_url.split("/")[-2]
+            store_article_data(file_path, article_type)
 
         print(
             f"{gcs_url} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
@@ -1576,6 +2070,10 @@ def on_click_upload_image(e: me.UploadEvent):
 
     if e.key == "model":
         state.models = load_model_data()
+        yield
+    else:
+        load_article_data()
+        yield
 
 
 def get_csv_headers(csv_reader):
@@ -1729,33 +2227,36 @@ def on_click_upload_catalog(e: me.UploadEvent):
 
 def load_model_data(limit: int = 50):
     try:
-        models = []
-        model_counter = 1
-        folder_files = list_files_in_bucket(
-            f"{config.GENMEDIA_BUCKET}", prefix="uploads/models/"
-        )
-        for file_name in folder_files:
-            if file_name.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
-                model_counter += 1
-                models.append(
-                    ModelRecord(
-                        model_group="4",
-                        model_id=f"{file_name}".split("/")[-1],
-                        model_name=f"{model_counter}",
-                        primary_view="1",
-                        model_image=f"{file_name}".split("/")[-1],
-                    )
-                )
-        # media_ref = (
-        #     db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).order_by(
-        #         "model_name", direction=firestore.Query.ASCENDING
-        #     )
-        #     # .limit(limit)
-        # )
+
         # models = []
-        # for doc in media_ref.stream():
-        #     model_data = doc.to_dict()
-        #     models.append(ModelRecord(**model_data))
+        # model_counter = 1
+        # folder_files = list_files_in_bucket(
+        #     f"{config.GENMEDIA_BUCKET}", prefix="uploads/models/"
+        # )
+        # for file_name in folder_files:
+        #     if file_name.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
+        #         model_counter += 1
+        #         models.append(
+        #             ModelRecord(
+        #                 model_group="4",
+        #                 model_id=f"{file_name}".split("/")[-1],
+        #                 model_name=f"{model_counter}",
+        #                 primary_view="1",
+        #                 model_image=f"{file_name}".split("/")[-1],
+        #             )
+        #         )
+        app_state = me.state(AppState)
+        media_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME)
+        # .order_by(
+        #     "model_id", direction=firestore.Query.ASCENDING
+        # )
+
+        query = media_ref.where("upload_user", "in", ["everyone", app_state.user_email])
+
+        models = []
+        for doc in query.stream():
+            model_data = doc.to_dict()
+            models.append(ModelRecord(**model_data))
 
         return models
     except Exception as e:
@@ -1765,32 +2266,48 @@ def load_model_data(limit: int = 50):
 def load_article_data(limit: int = 50):
     state = me.state(PageState)
 
-    articles = []
-    article_counter = 1
+    # articles = []
+    # article_counter = 1
 
-    folder_files = list_files_in_bucket(
-        f"{config.GENMEDIA_BUCKET}", prefix="uploads/apparel/"
-    )
-    for file_name in folder_files:
-        if file_name.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
-            apparel_with_subfolder = (
-                f"{file_name}".split("/")[-2] + "/" + f"{file_name}".split("/")[-1]
-            )
-            article_counter += 1
-            articles.append(
-                CatalogRecord(
-                    item_id=apparel_with_subfolder,
-                    look_id=0,
-                    article_type=f"{file_name}".split("/")[-2],
-                    article_color=None,
-                    model_group="0",
-                    description=None,
-                    ai_description=None,
-                    image_view="front",
-                    try_on_order=0,
-                    clothing_image_path=f"gs://{config.GENMEDIA_BUCKET}/{file_name}",
-                )
-            )
+    # folder_files = list_files_in_bucket(
+    #     f"{config.GENMEDIA_BUCKET}", prefix="uploads/apparel/"
+    # )
+    # for file_name in folder_files:
+    #     if file_name.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
+    #         apparel_with_subfolder = (
+    #             f"{file_name}".split("/")[-2] + "/" + f"{file_name}".split("/")[-1]
+    #         )
+    #         article_counter += 1
+    #         articles.append(
+    #             CatalogRecord(
+    #                 item_id=apparel_with_subfolder,
+    #                 look_id=0,
+    #                 article_type=f"{file_name}".split("/")[-2],
+    #                 article_color=None,
+    #                 model_group="0",
+    #                 description=None,
+    #                 ai_description=None,
+    #                 image_view="front",
+    #                 try_on_order=0,
+    #                 clothing_image_path=f"gs://{config.GENMEDIA_BUCKET}/{file_name}",
+    #             )
+    #         )
+    # state.articles = articles
+
+    app_state = me.state(AppState)
+    media_ref = db.collection(config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME)
+    # .order_by(
+    #     "article_type", direction=firestore.Query.ASCENDING
+    # )
+    query = media_ref.where("upload_user", "in", ["everyone", app_state.user_email])
+
+    articles = []
+    for doc in query.stream():
+        article_data = doc.to_dict()
+        articles.append(CatalogRecord(**article_data))
+
+    articles = sorted(articles, key=lambda article: article.article_type)
+
     state.articles = articles
 
 
@@ -1805,9 +2322,7 @@ def load_look_data(limit: int = 50):
         # looks.append(doc.to_dict())
         catalog_data = doc.to_dict()
         record = CatalogRecord(**catalog_data)
-        record.clothing_image_path = (
-            f"gs://{config.GENMEDIA_BUCKET}/{record.item_id}",
-        )
+        record.clothing_image = (f"gs://{config.GENMEDIA_BUCKET}/{record.item_id}",)
         looks.append(record)
 
     looks.sort(key=lambda item: (item.look_id, item.try_on_order))
@@ -1827,7 +2342,9 @@ def get_selected_look():
     selected_look_data = list(
         filter(lambda catalogrecord: catalogrecord.selected, state.articles)
     )
-    selected_look_data.sort(key=lambda item: item.try_on_order)
+    # selected_look_data.sort(key=lambda item: item.try_on_order)
+    # for i in selected_look_data:
+    #     i.clothing_image = f"gs://{config.GENMEDIA_BUCKET}/{i.clothing_image}"
 
     return selected_look_data
 
@@ -1844,11 +2361,11 @@ def get_selected_look():
 
 
 # TODO change logic to filter function
-def get_model_records(model_name):
+def get_model_records(model_id):
     state = me.state(PageState)
     model_records = []
     for m in state.models:
-        if m.model_name == model_name:
+        if m.model_id == model_id:
             model_records.append(m)
     return model_records
 
@@ -1867,6 +2384,15 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     look_articles = get_selected_look()
     articles_for_vto = []
+
+    if e.key == "primary":
+        state.retry_counter = 0
+    elif e.key == "retry":
+        print(f"attempting retry {state.retry_counter}")
+        if state.retry_counter >= int(state.max_retry):
+            return
+
+        state.retry_counter += 1
 
     # Create a list of failed items to be used later
     if e.key == "retry":
@@ -1893,32 +2419,34 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
         articles_for_vto = look_articles
 
     print(f"articles_for_vto {articles_for_vto}")
-    images_to_process = get_model_records(state.selected_model.model_name)
+    images_to_process = get_model_records(state.selected_model.model_id)
 
     if e.key == "alternate":
         status_prefix = "Alt View: "
     elif e.key == "retry":
-        status_prefix = "Critic Retry: "
+        status_prefix = f"Critic Retry {state.retry_counter}: "
     else:
         status_prefix = "Primary View: "
 
     # article_image_bytes_list_wrapper = []
 
+    print(f"images_to_process {images_to_process}")
+
     for r in images_to_process:
         # loop through images for the model (primary + alternate model)
-
         # TODO change from primary being int to bool
-        if e.key == "primary" and r.primary_view != "1":
+        if e.key == "primary" and r.primary_view == False:
             continue
-        elif e.key == "alternate" and r.primary_view == "1":
+        elif e.key == "alternate" and r.primary_view == True:
             continue
-        elif e.key == "retry" and r.primary_view != "1":
+        elif e.key == "retry" and r.primary_view == False:
             continue
 
         if e.key != "retry":
-            state.reference_image_gcs_model = (
-                f"gs://{config.GENMEDIA_BUCKET}/uploads/models/{r.model_image}"
-            )
+            # state.reference_image_gcs_model = (
+            #     f"gs://{config.GENMEDIA_BUCKET}/{r.model_image}"
+            # )
+            state.reference_image_gcs_model = r.model_image
 
             state.current_status = "Generating catalog descriptions"
             yield
@@ -1934,7 +2462,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
 
         articles = []
         for i, row in enumerate(look_articles):
-            articles.append(row.clothing_image_path)
+            articles.append(f"{row.clothing_image}")
 
         # Call Gemini to get catalog enrichment information
         with concurrent.futures.ThreadPoolExecutor() as executor_catalog_enrichment:
@@ -1958,7 +2486,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                     results = executor_apparel_images.map(download_from_gcs, articles)
                     with concurrent.futures.ThreadPoolExecutor() as executor_vto:
                         r1 = articles_for_vto[0]
-                        article_image_uri_list.append(r1.clothing_image_path)
+                        article_image_uri_list.append(r1.clothing_image)
                         state.current_status = (
                             f"{status_prefix}Trying on {r1.article_type}..."
                         )
@@ -1969,7 +2497,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                                 person_image_bytes=None,
                                 product_image_bytes=None,
                                 person_image_uri=state.reference_image_gcs_model,
-                                product_image_uri=r1.clothing_image_path,
+                                product_image_uri=r1.clothing_image,
                                 sample_count=int(state.vto_sample_count),
                                 prompt="the shirt should be tucked in",
                                 product_description="tucked in shirt",
@@ -2022,7 +2550,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                             temp_progressions = []
 
                             if i > 0:
-                                article_image_uri_list.append(row.clothing_image_path)
+                                article_image_uri_list.append(row.clothing_image)
 
                                 state.current_status = (
                                     f"{status_prefix}Trying on {row.article_type}..."
@@ -2034,7 +2562,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                                     person_image_bytes=None,
                                     product_image_bytes=None,
                                     person_image_uri=state.reference_image_gcs_model,
-                                    product_image_uri=row.clothing_image_path,
+                                    product_image_uri=row.clothing_image,
                                     sample_count=int(state.vto_sample_count),
                                     # TODO testing with these
                                     # prompt="the shirt should be tucked in",
@@ -2096,7 +2624,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                             byte_lookup = None
                             for z, art in enumerate(articles):
                                 if (
-                                    row.clothing_image_path.split("/")[-1]
+                                    row.clothing_image.split("/")[-1]
                                     == art.split("/")[-1]
                                 ):
                                     byte_lookup = article_image_bytes_list[z]
@@ -2109,7 +2637,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                                 f"a {row.article_type}",
                                 f"the {row.article_type}",
                             )
-
+                            print(f"best match is {best_match}")
                             last_best_image = None
 
                             for p in temp_progressions:
@@ -2126,19 +2654,25 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                                         state.result_images.append(p.image_path)
                                         continue
 
+                            print(
+                                f"state.progression_images is {state.progression_images}"
+                            )
+
+                            print(f"last_best_image is {last_best_image}")
+
                             # If all images are poor, the critic refuses to select one, so select the last image to move forward with
                             if last_best_image is None:
                                 last_best_image = state.result_images[-1]
                             progressions.progression_images = temp_progressions
-
+                            print(f"last_best_image is {last_best_image}")
                             if e.key == "retry":
                                 state.retry_progression_images.append(progressions)
-                            elif r.primary_view == "1":
+                            elif r.primary_view == True:
                                 state.progression_images.append(progressions)
                             else:
                                 state.alternate_progression_images.append(progressions)
 
-                            if r.primary_view == "1" and (i + 1) == len(
+                            if r.primary_view == True and (i + 1) == len(
                                 articles_for_vto
                             ):
                                 state.result_image = (
@@ -2185,16 +2719,8 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     print("Cut! That's a wrap!")
 
-    if e.key != "retry":
-        if state.generate_alternate_views and e.key == "primary":
-            new_event = e
-            new_event.key = "alternate"
-            yield from on_click_vto_look(new_event)
-        elif state.generate_video:
-            video_result = on_click_veo(e)
-            yield from on_click_veo(e)
-
     if e.key == "primary" or e.key == "retry":
+        # run final critic
         step_start_time = time.time()
         yield WorkflowStepResult(
             step_name="final_critic",
@@ -2210,7 +2736,6 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
             )
             state.current_status = "Critic evaluation in progress..."
             yield
-
             final_critic = final_image_critic(
                 # article_image_bytes_list_wrapper,
                 article_image_bytes_list,
@@ -2221,12 +2746,22 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
             state.final_accuracy = final_critic.accurate
             state.current_status = ""
             yield
-            # minus-circle alert-decagram
-            if e.key == "primary" and not state.final_critic.accurate:
+            # retry if necessary
+            print(f"final_critic is {final_critic}")
+            if not state.final_critic.accurate and state.retry_counter < int(
+                state.max_retry
+            ):
                 # retry logic
                 new_event = e
                 new_event.key = "retry"
                 yield from on_click_vto_look(new_event)
+            # elif state.generate_alternate_views:
+            #     new_event = e
+            #     new_event.key = "alternate"
+            #     yield from on_click_vto_look(new_event)
+            elif state.generate_video:
+                # video_result = on_click_veo(e)
+                yield from on_click_veo(e)
 
         step_duration = time.time() - step_start_time
         yield WorkflowStepResult(
@@ -2580,8 +3115,8 @@ def on_click_clear_reference_image(
     # I2V reference Image
     state.reference_image_file_clothing = None
     state.reference_image_file_key_clothing = 0
-    state.reference_image_gcs_clothing = None
-    state.reference_image_uri_clothing = None
+    state.reference_image_gcs_clothing = []
+    state.reference_image_uri_clothing = []
 
     state.reference_image_file_model = None
     state.reference_image_file_key_model = 0
@@ -2604,4 +3139,5 @@ def on_click_clear_reference_image(
     # state.final_accuracy = False
     state.final_critic = None
     state.tryon_started = False
+    state.retry_counter = 0
     yield

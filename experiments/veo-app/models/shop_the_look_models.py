@@ -45,18 +45,14 @@ class BestImageAccuracy(BaseModel):
 @dataclass
 class CatalogRecord:
     item_id: str = None
-    look_id: int = None
     article_type: str = None
-    article_color: str = None
     model_group: str = None
-    description: str = None
     ai_description: str = None
-    image_view: str = None
-    try_on_order: int = 0
-    timestamp: str = None
     selected: bool = False
     available_to_select: bool = True
-    clothing_image_path: str = None
+    clothing_image: str = None
+    upload_user: str = None
+    timestamp: str = None
 
 
 class ArticleDescription(BaseModel):
@@ -77,11 +73,9 @@ class ArticleDescriptionWrapper(BaseModel):
 class ModelRecord:
     model_group: str = None
     model_id: str = None
-    model_name: str = None
-    model_description: str = None
-    model_view: str = None
-    primary_view: str = None
     model_image: str = None
+    primary_view: bool = True
+    upload_user: str = None
     timestamp: str = None
 
 
