@@ -48,6 +48,7 @@ module "project-services" {
   activate_apis = [
     "iap.googleapis.com",
     "compute.googleapis.com",
+    "certificatemanager.googleapis.com",
     "cloudbuild.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
@@ -91,6 +92,7 @@ module "lb-http" {
   version                         = "~>13.0"
   name                            = "creativestudio"
   project                         = var.project_id
+  load_balancing_scheme           = "EXTERNAL_MANAGED"
   ssl                             = var.use_lb
   managed_ssl_certificate_domains = [var.domain]
   https_redirect                  = var.use_lb
