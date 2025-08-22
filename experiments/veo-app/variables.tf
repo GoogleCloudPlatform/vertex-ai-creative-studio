@@ -24,7 +24,7 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "ssl" {
+variable "use_lb" {
   description = "Run load balancer on HTTPS and provision managed certificate with provided `domain`."
   type        = bool
   default     = true
@@ -82,4 +82,5 @@ variable "initial_user" {
   description = "Email address of initial user that will be granted access to Creative Studio in IAP"
   type = string
   nullable = true
+  default = null
 }

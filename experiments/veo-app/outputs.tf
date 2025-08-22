@@ -15,8 +15,13 @@
 */
 
 output "load-balancer-ip" {
-  value = module.lb-http.external_ip
+  value = var.use_lb ? module.lb-http[0].external_ip : ""
   description = "IP Address that should be used for DNS A record for the domain provided."
+}
+
+output "cloud-run-app-url" {
+  value = !var.use_lb ? google_cloud_run_v2_service.creative_studio.uri : ""
+  description = "The Cloud Run URL where the website can be reached."
 }
 
 output "builds-service-account" {

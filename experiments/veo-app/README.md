@@ -5,16 +5,18 @@
 - [GenMedia Creative Studio: v.Next](#genmedia-creative-studio-vnext)
 - [Deploying GenMedia Creative Studio](#deploying-genmedia-creative-studio)
   - [Prerequisites](#prerequisites)
-  - [Deployment Steps](#deployment-steps)
     - [1. Download the source code for this project](#1-download-the-source-code-for-this-project)
     - [2. Export Environment Variables](#2-export-environment-variables)
-    - [3. Initialize Terraform](#3-initialize-terraform)
-    - [4. Create a DNS A record for the domain name](#4-create-a-dns-a-record-for-the-domain-name)
-    - [5. Build and Deploy Container Image](#5-build-and-deploy-container-image)
-    - [6. Wait for certificate to go to provisioned state](#6-wait-for-certificate-to-go-to-provisioned-state)
-  - [Other ways of running](#other-ways-of-running)
-    - [Cloud Run Domain](#cloud-run-domain)
-    - [Cloud Shell](#cloud-shell)
+  - [Deploying with Custom Domain](#deploying-with-custom-domain)
+    - [1. Initialize Terraform](#1-initialize-terraform)
+    - [2. Create a DNS A record for the domain name](#2-create-a-dns-a-record-for-the-domain-name)
+    - [3. Build and Deploy Container Image](#3-build-and-deploy-container-image)
+    - [4. Wait for certificate to go to provisioned state](#4-wait-for-certificate-to-go-to-provisioned-state)
+  - [Deploying using Cloud Run Domain](#deploying-using-cloud-run-domain)
+    - [1. Initialize Terraform](#1-initialize-terraform-1)
+    - [2. Build and Deploy Container Image](#2-build-and-deploy-container-image)
+    - [3. Edit Cloud Run's IAP Policy to provide initial user's access](#3-edit-cloud-runs-iap-policy-to-provide-initial-users-access)
+  - [Deploying to Cloud Shell for Testing](#deploying-to-cloud-shell-for-testing)
 - [Solution Design](#solution-design)
   - [Solution Components](#solution-components)
     - [Runtime Components](#runtime-components)
@@ -63,10 +65,7 @@ Deployment of GenMedia Creative Studio is accomplished using a combination of Te
 
 You'll need the following
 * An existing Google Cloud Project
-* This source
-* Ability to create a DNS A record for your target domain that resolves to the provisioned load balancer
-
-## Deployment Steps
+* If you want to use a custom domain, you need the ability to create a DNS A record for your target domain that resolves to the provisioned load balancer
 
 ### 1. Download the source code for this project
 
@@ -89,25 +88,34 @@ Replace the example values and execute the script below:
 
 ```bash
 export REGION=us-central1 PROJECT_ID=$(gcloud config get project) 
-export DOMAIN_NAME=creativestudio.example.com
 export INITIAL_USER=admin@example.com
 ```
 
-### 3. Initialize Terraform
+## Deploying with Custom Domain
+
+Follow these steps if you are going to deploy GenMedia Creative Studio using your own custom domain. You will need the ability to create a DNS A record if you choose this deployment option.
+
+### 1. Initialize Terraform
+
+Because you are using a custom domain, you will need to export one more variable with the DNS name for the domain that will be used to navigate to GenMedia Creative Studio.
+
+```bash
+export DOMAIN_NAME=creativestudio.example.com
+```
 
 Make sure your command line is in the folder containing this README (i.e., experiments/veo-app). Then create the `terraform.tfvars` using the following command:
 
 ```bash
 cat > terraform.tfvars << EOF
-project_id = $PROJECT_ID
-domain = $DOMAIN_NAME
-initial_user = $INITIAL_USER
+project_id = "$PROJECT_ID"
+initial_user = "$INITIAL_USER"
+domain = "$DOMAIN_NAME"
 EOF
 
 terraform init
 terraform apply
 ```
-### 4. Create a DNS A record for the domain name
+### 2. Create a DNS A record for the domain name
 A load balancer and a Google Cloud managed certificate are provisioned by the Terraform configuration file. You must create a DNS A record that resolves to the IP address of the provisioned load balancer. Below is a sample output from running the `terraform apply` command, showing where the provisioned application balancer's IP is displayed.
 
 ![Solution Design](./docs/terraform_outputs.png)
@@ -116,27 +124,68 @@ If you use Google Cloud DNS, follow the steps [here](https://cloud.google.com/dn
 
 > If you take too long to create the A record, usually >15 minutes or the DNS entry resolves to any other IP address than the load balancer's, provisioning of the Google Cloud Managed certificate may fail with a status of `FAILED_NOT_VISIBLE`. If this is the case, make sure the DNS A record is updated correctly and follow the steps [here](https://cloud.google.com/load-balancing/docs/ssl-certificates/troubleshooting?#verify_configuration_changes).
 
-### 5. Build and Deploy Container Image
-A shell script, `build.sh`, is include in this repo that submits a build to Cloud Build which builds and deploys the application's container image. Use the following command:
+### 3. Build and Deploy Container Image
+A shell script, `build.sh`, is included in this repo that submits a build to Cloud Build which builds and deploys the application's container image. Use the following command:
 
 ```bash
-.\build.sh
+./build.sh
 ```
 
-### 6. Wait for certificate to go to provisioned state
+### 4. Wait for certificate to go to provisioned state
 
 With both the infrastructure and application deployed, you are just waiting for the certificate to complete provisioning. Once you see the status as "ACTIVE" and the "In use by" section populated (see sample below), your application is ready for use. You can navigate to the [Certificate Manager GCP Console page](https://console.cloud.google.com/security/ccm/list/lbCertificates), and select the certificate to keep an eye on the status.
 
 ![Provisioned Certificate](./docs/ssl_certificate_status.png)
 
-## Other ways of running
+## Deploying using Cloud Run Domain
 
-### Cloud Run Domain
-If you are unable to create a DNS record in your corporate domain, you can also use the autogenerated Cloud Run domain along with it's preview support for IAP to secure the endpoint.
+If you are unable to create a DNS record in your corporate domain, you can also use the autogenerated Cloud Run domain along with it's preview support for IAP to secure the endpoint. 
 
-At this point, the Terraform config files do not support this option.
+> Currently, Cloud Run's integration with IAP is a preview feature and is subject to the "Pre-GA Offerings Terms" in the General Service Terms section of the [Service Specific Terms](https://cloud.google.com/terms/service-terms#1). Pre-GA features are available "as is" and might have limited support. For more information, see the [launch stage descriptions](https://cloud.google.com/products#product-launch-stages).
 
-### Cloud Shell
+### 1. Initialize Terraform
+
+Make sure your command line is in the folder containing this README (i.e., experiments/veo-app). Then create the `terraform.tfvars` using the following command:
+
+```bash
+cat > terraform.tfvars << EOF
+project_id = "$PROJECT_ID"
+initial_user = "$INITIAL_USER"
+use_lb = false
+EOF
+
+terraform init
+terraform apply
+```
+
+Make sure to take note of the Cloud Run URL that is output. This is what you will navigate to in your browser to access the application. Before doing that though, you need to build and deploy the container image.
+
+![Cloud Run URL output](./docs/terraform_outputs_cloud_run.png)
+
+
+### 2. Build and Deploy Container Image
+A shell script, `build.sh`, is included in this repo that submits a build to Cloud Build which builds and deploys the application's container image. Use the following command:
+
+```bash
+./build.sh
+```
+
+### 3. Edit Cloud Run's IAP Policy to provide initial user's access
+The last step is to change the IAP policy of the Cloud Run service to provide access to a user. You can also use a group but for the purposes of this example, a single user is given access.
+
+```bash
+gcloud beta iap web add-iam-policy-binding \
+--project $PROJECT_ID \
+--region=$REGION \
+--member=user:$INITIAL_USER \
+--role=roles/iap.httpsResourceAccessor \
+--resource-type=cloud-run \
+--service=creative-studio
+```
+
+Congratulations, you can now navigate to the address provided in the `cloud-run-app-url` Terraform output.
+
+## Deploying to Cloud Shell for Testing
 Use this option if you want to quickly run the UI without having to setup a local development environment. To get started, use Cloud Shell and follow the tutorial instructions.
 
   [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_workspace=experiments/veo-app&cloudshell_tutorial=tutorial.md)

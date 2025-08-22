@@ -72,7 +72,7 @@ resource "google_project_service_identity" "iap_sa" {
 }
 
 resource "google_iap_web_iam_member" "initial_user_iap_access" {
-  count = var.initial_user == null || var.initial_user == "" ? 0 : 1
+  count = var.use_lb && var.initial_user != null ? 1 : 0
   role = "roles/iap.httpsResourceAccessor"
   member = "user:${var.initial_user}"
   depends_on = [ module.project-services ]
@@ -86,20 +86,21 @@ resource "google_cloud_run_service_iam_member" "iap_cloudrun_access" {
 }
 
 module "lb-http" {
+  count                           = var.use_lb ? 1 : 0
   source                          = "terraform-google-modules/lb-http/google//modules/serverless_negs"
   version                         = "~>13.0"
   name                            = "creativestudio"
   project                         = var.project_id
-  ssl                             = var.ssl
+  ssl                             = var.use_lb
   managed_ssl_certificate_domains = [var.domain]
-  https_redirect                  = var.ssl
+  https_redirect                  = var.use_lb
   backends = {
     default = {
       description = "Creative Studio backend"
       enable_cdn = false
       groups = [
         {
-          group = google_compute_region_network_endpoint_group.cloudrun_neg.id
+          group = google_compute_region_network_endpoint_group.cloudrun_neg[0].id
         }
       ]
       iap_config = {
@@ -114,6 +115,7 @@ module "lb-http" {
 }
 
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
+  count                 = var.use_lb ? 1 : 0
   name                  = "cloudrun-neg"
   network_endpoint_type = "SERVERLESS"
   region                = var.region
@@ -151,15 +153,17 @@ locals {
   }
 }
 
-
 resource "google_cloud_run_v2_service" "creative_studio" {
   provider              = google-beta
   name                  = "creative-studio"
   location              = var.region
   project               = var.project_id
-  ingress               = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
-  default_uri_disabled  = true
+  ingress               = var.use_lb ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
+  default_uri_disabled  = var.use_lb
   deletion_protection   = false
+  iap_enabled           = !var.use_lb
+  invoker_iam_disabled  = !var.use_lb
+  launch_stage          = var.use_lb ? "GA" : "BETA"
 
   template {
     containers {
@@ -240,6 +244,9 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
   app_engine_integration_mode       = "DISABLED"
   point_in_time_recovery_enablement = "POINT_IN_TIME_RECOVERY_ENABLED"
   delete_protection_state           = var.enable_data_deletion ? "DELETE_PROTECTION_DISABLED" : "DELETE_PROTECTION_ENABLED"
+  # Terraform docs / testing showed that deletion_policy is needed for db to be delete when using terraform destroy
+  # See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/firestore_database#delete_protection_state-1
+  deletion_policy                   = var.enable_data_deletion ? "DELETE" : "ABANDON"
   depends_on = [ module.project-services ]
 }
 
