@@ -18,6 +18,8 @@
     - [3. Edit Cloud Run's IAP Policy to provide initial user's access](#3-edit-cloud-runs-iap-policy-to-provide-initial-users-access)
   - [Deploying to Cloud Shell for Testing](#deploying-to-cloud-shell-for-testing)
 - [Solution Design](#solution-design)
+  - [Custom Domain Using Identity Aware Proxy w/Load Balancer](#custom-domain-using-identity-aware-proxy-wload-balancer)
+  - [Cloud Run Domain Using Identity Aware Proxy w/Cloud Run](#cloud-run-domain-using-identity-aware-proxy-wcloud-run)
   - [Solution Components](#solution-components)
     - [Runtime Components](#runtime-components)
     - [Build time Components](#build-time-components)
@@ -175,7 +177,7 @@ The last step is to change the IAP policy of the Cloud Run service to provide ac
 
 ```bash
 gcloud beta iap web add-iam-policy-binding \
---project $PROJECT_ID \
+--project=$PROJECT_ID \
 --region=$REGION \
 --member=user:$INITIAL_USER \
 --role=roles/iap.httpsResourceAccessor \
@@ -191,7 +193,13 @@ Use this option if you want to quickly run the UI without having to setup a loca
   [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_workspace=experiments/veo-app&cloudshell_tutorial=tutorial.md)
 
 # Solution Design
-![Solution Design](./docs/vertex-ai-creative-studio.png)
+There are two way to deploy this solution. One using a custom domain with a load balancer and IAP integration. The other is using Cloud Run's default URL and integrating IAP with Cloud Run. The below diagrams depict the components used for each option.
+
+## Custom Domain Using Identity Aware Proxy w/Load Balancer
+![Solution Design - LB IAP](./docs/vertex-ai-creative-studio-lb-iap.png)
+
+## Cloud Run Domain Using Identity Aware Proxy w/Cloud Run
+![Solution Design - Cloud Run IAP](./docs/vertex-ai-creative-studio-cloudrun-iap.png)
 
 The above diagram depicts the components that make up the Creative Studio solution. Items of note:
 
