@@ -85,7 +85,6 @@ resource "google_cloud_run_service_iam_member" "iap_cloudrun_access" {
   member = google_project_service_identity.iap_sa.member
 }
 
-
 module "lb-http" {
   source                          = "terraform-google-modules/lb-http/google//modules/serverless_negs"
   version                         = "~>13.0"
@@ -132,7 +131,7 @@ resource "google_service_account" "creative_studio" {
   account_id = "service-creative-studio"
 }
 
-  # Centralizing environment variables here and using for each in service declaration for simplicity
+# Centralizing environment variables here and using for each in service declaration for simplicity
 locals {
   creative_studio_env_vars = {
     PROJECT_ID          = var.project_id
@@ -192,7 +191,7 @@ resource "google_cloud_run_v2_service" "creative_studio" {
   ]
 }
 
-/* There are times when IAP service account is not automatically provisioned, creating explicitly to be sure */
+/* There are times when Vertex service account is not automatically provisioned, creating explicitly to be sure */
 resource "google_project_service_identity" "vertex_sa" {
   provider = google-beta
   project = var.project_id
