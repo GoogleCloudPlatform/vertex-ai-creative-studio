@@ -224,7 +224,7 @@ platformdirs==4.3.8
     # via black
 pluggy==1.6.0
     # via pytest
-prompt-toolkit==3.0.51
+prompt-toolkit==3.0.52
     # via ipython
 proto-plus==1.26.1
     # via
