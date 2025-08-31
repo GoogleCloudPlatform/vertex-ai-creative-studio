@@ -84,3 +84,22 @@ variable "initial_user" {
   nullable = true
   default = null
 }
+
+variable "initial_users" {
+  description = "List of email addresses of initial users that will be granted access to Creative Studio"
+  type        = list(string)
+  default     = []
+}
+
+variable "iap_oauth_client_id" {
+  description = "The OAuth 2.0 client ID to be used by the IAP."
+  type        = string
+  default     = ""
+}
+
+variable "iap_oauth_client_secret" {
+  description = "The OAuth 2.0 client secret to be used by the IAP."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

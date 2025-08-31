@@ -73,9 +73,9 @@ resource "google_project_service_identity" "iap_sa" {
 }
 
 resource "google_iap_web_iam_member" "initial_user_iap_access" {
-  count = var.use_lb && var.initial_user != null ? 1 : 0
-  role = "roles/iap.httpsResourceAccessor"
-  member = "user:${var.initial_user}"
+  for_each = toset(local.iap_user_list)
+  role     = "roles/iap.httpsResourceAccessor"
+  member   = "user:${each.key}"
   depends_on = [ module.project-services ]
 }
 
@@ -106,7 +106,9 @@ module "lb-http" {
         }
       ]
       iap_config = {
-        enable = true
+        enable               = true
+        oauth2_client_id     = var.iap_oauth_client_id
+        oauth2_client_secret = var.iap_oauth_client_secret
       }
       log_config = {
         enable = true
@@ -163,8 +165,6 @@ resource "google_cloud_run_v2_service" "creative_studio" {
   ingress               = var.use_lb ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
   default_uri_disabled  = var.use_lb
   deletion_protection   = false
-  iap_enabled           = !var.use_lb
-  invoker_iam_disabled  = !var.use_lb
   launch_stage          = var.use_lb ? "GA" : "BETA"
 
   template {
@@ -191,13 +191,34 @@ resource "google_cloud_run_v2_service" "creative_studio" {
     }
   }
   lifecycle {
-    ignore_changes = [ template.containers[0].image, client ]
+    ignore_changes = [ template[0].containers[0].image, client ]
   }
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
     google_project_iam_member.build_logs_writer,
     module.project-services
   ]
+}
+
+
+locals {
+  invoker_user_list = !var.use_lb ? distinct(compact(concat(
+    var.initial_user != null ? [var.initial_user] : [],
+    var.initial_users
+  ))) : []
+  iap_user_list = var.use_lb ? distinct(compact(concat(
+    var.initial_user != null ? [var.initial_user] : [],
+    var.initial_users
+  ))) : []
+}
+
+resource "google_cloud_run_service_iam_member" "initial_user_invokers" {
+  for_each = toset(local.invoker_user_list)
+  location = google_cloud_run_v2_service.creative_studio.location
+  project  = google_cloud_run_v2_service.creative_studio.project
+  service  = google_cloud_run_v2_service.creative_studio.name
+  role     = "roles/run.invoker"
+  member   = "user:${each.key}"
 }
 
 /* There are times when Vertex service account is not automatically provisioned, creating explicitly to be sure */
@@ -224,7 +245,7 @@ module "creative_studio_asset_bucket" {
   }
   set_admin_roles           = true
   bucket_admins             = {}
-  admins                    = [ "user:${var.initial_user}" ]
+  admins                    = var.initial_user != null ? [ "user:${var.initial_user}" ] : (length(var.initial_users) > 0 ? [ "user:${var.initial_users[0]}" ] : [])
   set_creator_roles         = true
   bucket_creators           = {}
   creators                  = [ google_service_account.creative_studio.member ]
@@ -277,6 +298,12 @@ resource "google_project_iam_member" "creative_studio_vertex_access" {
   member  = google_service_account.creative_studio.member
 }
 
+resource "google_project_iam_member" "creative_studio_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = google_service_account.creative_studio.member
+}
+
 /********************************************
 *  Build time Resources Section
 *********************************************/
@@ -308,7 +335,7 @@ module "source_bucket" {
   }
   set_admin_roles          = true
   bucket_admins            = {}
-  admins                   = [ "user:${var.initial_user}" ]
+  admins                   = var.initial_user != null ? [ "user:${var.initial_user}" ] : (length(var.initial_users) > 0 ? [ "user:${var.initial_users[0]}" ] : [])
   set_creator_roles        = true
   bucket_creators          = {}
   creators                 = [ google_service_account.cloudbuild.member ]
