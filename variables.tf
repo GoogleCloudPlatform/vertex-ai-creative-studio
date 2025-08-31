@@ -80,9 +80,28 @@ variable "enable_data_deletion" {
 
 variable "initial_user" {
   description = "Email address of initial user that will be granted access to Creative Studio in IAP"
+  type = string
+  nullable = true
+  default = null
+}
+
+variable "initial_users" {
+  description = "List of email addresses of initial users that will be granted access to Creative Studio"
+  type        = list(string)
+  default     = []
+}
+
+variable "iap_oauth_client_id" {
+  description = "The OAuth 2.0 client ID to be used by the IAP."
   type        = string
-  nullable    = true
-  default     = null
+  default     = ""
+}
+
+variable "iap_oauth_client_secret" {
+  description = "The OAuth 2.0 client secret to be used by the IAP."
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "allow_local_domain_cors_requests" {
