@@ -4,8 +4,8 @@ use (
 	./mcp-avtool-go
 	./mcp-chirp3-go
 	./mcp-common
+	./mcp-gemini-go
 	./mcp-imagen-go
 	./mcp-lyria-go
 	./mcp-veo-go
-./mcp-gemini-go
 )

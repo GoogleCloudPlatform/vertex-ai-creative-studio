@@ -1,5 +1,12 @@
 # Changelog
 
+## 2025-08-31
+
+*   **Feat:** Added `gemini_audio_tts` and `list_gemini_voices` tools to the `mcp-gemini-go` server to provide speech synthesis capabilities using Gemini TTS models.
+*   **Feat:** The new tools support all 30 voices available in the Gemini TTS documentation.
+*   **Feat:** Added a `gemini://language_codes` resource to the `mcp-gemini-go` server to list supported languages.
+*   **Docs:** Updated the `mcp-gemini-go/README.md` with documentation and usage examples for the new TTS tools and resource.
+
 ## 2025-08-29
 
 *   **Feat:** Added a new `mcp-gemini-go` server to provide an MCP interface for Google's Gemini models.

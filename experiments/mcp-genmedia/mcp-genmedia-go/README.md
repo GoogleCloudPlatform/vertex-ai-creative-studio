@@ -141,7 +141,8 @@ This repository provides AI application samples for:
 
 *   **`mcp-gemini-go`**:
     *   Provides a multimodal interface to Google's Gemini models.
-    *   Tool: `gemini_image_generation` for generating text and images from a prompt that can include text and images.
+    *   Tools include `gemini_image_generation` for generating text and images, and `gemini_audio_tts` for synthesizing speech with Gemini TTS models.
+    *   Also includes the `list_gemini_voices` helper tool and the `gemini://language_codes` resource.
     *   Output can be saved to a local directory or GCS.
 
 *   **`mcp-imagen-go`**:

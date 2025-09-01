@@ -17,16 +17,13 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
 	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/rs/cors"
 	"google.golang.org/genai"
 )
 
@@ -38,7 +35,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.1.0"
+	version     = "0.2.0"
 )
 
 func init() {
@@ -103,39 +100,53 @@ func main() {
 	}
 	s.AddTool(tool, handlerWithClient)
 
-	log.Printf("Starting Gemini MCP Server (Version: %s, Transport: %s)", version, transport)
+	// --- Register Gemini TTS Tools ---
+	listVoicesTool := mcp.NewTool("list_gemini_voices",
+		mcp.WithDescription("Lists the available single-speaker voices for use with the Gemini-TTS models."),
+	)
+	s.AddTool(listVoicesTool, listGeminiVoicesHandler)
 
-	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8082"))
-		log.Printf("Gemini MCP Server listening on SSE at :8082")
-		if err := sseServer.Start(":8082"); err != nil {
-			log.Fatalf("SSE Server error: %v", err)
-		}
-	} else if transport == "http" {
-		mcpHTTPHandler := server.NewStreamableHTTPServer(s)
-		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-MCP-Progress-Token"},
-			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: true,
-			MaxAge:           300,
-		})
-		handlerWithCORS := c.Handler(mcpHTTPHandler)
-		httpPort := os.Getenv("PORT")
-		if httpPort == "" {
-			httpPort = "8080"
-		}
-		listenAddr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("Gemini MCP Server listening on HTTP at %s/mcp", listenAddr)
-		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
-			log.Fatalf("HTTP Server error: %v", err)
-		}
-	} else {
-		log.Printf("Gemini MCP Server listening on STDIO")
-		if err := server.ServeStdio(s); err != nil {
-			log.Fatalf("STDIO Server error: %v", err)
-		}
+	ttsTool := mcp.NewTool("gemini_audio_tts",
+		mcp.WithDescription("Synthesizes speech from text using Gemini models, allowing for granular control over style, pace, tone, and emotional expression through natural-language prompts."),
+		mcp.WithString("text",
+			mcp.Required(),
+			mcp.Description("The text to synthesize (up to 800 characters)."),
+		),
+		mcp.WithString("prompt",
+			mcp.Description("Stylistic instructions on how to synthesize the content. You can adapt delivery, adopt specific accents, and produce a range of tones and expressions."),
+		),
+		mcp.WithString("voice_name",
+			mcp.DefaultString(defaultGeminiTTSVoice),
+			mcp.Description("The voice to use. Use 'list_gemini_voices' to see available voices."),
+			mcp.Enum(availableGeminiVoices...),
+		),
+		mcp.WithString("model_name",
+			mcp.DefaultString(defaultGeminiTTSModel),
+			mcp.Description("The model to use."),
+			mcp.Enum("gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"),
+		),
+		mcp.WithString("output_filename_prefix",
+			mcp.DefaultString("gemini_tts_audio"),
+			mcp.Description("Optional. A prefix for the output WAV filename if saving locally. A timestamp and .wav extension will be appended."),
+		),
+		mcp.WithString("output_directory",
+			mcp.Description("Optional. If provided, specifies a local directory to save the generated audio file to. If not provided, audio data is returned in the response."),
+		),
+	)
+	s.AddTool(ttsTool, geminiAudioTTSHandler)
+	// --- End of TTS Tools ---
+
+	// --- Register Gemini Resources ---
+	s.AddResource(mcp.NewResource(
+		"gemini://language_codes",
+		"Gemini TTS Language Codes",
+		mcp.WithResourceDescription("A list of supported languages and their BCP-47 codes for Gemini TTS."),
+		mcp.WithMIMEType("application/json"),
+	), geminiLanguageCodesHandler)
+	// --- End of Gemini Resources ---
+
+	log.Printf("Starting %s MCP Server (Version: %s)", serviceName, version)
+	if err := server.ServeStdio(s); err != nil {
+		log.Fatalf("STDIO Server error: %v", err)
 	}
-	log.Println("Gemini Server has stopped.")
 }
