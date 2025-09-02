@@ -26,21 +26,21 @@ from common.metadata import (
     MediaItem,
     config,
     db,
+    get_media_for_page,  # This might need adjustment if we want truly accurate filtered counts server-side
     get_media_item_by_id,
-    get_media_for_page, # This might need adjustment if we want truly accurate filtered counts server-side
 )
 from components.dialog import (
     dialog,
     dialog_actions,
 )
 from components.header import header
-from components.library.image_details import image_details
+from components.library.image_details import CarouselState, image_details
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from state.state import AppState
 from components.pill import pill
+from state.state import AppState
 
 
 @me.stateclass
@@ -75,8 +75,10 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         pagestate: The current page state.
         is_filter_change: Whether the media is being loaded due to a filter change.
     """
-    app_state = me.state(AppState) # Get global app state for user email
-    user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+    app_state = me.state(AppState)  # Get global app state for user email
+    user_email_to_filter = (
+        app_state.user_email if pagestate.user_filter == "mine" else None
+    )
 
     if is_filter_change:
         pagestate.current_page = 1  # Reset to first page on any filter change
@@ -104,6 +106,38 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         sort_by_timestamp=True,
     )
     pagestate.key += 1  # Force re-render of the grid
+
+
+def _item_matches_filters(
+    item: MediaItem, pagestate: PageState, app_state: AppState
+) -> bool:
+    """Checks if a media item matches the current filter state."""
+    # User filter check
+    if pagestate.user_filter == "mine" and item.user_email != app_state.user_email:
+        return False
+
+    # Error filter check
+    error_message_present = bool(item.error_message)
+    if pagestate.error_filter_value == "no_errors" and error_message_present:
+        return False
+    if pagestate.error_filter_value == "only_errors" and not error_message_present:
+        return False
+
+    # Type filter check
+    if "all" not in pagestate.selected_values:
+        mime_type = item.raw_data.get("mime_type", "") if item.raw_data else ""
+        passes_type_filter = False
+        if "videos" in pagestate.selected_values and mime_type.startswith("video/"):
+            passes_type_filter = True
+        elif "images" in pagestate.selected_values and mime_type.startswith("image/"):
+            passes_type_filter = True
+        elif "music" in pagestate.selected_values and mime_type.startswith("audio/"):
+            passes_type_filter = True
+
+        if not passes_type_filter:
+            return False
+
+    return True
 
 
 def library_content(app_state: me.state):
@@ -134,19 +168,22 @@ def library_content(app_state: me.state):
             else:
                 fetched_item = get_media_item_by_id(media_id_from_url)
                 if fetched_item:
-                    # Check if the fetched item matches current filters before adding
-                    # This is a simplified check; ideally, get_media_item_by_id would also consider filters
-                    # or we re-evaluate if it should be shown.
-                    # For now, we add it if found, but it might not match current filters.
-                    if not any(v.id == fetched_item.id for v in pagestate.media_items):
-                        pagestate.media_items.insert(
-                            0, fetched_item
-                        )  # Prepend for visibility
-                        # pagestate.total_media +=1 # Adjust if needed, though complex with filters
-
-                    pagestate.selected_media_item_id = fetched_item.id
-                    pagestate.show_details_dialog = True
-                    pagestate.dialog_instance_key += 1
+                    # NEW: Check if the fetched item matches current filters before adding
+                    if _item_matches_filters(fetched_item, pagestate, app_state):
+                        if not any(
+                            v.id == fetched_item.id for v in pagestate.media_items
+                        ):
+                            pagestate.media_items.insert(
+                                0, fetched_item
+                            )  # Prepend for visibility
+                        pagestate.selected_media_item_id = fetched_item.id
+                        pagestate.show_details_dialog = True
+                        pagestate.dialog_instance_key += 1
+                    else:
+                        pagestate.url_item_not_found_message = (
+                            f"Item '{media_id_from_url}' exists but is hidden by your current filters. "
+                            "Try adjusting the 'All Users' or 'Media Type' filters."
+                        )
                 else:
                     pagestate.url_item_not_found_message = (
                         f"Media item with ID '{media_id_from_url}' not found."
@@ -220,11 +257,14 @@ def library_content(app_state: me.state):
                     ],
                     on_change=on_change_user_filter,
                 )
-                with me.content_button(
-                    type="icon",
-                    on_click=on_refresh_click,
-                    style=me.Style(margin=me.Margin(left="auto")),
-                ), me.tooltip(message="Refresh Library"):
+                with (
+                    me.content_button(
+                        type="icon",
+                        on_click=on_refresh_click,
+                        style=me.Style(margin=me.Margin(left="auto")),
+                    ),
+                    me.tooltip(message="Refresh Library"),
+                ):
                     me.icon(icon="refresh")
 
             with me.box(
@@ -315,9 +355,7 @@ def library_content(app_state: me.state):
                         )
 
                         with me.box(
-                            key=str(
-                                i
-                            ),  # Use item ID if available and unique, otherwise index is fine for local list
+                            key=m_item.id,  # Use item ID if available and unique, otherwise index is fine for local list
                             # key=m_item.id or str(i), # Prefer item ID for key if stable
                             on_click=on_media_item_click,
                             style=me.Style(
@@ -387,6 +425,8 @@ def library_content(app_state: me.state):
                                     pill("Image", "media_type_image")
                                     if m_item.aspect:
                                         pill(m_item.aspect, "aspect")
+                                    if len(m_item.gcs_uris) > 1:
+                                        pill(str(len(m_item.gcs_uris)), "multi_image_count")
 
                                 elif media_type_group == "audio":
                                     pill("Audio", "media_type_audio")
@@ -932,31 +972,32 @@ def on_click_set_permalink(e: me.ClickEvent):
 
 def on_media_item_click(e: me.ClickEvent):
     pagestate = me.state(PageState)
-    try:
-        # Assuming e.key is the index of the item in the currently displayed pagestate.media_items
-        selected_index = int(e.key)  # The key for the media item box is its index 'i'
-        if 0 <= selected_index < len(pagestate.media_items):
-            clicked_item = pagestate.media_items[selected_index]
-            pagestate.selected_media_item_id = clicked_item.id
-            pagestate.show_details_dialog = True
-            pagestate.dialog_instance_key += 1
-            pagestate.url_item_not_found_message = (
-                None  # Clear any old not found message
-            )
-        else:
-            print(f"Error: Invalid index {selected_index} for media item click.")
-    except ValueError:
-        print(f"Error: Click event key '{e.key}' is not a valid integer index.")
+    item_id = e.key
+    clicked_item = next(
+        (item for item in pagestate.media_items if item.id == item_id), None
+    )
+
+    if clicked_item:
+        pagestate.selected_media_item_id = clicked_item.id
+        pagestate.show_details_dialog = True
+        pagestate.dialog_instance_key += 1
+        pagestate.url_item_not_found_message = None  # Clear any old not found message
+    else:
+        print(f"Error: Could not find media item with ID '{item_id}' in the current list.")
     yield
 
 
 def on_close_details_dialog(e: me.ClickEvent):
     pagestate = me.state(PageState)
+    carousel_state = me.state(CarouselState)  # Get the state
+
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
     pagestate.url_item_not_found_message = (
         None  # Clear message when dialog is closed by user
     )
+    carousel_state.current_index = 0  # Reset the index
+
     # Optionally, clear media_id from URL params if desired
     # if "media_id" in me.query_params:
     #    del me.query_params["media_id"]
@@ -980,10 +1021,8 @@ def handle_page_change(e: me.ClickEvent):
 
     if (
         1
-        <=
-        new_page
-        <=
-        (
+        <= new_page
+        <= (
             (pagestate.total_media + pagestate.media_per_page - 1)
             // pagestate.media_per_page
             if pagestate.media_per_page > 0 and pagestate.total_media > 0
@@ -991,7 +1030,9 @@ def handle_page_change(e: me.ClickEvent):
         )
     ):
         app_state = me.state(AppState)
-        user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+        user_email_to_filter = (
+            app_state.user_email if pagestate.user_filter == "mine" else None
+        )
         pagestate.current_page = new_page
         # Fetch only the items for the new page with current filters
         pagestate.media_items = get_media_for_page(
@@ -1047,6 +1088,7 @@ def on_change_error_filter(e: me.ButtonToggleChangeEvent):
     pagestate.is_loading = False
     yield
 
+
 def on_change_user_filter(e: me.ButtonToggleChangeEvent):
     """Handles changes to the user filter."""
     pagestate = me.state(PageState)
@@ -1083,4 +1125,3 @@ def page():
     app_state = me.state(AppState)
     with me.box(style=me.Style(display="flex", flex_direction="row")):
         library_content(app_state)
-

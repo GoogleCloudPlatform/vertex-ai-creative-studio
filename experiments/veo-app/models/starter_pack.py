@@ -26,7 +26,10 @@ def generate_starter_pack_from_look(look_image_uri: str) -> str:
     """Generates a starter pack from a look image."""
     prompt = "Analyze the image to extract the featured products for a mood board. Lay out only the articles / items, and not the person."
     generated_images, _ = gemini.generate_image_from_prompt_and_images(
-        prompt=prompt, images=[look_image_uri]
+        prompt=prompt,
+        images=[look_image_uri],
+        gcs_folder="starter_pack_generations",
+        file_prefix="starter_pack_from_look",
     )
     if generated_images:
         return generated_images[0]
@@ -38,7 +41,10 @@ def generate_look_from_starter_pack(
     """Generates a look from a starter pack and model image."""
     prompt = "Try this ensemble on the given model."
     generated_images, _ = gemini.generate_image_from_prompt_and_images(
-        prompt=prompt, images=[starter_pack_uri, model_image_uri]
+        prompt=prompt,
+        images=[starter_pack_uri, model_image_uri],
+        gcs_folder="starter_pack_generations",
+        file_prefix="look_from_starter_pack",
     )
     if generated_images:
         return generated_images[0]

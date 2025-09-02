@@ -40,7 +40,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   pytest
 contourpy==1.3.3
     # via matplotlib
-cryptography==45.0.6
+cryptography==45.0.7
     # via pyjwt
 cycler==0.12.1
     # via matplotlib
@@ -50,7 +50,7 @@ deepdiff==6.7.1
     # via mesop
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
-executing==2.2.0
+executing==2.2.1
     # via stack-data
 fastapi==0.116.1
     # via veo-app
@@ -267,7 +267,7 @@ pydantic==2.11.7
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.39.0
+pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via

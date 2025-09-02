@@ -143,7 +143,11 @@ def generate_character_video(
         )
         # Generate images with Gemini
         gemini_future = executor.submit(
-            generate_image_from_prompt_and_images, final_prompt, reference_image_gcs_uris
+            generate_image_from_prompt_and_images,
+            final_prompt,
+            reference_image_gcs_uris,
+            gcs_folder="character_consistency_candidates",
+            file_prefix="candidate",
         )
 
         imagen_candidate_gcs_uris, imagen_candidate_image_bytes_list = imagen_future.result()

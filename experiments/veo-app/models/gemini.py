@@ -56,7 +56,12 @@ cfg = Default()  # Instantiate config
 REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
 
 
-def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tuple[list[str], float]:
+def generate_image_from_prompt_and_images(
+    prompt: str,
+    images: list[str],
+    gcs_folder: str = "generated_images",
+    file_prefix: str = "image",
+) -> tuple[list[str], float]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
     model_name = cfg.GEMINI_IMAGE_GEN_MODEL
@@ -103,8 +108,8 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tup
                 ):
                     mime_type = part.inline_data.mime_type
                 gcs_uri = store_to_gcs(
-                    folder="character_consistency_candidates",
-                    file_name=f"candidate_{uuid.uuid4()}_{i}.png",
+                    folder=gcs_folder,
+                    file_name=f"{file_prefix}_{uuid.uuid4()}_{i}.png",
                     mime_type=mime_type,
                     contents=part.inline_data.data,
                 )
