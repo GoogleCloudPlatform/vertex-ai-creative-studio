@@ -15,7 +15,7 @@ click==8.2.1
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
 cryptography==45.0.6
-deepdiff==8.6.0
+deepdiff==8.6.1
 docstring-parser==0.17.0
 fastparquet==2024.11.0
 firebase-admin==7.0.0
