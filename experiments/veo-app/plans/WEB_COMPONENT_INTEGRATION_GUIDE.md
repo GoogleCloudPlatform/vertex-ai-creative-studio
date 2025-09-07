@@ -217,3 +217,68 @@ A global CSP, implemented as a FastAPI middleware in `main.py`, is the most robu
 "media-src 'self' blob: https://storage.googleapis.com https://*.googleusercontent.com; "
 "worker-src 'self' blob:;"
 ```
+
+### F. Theming and Styling (Passing CSS Variables)
+
+-   **The Problem:** CSS Custom Properties (variables) from the main document, like Mesop's theme colors (`--mesop-theme-secondary-container`), may not reliably penetrate the Shadow DOM boundary of a web component. Relying on `var(...)` in your component's stylesheet can fail, causing it to use fallback values and appear visually inconsistent with the rest of the application.
+
+-   **The Solution:** The most robust pattern is to pass the CSS variable *names* from Python into the web component as string properties. The component then uses these properties in inline styles, which guarantees the browser can resolve them against the main document's stylesheet.
+
+**Example Implementation:**
+
+1.  **Update the Python Wrapper (`.py`):** Add properties to accept the theme variable strings.
+
+    ```python
+    @me.web_component(path="./interactive_tile.js")
+    def interactive_tile(
+        # ... other properties
+        default_bg_color: str = "",
+        hover_bg_color: str = "",
+    ):
+        return me.insert_web_component(
+            # ...
+            properties={
+                # ... other properties
+                "defaultBgColor": default_bg_color,
+                "hoverBgColor": hover_bg_color,
+            },
+        )
+    ```
+
+2.  **Update the Parent/Usage (`.py`):** When you call the component, use `me.theme_var()` to pass the variable names.
+
+    ```python
+    import mesop.components.interactive_tile.interactive_tile as interactive_tile
+
+    interactive_tile.interactive_tile(
+        # ...
+        default_bg_color=me.theme_var("secondary-container"),
+        hover_bg_color=me.theme_var("tertiary-container"),
+    )
+    ```
+
+3.  **Update the Lit Component (`.js`):** Receive the properties and use them to dynamically build an inline style object.
+
+    ```javascript
+    class InteractiveTile extends LitElement {
+      static properties = {
+        // ...
+        defaultBgColor: { type: String },
+        hoverBgColor: { type: String },
+      };
+
+      render() {
+        const cardStyles = {};
+        // Apply the passed-in CSS variable name to the inline style.
+        cardStyles.backgroundColor = this.isHovered ? this.hoverBgColor : this.defaultBgColor;
+
+        return html`
+          <div class="card" style=${styleMap(cardStyles)}>
+            ...
+          </div>
+        `;
+      }
+    }
+    ```
+
+This pattern bypasses the Shadow DOM inheritance issue entirely and ensures visual consistency.

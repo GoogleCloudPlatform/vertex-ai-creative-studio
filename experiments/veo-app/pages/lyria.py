@@ -102,17 +102,16 @@ def lyria_content(app_state: me.state):
     pagestate = me.state(PageState)
 
     if pagestate.info_dialog_open:
-        with dialog(is_open=pagestate.info_dialog_open):
+        with dialog(is_open=pagestate.info_dialog_open): # pylint: disable=not-context-manager
             me.text("About Lyria", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][2]["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
             me.text(f"Prompt: {pagestate.music_prompt_input}")
-            with dialog_actions():
+            with dialog_actions():  # pylint: disable=not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("Lyria", "music_note", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(style=_BOX_STYLE):

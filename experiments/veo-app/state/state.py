@@ -24,6 +24,7 @@ class AppState:
     theme_mode: str = "light"
     user_email: str = "anonymous@google.com"
     session_id: str = ""
+    current_page: str = ""
 
     def __init__(self):
         """Initializes the AppState, reading user info from the request context."""

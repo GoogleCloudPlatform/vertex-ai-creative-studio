@@ -78,8 +78,7 @@ def get_config_table(app_state: AppState):
 
 def config_page_contents(app_state: me.state):  # pylint: disable=unused-argument
     """Configurations page content"""
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("Configurations", "settings")
 
             me.table(

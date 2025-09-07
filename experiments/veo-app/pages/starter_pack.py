@@ -37,8 +37,7 @@ from config.default import Default
     title="Starter Pack",
 )
 def page():
-    with page_scaffold():  # pylint: disable=E1129
-        with page_frame():  # pylint: disable=E1129
+    with page_frame():  # pylint: disable=E1129
             header("Starter Pack", "style")
             with me.box(
                 style=me.Style(

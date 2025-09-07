@@ -554,3 +554,64 @@ Follow this checklist to ensure your feature is fully integrated:
     *   Update the `MediaItem` constructor inside this function to read your new field from the `raw_item_data` dictionary.
 7.  **Display in Library (`pages/library.py`):** Update the details dialog within the library page to display the new field from the `MediaItem` object.
 8.  **Handle Edge Cases:** Remember to update any related functionality. For example, does the "Clear" button on the page need to reset your new field?
+
+## Analytics and Instrumentation
+
+The application includes a structured analytics framework in `common/analytics.py` to provide insights into user behavior and application performance. The logger is environment-aware: it outputs human-readable JSON locally and integrates automatically with Cloud Logging for structured logs when deployed on Cloud Run.
+
+Here’s how to use it when building or modifying pages.
+
+### Page Views
+
+Page view tracking is handled automatically by the main page scaffold.
+
+-   **File:** `components/page_scaffold.py`
+-   **Function:** `log_page_view()`
+
+When you create a new page and wrap its content in `with page_scaffold(page_name="your_page_name"):`, the page view is logged automatically. No extra work is needed.
+
+### UI Clicks
+
+To track clicks on important UI elements like buttons, use the `@track_click` decorator.
+
+-   **File:** `common/analytics.py`
+-   **Decorator:** `@track_click("element_id")`
+
+This is the easiest method. Simply apply the decorator to your Mesop event handler function.
+
+**Example:**
+
+```python
+# In your pages/my_page.py file
+from common.analytics import track_click
+
+@track_click(element_id="my_page_generate_button")
+def on_generate_click(e: me.ClickEvent):
+    # Your event handler logic here
+    yield
+
+# ... in your render function
+me.button("Generate", on_click=on_generate_click)
+```
+
+### Model Calls
+
+To track the performance and status of calls to generative models, use the `track_model_call` context manager.
+
+-   **File:** `common/analytics.py`
+-   **Context Manager:** `with track_model_call("model_name", **kwargs):`
+
+This will automatically log the model name, the call's duration, and whether it succeeded or failed. If an exception occurs within the `with` block, it will be logged as a failure and then re-raised.
+
+**Example:**
+
+```python
+# In your models/my_model.py file
+from common.analytics import track_model_call
+
+def call_my_generative_model(prompt: str):
+    with track_model_call("my-cool-model-v1", prompt_length=len(prompt)):
+        # Code that makes the actual API call to the model
+        response = generative_model.generate_content(prompt)
+        return response
+```

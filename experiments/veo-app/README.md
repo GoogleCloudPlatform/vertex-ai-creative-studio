@@ -40,21 +40,18 @@
 
 This is the next gen version of GenMedia Creative Studio
 
-![Next Gen Experimental App UI](./assets/veo-app.png)
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/04484a0c-05fa-4a91-9ddc-9a073c1e4861)
+
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
 
 
 Current featureset
-* Text to Video: Create a video from a prompt.
-* Image to Video: Create a video from an image + prompt.
-* Library: Display the previous stored videos from Firestore index
-* Veo 2, Veo 3 settings/features: Aspect ratio, Duration, Auto prompt enhancer
-
-
-Future featureset
-
-* Prompt rewriter
-* Additional Veo 2 features: seed, negative prompt, person generation control
-* Advanced Veo 2 features
+* Image: Imagen 3, Imagen 4, Virtual Try-On, Gemini Image Generation
+* Video: Veo 2, Veo 3
+* Music: Lyria
+* Speech: Chirp 3 HD, Gemini Text to Speech
+* Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard
+* Asset Library
 
 
 This is built using [Mesop](https://mesop-dev.github.io/mesop/) with [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).

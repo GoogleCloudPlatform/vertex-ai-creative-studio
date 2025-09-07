@@ -1,0 +1,127 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Component for displaying a video item in the library grid."""
+
+import mesop as me
+from common.metadata import MediaItem
+from components.pill import pill
+
+
+@me.component
+def video_grid_item(item: MediaItem):
+    """Renders a grid item for a video media type."""
+    item_duration_str = f"{item.duration} sec" if item.duration is not None else "N/A"
+    item_url = (
+        item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+        if item.gcsuri
+        else (item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/") if item.gcs_uris else "")
+    )
+
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_wrap="wrap",
+            gap=5,
+            margin=me.Margin(bottom=8),
+        )
+    ):
+        pill("Video", "media_type_video")
+        pill(
+            "t2v" if not item.reference_image else "i2v",
+            "gen_t2v" if not item.reference_image else "gen_i2v",
+        )
+        if item.aspect:
+            pill(item.aspect, "aspect")
+        if item.duration is not None:
+            pill(item_duration_str, "duration")
+        if item.resolution:
+            pill(item.resolution, "resolution")
+        pill("24 fps", "fps")
+        if item.enhanced_prompt_used:
+            with me.tooltip(message="Prompt was auto-enhanced"):
+                me.icon(
+                    "auto_fix_normal",
+                    style=me.Style(color=me.theme_var("primary")),
+                )
+
+    # Media Preview Section
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="row",
+            gap=8,
+            align_items="center",
+            justify_content="center",
+            margin=me.Margin(top=8, bottom=8),
+            min_height="150px",
+        )
+    ):
+        if item_url:
+            me.video(
+                src=item_url,
+                style=me.Style(
+                    width="100%",
+                    height="150px",
+                    border_radius=6,
+                    object_fit="cover",
+                ),
+            )
+        else:
+            me.text(
+                "Video not available.",
+                style=me.Style(
+                    height="150px",
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                    color=me.theme_var("onsurfacevariant"),
+                ),
+            )
+
+        # Reference images for video
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="column",
+                gap=5,
+            )
+        ):
+            if item.reference_image:
+                ref_img_url = item.reference_image.replace(
+                    "gs://",
+                    "https://storage.mtls.cloud.google.com/",
+                )
+                me.image(
+                    src=ref_img_url,
+                    style=me.Style(
+                        height="70px",
+                        width="auto",
+                        border_radius=4,
+                        object_fit="contain",
+                    ),
+                )
+            if item.last_reference_image:
+                last_ref_img_url = item.last_reference_image.replace(
+                    "gs://",
+                    "https://storage.mtls.cloud.google.com/",
+                )
+                me.image(
+                    src=last_ref_img_url,
+                    style=me.Style(
+                        height="70px",
+                        width="auto",
+                        border_radius=4,
+                        object_fit="contain",
+                    ),
+                )

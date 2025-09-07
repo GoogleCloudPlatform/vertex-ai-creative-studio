@@ -74,7 +74,7 @@ This page allows you to test the character consistency workflow step-by-step.
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():  # pylint: disable=not-context-manager
+    with page_scaffold(page_name="test_character_consistency"):  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
             header(
                 "Character Consistency Test",

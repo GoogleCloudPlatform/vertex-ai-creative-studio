@@ -63,8 +63,7 @@ def render_section(section_data: dict):
 
 def about_page_content():
     """About page."""
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("About This Application", "info")
 
             if ABOUT_PAGE_CONTENT:

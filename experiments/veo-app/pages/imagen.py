@@ -50,8 +50,7 @@ def imagen_content(app_state: me.state):
             with dialog_actions():  # pylint: disable=not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header(
                 "Imagen Creative Studio",
                 "image",

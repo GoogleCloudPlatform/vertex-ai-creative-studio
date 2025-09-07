@@ -38,6 +38,7 @@ from tenacity import (
 
 from common.storage import store_to_gcs
 from config.default import Default
+from common.analytics import track_model_call
 
 # class ImageModel(TypedDict): # Remove this definition
 #     """Defines Models For Image Generation."""
@@ -172,19 +173,26 @@ def generate_images_from_prompt(
     Returns a list of image URIs. Does not directly modify PageState.
     """
     full_prompt = f"{input_txt}, {prompt_modifiers_segment}"
-    response = generate_images(
-        model=current_model_name,
+    with track_model_call(
+        model_name=current_model_name,
         prompt=full_prompt,
-        number_of_images=image_count,
-        aspect_ratio=aspect_ratio,
+        image_count=image_count,
         negative_prompt=negative_prompt,
-    )
-    generated_uris = [
-        img.image.gcs_uri
-        for img in response.generated_images
-        if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
-    ]
-    return generated_uris
+        aspect_ratio=aspect_ratio,
+    ):
+        response = generate_images(
+            model=current_model_name,
+            prompt=full_prompt,
+            number_of_images=image_count,
+            aspect_ratio=aspect_ratio,
+            negative_prompt=negative_prompt,
+        )
+        generated_uris = [
+            img.image.gcs_uri
+            for img in response.generated_images
+            if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
+        ]
+        return generated_uris
 
 
 def generate_virtual_models(prompt: str, num_images: int) -> list[str]:

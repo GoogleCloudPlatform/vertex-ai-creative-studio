@@ -238,8 +238,7 @@ def vto():
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):

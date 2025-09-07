@@ -28,6 +28,16 @@ def generation_controls():
         me.text("Error: No model configuration found.")
         return
 
+    # Correct state if it's inconsistent with the new model's configuration.
+    if state.aspect_ratio not in selected_config.supported_aspect_ratios:
+        state.aspect_ratio = selected_config.supported_aspect_ratios[0]
+    if not (selected_config.min_duration <= state.video_length <= selected_config.max_duration):
+        state.video_length = selected_config.default_duration
+    if state.resolution not in selected_config.resolutions:
+        state.resolution = selected_config.resolutions[0]
+    if state.veo_mode not in selected_config.supported_modes:
+        state.veo_mode = selected_config.supported_modes[0]
+
     with me.box(style=me.Style(display="flex", flex_basis="row", gap=5)):
         # Aspect Ratio Selector
         me.select(
@@ -137,17 +147,7 @@ def on_selection_change_model(e: me.SelectSelectionChangeEvent):
     state = me.state(PageState)
     state.veo_model = e.value
     
-    new_config = get_veo_model_config(e.value)
-    if new_config:
-        # Apply the default settings and constraints from the new model's config
-        state.aspect_ratio = new_config.supported_aspect_ratios[0]
-        state.video_length = new_config.default_duration
-        state.auto_enhance_prompt = new_config.supports_prompt_enhancement
-        state.resolution = new_config.resolutions[0]
-        
-        # If the current mode is no longer supported, default to the first supported mode.
-        if state.veo_mode not in new_config.supported_modes:
-            state.veo_mode = new_config.supported_modes[0]
+    yield
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):

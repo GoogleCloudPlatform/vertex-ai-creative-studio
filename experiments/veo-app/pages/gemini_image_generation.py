@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import time
 from dataclasses import field
 
@@ -19,6 +20,7 @@ import mesop as me
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
@@ -44,15 +46,45 @@ class PageState:
     show_snackbar: bool = False
     snackbar_message: str = ""
     previous_media_item_id: str | None = None  # For linking generation sequences
+    num_images_to_generate: int = 1
 
+    info_dialog_open: bool = False
+
+
+ACTION_PROMPTS = {
+    "rotate_left": "Rotate the primary subject in the image to the left.",
+    "rotate_right": "Rotate the primary subject in the image to the right.",
+    "remove_background": "Remove the background from this image, replacing it with a solid white background.",
+}
+
+NUM_IMAGES_PROMPTS = {
+    2: "Give me 2 options.",
+    3: "Give me 3 options.",
+    4: "Give me 4 options.",
+}
+
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    NANO_BANANA_INFO = next(
+        (s for s in about_content["sections"] if s.get("id") == "gemini_image_generation"), None
+    )
 
 def gemini_image_gen_page_content():
-    """UI for the Gemini Image Generation test page."""
+    """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
-            header("Gemini Image Generation", "image")
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
+            me.text(f'About {NANO_BANANA_INFO["title"]}', type="headline-6")
+            me.markdown(NANO_BANANA_INFO["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
+    with page_frame():  # pylint: disable=E1129
+            header("Gemini Image Generation", "spark", show_info_button=True,
+                on_info_click=open_info_dialog,)
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Left column (controls)
@@ -109,8 +141,23 @@ def gemini_image_gen_page_content():
                     me.textarea(
                         label="Prompt",
                         rows=3,
+                        max_rows=14,
+                        autosize=True,
                         on_blur=on_prompt_blur,
                         value=state.prompt,
+                        style=me.Style(width="100%", margin=me.Margin(bottom=16)),
+                    )
+                    
+                    me.select(
+                        label="Number of Images",
+                        options=[
+                            me.SelectOption(label="1", value="1"),
+                            me.SelectOption(label="2", value="2"),
+                            me.SelectOption(label="3", value="3"),
+                            me.SelectOption(label="4", value="4"),
+                        ],
+                        on_selection_change=on_num_images_change,
+                        value=str(state.num_images_to_generate),
                         style=me.Style(width="100%", margin=me.Margin(bottom=16)),
                     )
 
@@ -120,7 +167,7 @@ def gemini_image_gen_page_content():
                             flex_direction="row",
                             align_items="center",
                             gap=16,
-                        )
+                        ),
                     ):
                         if state.is_generating:
                             with me.content_button(type="raised", disabled=True):
@@ -168,7 +215,7 @@ def gemini_image_gen_page_content():
                                     flex_direction="row",
                                     align_items="center",
                                     gap=16,
-                                )
+                                ),
                             ):
                                 me.image(
                                     src=state.selected_image_url,
@@ -185,6 +232,46 @@ def gemini_image_gen_page_content():
                                     type="stroked",
                                 )
 
+                    # Image presets
+                    if state.generated_image_urls or state.uploaded_image_gcs_uris:
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="column",
+                                gap=16,
+                                margin=me.Margin(top=16),
+                            )
+                        ):
+                            me.text("Image Presets", style=me.Style(font_weight="bold"))
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                    align_items="center",
+                                    gap=16,
+                                ),
+                            ):
+                                me.button(
+                                    "Rotate left",
+                                    on_click=on_image_action_click,
+                                    type="stroked",
+                                    key="rotate_left",
+                                )
+                                me.button(
+                                    "Rotate right",
+                                    on_click=on_image_action_click,
+                                    type="stroked",
+                                    key="rotate_right",
+                                )
+                                me.button(
+                                    "Remove background",
+                                    on_click=on_image_action_click,
+                                    type="stroked",
+                                    key="remove_background",
+                                )
+
+
+                # Right column (generated images)
                 with me.box(style=me.Style(flex_grow=1)):
                     if state.generation_complete and not state.generated_image_urls:
                         me.text("No images returned.")
@@ -260,7 +347,7 @@ def gemini_image_gen_page_content():
 
 
 def on_upload(e: me.UploadEvent):
-    """Handle image uploads."""
+    """Handles file uploads, stores them in GCS, and updates the state."""
     state = me.state(PageState)
     for file in e.files:
         gcs_url = store_to_gcs(
@@ -274,33 +361,37 @@ def on_upload(e: me.UploadEvent):
 
 
 def on_library_select(e: LibrarySelectionChangeEvent):
-    """Handle image selection from the library."""
+    """Appends a selected library image's GCS URI to the list of uploaded images."""
     state = me.state(PageState)
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
     yield
 
 
 def on_remove_image(e: me.ClickEvent):
-    """Handle remove image click."""
+    """Removes an image from the `uploaded_image_gcs_uris` list based on its index."""
     state = me.state(PageState)
     del state.uploaded_image_gcs_uris[int(e.key)]
     yield
 
 
 def on_prompt_blur(e: me.InputEvent):
-    """Handle prompt input."""
+    """Updates the prompt in the page state when the input field loses focus."""
     me.state(PageState).prompt = e.value
+
+def on_num_images_change(e: me.SelectSelectionChangeEvent):
+    """Updates the number of images to generate in the page state."""
+    me.state(PageState).num_images_to_generate = int(e.value)
 
 
 def on_thumbnail_click(e: me.ClickEvent):
-    """Handle thumbnail click."""
+    """Sets the clicked thumbnail as the main selected image."""
     state = me.state(PageState)
     state.selected_image_url = e.key
     yield
 
 
 def on_clear_click(e: me.ClickEvent):
-    """Handle clear button click."""
+    """Resets the entire page state to its initial values, clearing all inputs and outputs."""
     state = me.state(PageState)
     state.generated_image_urls = []
     state.prompt = ""
@@ -309,50 +400,96 @@ def on_clear_click(e: me.ClickEvent):
     state.generation_time = 0.0
     state.generation_complete = False
     state.previous_media_item_id = None  # Reset the chain
+    state.num_images_to_generate = 1
     yield
 
 
-def on_continue_click(e: me.ClickEvent):
-    """Handle continue button click."""
+def on_image_action_click(e: me.ClickEvent):
+    """Handles clicks on image action buttons, triggering a new generation."""
     state = me.state(PageState)
-    # Convert the display URL back to a GCS URI
+    input_gcs_uri = ""
+
+    # Prioritize the selected generated image
+    if state.selected_image_url:
+        input_gcs_uri = state.selected_image_url.replace(
+            "https://storage.mtls.cloud.google.com/", "gs://"
+        )
+    # Fallback to the first uploaded image
+    elif state.uploaded_image_gcs_uris:
+        input_gcs_uri = state.uploaded_image_gcs_uris[0]
+    # No image available
+    else:
+        yield from show_snackbar(state, "Please upload or select an image first.")
+        return
+
+    action_prompt = ACTION_PROMPTS.get(e.key)
+    if not action_prompt:
+        yield from show_snackbar(state, f"Unknown action: {e.key}")
+        return
+
+    # The action uses the identified image as the sole input
+    yield from _generate_and_save(base_prompt=action_prompt, input_gcs_uris=[input_gcs_uri])
+
+
+def on_continue_click(e: me.ClickEvent):
+    """Uses the currently selected generated image as the input for a subsequent generation."""
+    state = me.state(PageState)
+    if not state.selected_image_url:
+        yield from show_snackbar(state, "Please select an image to continue with.")
+        return
+
     gcs_uri = state.selected_image_url.replace(
         "https://storage.mtls.cloud.google.com/", "gs://"
     )
-
-    # Clear the uploaded images and add the selected one
     state.uploaded_image_gcs_uris = [gcs_uri]
-
-    # Clear the generated images and related state, and reset the chain
     state.generated_image_urls = []
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
-    state.previous_media_item_id = None  # Reset the chain
+    # Keep state.previous_media_item_id to maintain the chain
     yield
 
 
 def show_snackbar(state: PageState, message: str):
+    """Displays a snackbar message at the bottom of the page."""
     state.snackbar_message = message
     state.show_snackbar = True
     yield
     time.sleep(3)
     state.show_snackbar = False
     yield
+    # The snackbar will be hidden on the next interaction.
+
+def _get_appended_prompt(base_prompt: str, num_images: int) -> str:
+    """Appends the number of images prompt to the base prompt."""
+    suffix = NUM_IMAGES_PROMPTS.get(num_images)
+    if not suffix:
+        return base_prompt
+    
+    if not base_prompt:
+        return suffix
+        
+    # Avoid double punctuation
+    if base_prompt.endswith((".", "!", "?")):
+        return f"{base_prompt} {suffix}"
+    return f"{base_prompt}. {suffix}"
 
 
-def generate_images(e: me.ClickEvent):
-    """Generate images and automatically save them to the library in a chain."""
+def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
+    """Core logic to generate images and save results to Firestore."""
     state = me.state(PageState)
     app_state = me.state(AppState)
+    
+    final_prompt = _get_appended_prompt(base_prompt, state.num_images_to_generate)
+
     state.is_generating = True
     state.generation_complete = False
     yield
 
     try:
         gcs_uris, execution_time = generate_image_from_prompt_and_images(
-            prompt=state.prompt,
-            images=state.uploaded_image_gcs_uris,
+            prompt=final_prompt,
+            images=input_gcs_uris,
             gcs_folder="gemini_image_generations",
             file_prefix="gemini_image",
         )
@@ -361,10 +498,10 @@ def generate_images(e: me.ClickEvent):
 
         if not gcs_uris:
             item = MediaItem(
-                prompt=state.prompt,
+                prompt=final_prompt,
                 mime_type="image/png",
                 user_email=app_state.user_email,
-                source_images_gcs=state.uploaded_image_gcs_uris,
+                source_images_gcs=input_gcs_uris,
                 comment="generated by gemini image generation",
                 model=cfg().GEMINI_IMAGE_GEN_MODEL,
                 related_media_item_id=state.previous_media_item_id,
@@ -372,8 +509,8 @@ def generate_images(e: me.ClickEvent):
                 generation_time=execution_time,
             )
             add_media_item_to_firestore(item)
-            state.previous_media_item_id = item.id  # Keep the chain
-            show_snackbar(
+            state.previous_media_item_id = item.id
+            yield from show_snackbar(
                 state,
                 "No images were generated, but the attempt was logged to the library.",
             )
@@ -385,29 +522,24 @@ def generate_images(e: me.ClickEvent):
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
-            # Automatically save to library
             item = MediaItem(
                 gcs_uris=gcs_uris,
-                prompt=state.prompt,
+                prompt=final_prompt,
                 mime_type="image/png",
                 user_email=app_state.user_email,
-                source_images_gcs=state.uploaded_image_gcs_uris,
+                source_images_gcs=input_gcs_uris,
                 comment="generated by gemini image generation",
                 model=cfg().GEMINI_IMAGE_GEN_MODEL,
                 related_media_item_id=state.previous_media_item_id,
                 generation_time=execution_time,
             )
             add_media_item_to_firestore(item)
-
-            # Update state for the next link in the chain
             state.previous_media_item_id = item.id
-
-            # Show feedback
-            show_snackbar(state, "Automatically saved to library.")
+            yield from show_snackbar(state, "Automatically saved to library.")
 
     except Exception as ex:
         print(f"ERROR: Failed to generate images. Details: {ex}")
-        show_snackbar(state, f"An error occurred: {ex}")
+        yield from show_snackbar(state, f"An error occurred: {ex}")
 
     finally:
         state.is_generating = False
@@ -415,6 +547,25 @@ def generate_images(e: me.ClickEvent):
         yield
 
 
-@me.page(path="/gemini_image_generation")
+def generate_images(e: me.ClickEvent):
+    """Event handler for the main 'Generate Images' button."""
+    state = me.state(PageState)
+    yield from _generate_and_save(
+        base_prompt=state.prompt, input_gcs_uris=state.uploaded_image_gcs_uris
+    )
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
+    yield
+
 def page():
+    """Defines the Mesop page route for Gemini Image Generation."""
     gemini_image_gen_page_content()

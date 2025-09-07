@@ -30,7 +30,7 @@ cloudpickle==3.1.1
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==45.0.6
+cryptography==45.0.7
     # via authlib
 docstring-parser==0.17.0
     # via google-cloud-aiplatform

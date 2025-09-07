@@ -83,8 +83,7 @@ def content(app_state: me.state):  # pylint: disable=unused-argument
     logging.info("Username: %s", page_state.username)
     logging.info("User email: %s", app_state.user_email)
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
 
            
             # Page Header

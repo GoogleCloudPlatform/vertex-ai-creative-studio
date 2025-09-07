@@ -15,6 +15,7 @@ import typing
 
 import mesop as me
 
+from components.svg_icon.svg_icon import svg_icon
 
 @me.component
 def header(
@@ -25,6 +26,16 @@ def header(
     current_status: str = None,
 ):
     """Header component."""
+    
+    # List of custom icons that should use the svg_icon component
+    custom_icons = ["spark", "style", "scene"]
+    def render_icon(icon_name: str):
+        if icon_name in custom_icons:
+            with me.box(style=me.Style(width=24, height=24)):
+                svg_icon(icon_name=icon_name)
+        else:
+            me.icon(icon=icon_name)
+    
     with me.box(
         style=me.Style(
             display="flex",
@@ -40,7 +51,8 @@ def header(
                 align_items="baseline",
             ),
         ):
-            me.icon(icon=icon)
+            #me.icon(icon=icon)
+            render_icon(icon)
             me.text(
                 title,
                 type="headline-5",

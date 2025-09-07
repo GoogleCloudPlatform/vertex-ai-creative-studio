@@ -40,6 +40,8 @@ class NavItem(BaseModel):
     align: Optional[str] = None
     feature_flag: Optional[str] = None
     feature_flag_not: Optional[str] = None
+    description: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 class NavConfig(BaseModel):
@@ -53,6 +55,7 @@ class Default:
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
+    GA_MEASUREMENT_ID: str = os.environ.get("GA_MEASUREMENT_ID")
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(

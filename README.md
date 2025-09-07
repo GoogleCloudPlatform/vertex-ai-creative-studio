@@ -14,6 +14,8 @@ Here's a glimpse of what you'll find:
 
 **Genmedia Creative Studio v.Next:** The [the next generation](./experiments/veo-app/) of the creative studio application.
 
+[![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/3878488c-92fa-4ea3-a529-cb6262dfc848)](./experiments/veo-app/)
+
 **Combined Workflows**
 *   **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
 *   **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.

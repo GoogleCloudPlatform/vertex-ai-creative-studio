@@ -14,13 +14,13 @@ charset-normalizer==3.4.3
 click==8.2.1
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
-cryptography==45.0.6
-deepdiff==8.6.0
+cryptography==45.0.7
+deepdiff==8.6.1
 docstring-parser==0.17.0
 fastparquet==2024.11.0
 firebase-admin==7.0.0
 flask==3.1.2
-fsspec==2025.7.0
+fsspec==2025.9.0
 google-api-core==2.25.1
 google-api-python-client==2.179.0
 google-auth==2.40.3

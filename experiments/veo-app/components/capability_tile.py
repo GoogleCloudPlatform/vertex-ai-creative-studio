@@ -24,7 +24,7 @@ def go_to_page(e: me.ClickEvent):
 
 
 @me.component
-def media_tile(label: str, icon: str, route: str | None, icon_family: str | None = None):
+def media_tile(label: str, icon: str, route: str | None, icon_family: str | None = None, mode: str | None = None):
     """Media component"""
 
     is_clickable = bool(route)
@@ -79,3 +79,6 @@ def media_tile(label: str, icon: str, route: str | None, icon_family: str | None
                 style=icon_style,
             )
             me.text(label, style=me.Style(font_weight="medium", text_align="center"))
+
+            with me.box():
+                me.text(mode)

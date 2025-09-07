@@ -19,6 +19,7 @@ import time
 import mesop as me
 import datetime # Required for timestamp
 
+from common.analytics import track_click
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from config.default import Default
 from config.imagen_models import IMAGEN_MODELS, get_imagen_model_config
@@ -131,6 +132,7 @@ def on_selection_change_image_model(e: me.SelectSelectionChangeEvent):
         state.imagen_image_count = new_config.default_samples
 
 
+@track_click(element_id="imagen_generate_button")
 def on_click_generate_images(e: me.ClickEvent):
     """Click Event to generate images and commentary."""
     app_state = me.state(AppState)

@@ -4,14 +4,17 @@
       "id": 0,
       "display": "Home",
       "icon": "home",
-      "route": "/home"
+      "route": "/home",
+      "description": "The home page of the application."
     },
     {
       "id": 6,
       "display": "Imagen",
       "icon": "image",
       "route": "/imagen",
-      "group": "foundation"
+      "group": "foundation",
+      "mode": "image",
+      "description": "Generate images from text prompts using Imagen."
     },
     {
       "id": 8,
@@ -19,36 +22,46 @@
       "icon": "edit",
       "route": "/edit_images",
       "group": "foundation",
-      "feature_flag": "EDIT_IMAGES_ENABLED"
+      "mode": "image",
+      "feature_flag": "EDIT_IMAGES_ENABLED",
+      "description": "Edit images using inpainting and outpainting."
     },
     {
       "id": 10,
       "display": "Veo",
       "icon": "movie_filter",
       "route": "/veo",
-      "group": "foundation"
+      "group": "foundation",
+      "mode": "video",
+      "description": "Generate videos from text or image prompts using Veo."
     },
     {
       "id": 12,
       "display": "Gemini Image Generation",
-      "icon": "auto_awesome",
+      "icon": "spark",
       "icon_family": "Google Symbols",
       "route": "/gemini_image_generation",
-      "group": "foundation"
+      "group": "foundation",
+      "mode": "image",
+      "description": "Generate images from text prompts using Gemini."
     },
-       {
+    {
       "id": 14,
       "display": "Gemini TTS",
-      "icon": "record_voice_over",
+      "icon": "spark",
       "route": "/gemini-tts",
-      "group": "foundation"
+      "group": "foundation",
+      "mode": "speech",
+      "description": "Gemini's latest Text to Speech mode"
     },
     {
       "id": 15,
       "display": "Chirp 3 HD",
       "icon": "graphic_eq",
       "route": "/chirp-3hd",
-      "group": "foundation"
+      "group": "foundation",
+      "mode": "speech",
+      "description": "Generate high-definition speech from text using Chirp 3."
     },
     {
       "id": 20,
@@ -56,63 +69,72 @@
       "icon": "music_note",
       "route": "/lyria",
       "group": "foundation",
-      "feature_flag": "LYRIA_PROJECT_ID"
+      "feature_flag": "LYRIA_PROJECT_ID",
+      "mode": "music",
+      "description": "Generate music from text prompts using Lyria."
     },
- 
+
     {
       "id": 30,
       "display": "Virtual Try-On",
       "icon": "checkroom",
       "route": "/vto",
-      "group": "foundation"
+      "group": "workflows",
+      "mode": ["video", "image"],
+      "description": "Virtually try on clothing items."
     },
     {
       "id": 35,
       "display": "Starter Pack",
       "icon": "style",
       "route": "/starter-pack",
-      "group": "workflows"
+      "group": "workflows",
+      "mode": "image",
+      "description": "Generate a starter pack of images for a concept."
     },
     {
       "id": 40,
       "display": "Product in Scene",
-      "icon": "scene_based_layout",
+      "icon": "scene",
       "route": "/recontextualize",
-      "group": "foundation"
+      "group": "workflows",
+      "mode": "image",
+      "description": "Place a product in a generated scene."
     },
     {
       "id": 50,
       "display": "Motion Portraits",
       "icon": "portrait",
       "route": "/motion_portraits",
-      "group": "workflows"
+      "group": "workflows",
+      "mode": "video",
+      "description": "Create animated portraits from a still image."
     },
     {
       "id": 55,
       "display": "Character Consistency",
       "icon": "person",
       "route": "/character_consistency",
-      "group": "workflows"
+      "group": "workflows",
+      "mode": ["image", "video"],
+      "description": "Create consistent characters across multiple images and videos."
     },
     {
       "id": 56,
       "display": "Shop the Look",
       "icon": "shopping_bag",
       "route": "/shop_the_look",
-      "group": "workflows"
-    },
-    {
-      "id": 57,
-      "display": "Product Description",
-      "icon": "description",
-      "group": "workflows"
+      "group": "workflows",
+      "mode": ["image", "video"],
+      "description": "Create a 'shop the look' experience from a model and clothing."
     },
     {
       "id": 60,
       "display": "Library",
       "icon": "perm_media",
       "route": "/library",
-      "group": "studio"
+      "group": "studio",
+      "description": "Browse your generated media."
     },
     {
       "id": 65,
@@ -120,7 +142,8 @@
       "icon": "info",
       "route": "/about",
       "align": "bottom",
-      "group": "studio"
+      "group": "studio",
+      "description": "Information about GenMedia Creative Studio."
     },
     {
       "id": 100,
@@ -128,7 +151,8 @@
       "icon": "settings",
       "route": "/config",
       "align": "bottom",
-      "group": "studio"
+      "group": "studio",
+      "description": "Configure application settings."
     }
   ]
 }

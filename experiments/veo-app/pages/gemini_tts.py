@@ -68,8 +68,7 @@ def page():
     """Renders the Gemini TTS page."""
     state = me.state(GeminiTtsState)
 
-    with page_scaffold():  # pylint: disable=E1129
-        with page_frame():  # pylint: disable=E1129
+    with page_frame():  # pylint: disable=E1129
             header(
                 "Gemini Text-to-Speech",
                 "record_voice_over",

@@ -339,3 +339,41 @@ When adding a new data field (e.g., a prompt, parameter, or setting) to a featur
 6.  **Persistence (Read):** Has the data loading function (`get_media_for_page` in `pages/library.py`) been updated to read the field from Firestore into the `MediaItem` object?
 7.  **UI Display:** Is the field now displayed correctly in all relevant views (e.g., the library details dialog)?
 8.  **Edge Cases:** Have all related user actions, like "Clear" or "Reset" buttons, been updated to handle the new field?
+# Refactoring Strategy
+
+**Guideline: Prefer Extraction over Large Replacements.** When refactoring, it's safer to first create the new, smaller component files using `write_file`. Then, make small, targeted `replace` calls in the original file to import and use these new components. For wholesale changes to a large function, consider writing the corrected function to a temporary file (`*.py.temp`) and asking the user to manually copy the contents, as this is often more reliable than a single, massive `replace` operation.
+
+# Error Recovery
+
+**Guideline: Recovering from a Failed `replace`.** If a `replace` tool call fails with a "0 occurrences found" error, you must assume the file's content is not what you expect. Your **immediate next step** must be to use `read_file` to get the exact current content of the file before attempting another `replace` call. Do not rely on the version of the file from your memory.
+
+## Analytics and Instrumentation
+
+When adding new features, it is important to instrument them with the analytics framework from `common/analytics.py` to provide insights into user behavior and application performance.
+
+### Page Views
+Page view tracking is handled automatically by the `page_scaffold` component. When creating a new page, ensure it is wrapped with this scaffold to enable automatic page view logging.
+
+### UI Clicks
+To track clicks on important UI elements, use the `@track_click` decorator on your event handler.
+
+**Example:**
+```python
+from common.analytics import track_click
+
+@track_click(element_id="my_page_generate_button")
+def on_generate_click(e: me.ClickEvent):
+    # Your event handler logic here
+    yield
+```
+
+### Model Calls
+To track the performance and status of calls to generative models, use the `track_model_call` context manager.
+
+**Example:**
+```python
+from common.analytics import track_model_call
+
+with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
+    model.generate_content(...)
+```

@@ -18,49 +18,39 @@ from typing import Dict, List
 
 import mesop as me
 
-from components.capability_tile import media_tile
 from components.header import header
+from components.interactive_tile.interactive_tile import interactive_tile
+from components.page_scaffold import page_frame, page_scaffold
 from config.default import get_welcome_page_config
 from state.state import AppState
 
 GROUP_ORDER = ["foundation", "workflows", "studio"]
 
 
+def handle_tile_click(e: me.WebEvent):
+    route = e.value.get("route")
+    if route:
+        me.navigate(route)
+
+
 def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
     """Home Page"""
     with me.box(
         style=me.Style(
+            background=me.theme_var("background"),
+            padding=me.Padding(top=24, left=24, right=24, bottom=24),
             display="flex",
             flex_direction="column",
-            height="100%",
-        ),
+        )
     ):
-        with me.box(
-            style=me.Style(
-                background=me.theme_var("background"),
-                height="100%",
-                overflow_y="scroll",
-                margin=me.Margin(bottom=20),
-            )
-        ):
-            with me.box(
-                style=me.Style(
-                    background=me.theme_var("background"),
-                    padding=me.Padding(top=24, left=24, right=24, bottom=24),
-                    display="flex",
-                    flex_direction="column",
-                )
-            ):
                 header("GenMedia Creative Studio", "home")
-
-                me.text(
-                    "Welcome to the v.next of Vertex AI GenMedia Creative Studio"
-                )
 
                 # Group pages by the "group" key
                 grouped_pages: Dict[str, List[Dict]] = defaultdict(list)
                 pages_to_display = [
-                    page for page in get_welcome_page_config() if page.get("display") != "Home"
+                    page
+                    for page in get_welcome_page_config()
+                    if page.get("display") != "Home"
                 ]
 
                 for page_data in pages_to_display:
@@ -87,10 +77,6 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                             font_weight="bold",
                             margin=me.Margin(top=24, bottom=12),
                             color=me.theme_var("on-surface"),
-                            background=(
-                             "linear-gradient(90deg, rgb(0, 44, 112) 0%, rgb(7, 110, 255) 100%)"
-                             "text"
-                         ),
                         ),
                     )
 
@@ -109,6 +95,20 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                             route = page_data.get("route")
                             icon = page_data.get("icon", "broken_image")
                             display_name = page_data.get("display", "Unnamed Page")
-                            icon_family = page_data.get("icon_family")
+                            description = page_data.get(
+                                "description", "Explore this capability."
+                            )
+                            video_url = page_data.get("video_url", "")
 
-                            media_tile(display_name, icon, route, icon_family)
+                            interactive_tile(
+                                label=display_name,
+                                icon=icon,
+                                description=description,
+                                route=route,
+                                video_url=video_url,
+                                on_tile_click=handle_tile_click,
+                                default_bg_color=me.theme_var("secondary-container"),
+                                default_text_color=me.theme_var("on-secondary-container"),
+                                hover_bg_color=me.theme_var("surface-container-high"),
+                                hover_text_color=me.theme_var("on-tertiary-container"),
+                            )

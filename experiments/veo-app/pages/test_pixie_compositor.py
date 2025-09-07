@@ -48,7 +48,7 @@ class PageState:
 )
 def test_pixie_compositor_page():
     state = me.state(PageState)
-    with page_scaffold():  # pylint: disable=not-context-manager
+    with page_scaffold(page_name="test_pixie_compositor"):  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
             header("Pixie Compositor Test", "movie")
 

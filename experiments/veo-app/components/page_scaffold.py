@@ -13,9 +13,10 @@
 # limitations under the License.
 import mesop as me
 
+from common.analytics import log_page_view
 from components.side_nav import sidenav
 from state.state import AppState
-from components.styles import (  # Updated import path
+from components.styles import (
     MAIN_COLUMN_STYLE,
     PAGE_BACKGROUND_PADDING_STYLE,
     PAGE_BACKGROUND_STYLE,
@@ -25,10 +26,12 @@ from components.styles import (  # Updated import path
 
 
 @me.content_component
-def page_scaffold():
+def page_scaffold(page_name: str):
     """page scaffold component"""
 
     app_state = me.state(AppState)
+    app_state.current_page = page_name
+    log_page_view(page_name=page_name, session_id=app_state.session_id)
 
     sidenav("")
 

@@ -35,7 +35,7 @@ from state.state import AppState
     title="Shop the Look",
 )
 def page():
-    with page_scaffold():
+    with page_scaffold(page_name="shop_the_look"):
         with page_frame():
             header("Shop the Look", icon="apparel", current_status=me.state(PageState).current_status)
             with me.box(

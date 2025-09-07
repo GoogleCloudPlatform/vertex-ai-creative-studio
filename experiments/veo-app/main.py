@@ -30,6 +30,7 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
+from config import default as config
 from app_factory import app
 from components.page_scaffold import page_scaffold
 from pages.about import about_page_content
@@ -46,7 +47,7 @@ from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
 import pages.shop_the_look
 from pages.test_character_consistency import page as test_character_consistency_page
-from pages.gemini_image_generation import page as test_gemini_image_gen_page
+from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
@@ -128,7 +129,7 @@ async def add_global_csp(request: Request, call_next):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: blob: https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
-        "media-src 'self' https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
+        "media-src 'self' https://deepmind.google https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "worker-src 'self' blob:;"
     )
     return response
@@ -149,6 +150,10 @@ async def set_request_context(request: Request, call_next):
     request.scope["MESOP_USER_EMAIL"] = user_email
     request.scope["MESOP_SESSION_ID"] = session_id
 
+    # Pass GA ID to Mesop context if it exists
+    if config.Default.GA_MEASUREMENT_ID:
+        request.scope["MESOP_GA_MEASUREMENT_ID"] = config.Default.GA_MEASUREMENT_ID
+
     response = await call_next(request)
     response.set_cookie(
         key="session_id", value=session_id, httponly=True, samesite="Lax"
@@ -168,64 +173,83 @@ async def set_request_context(request: Request, call_next):
 def home_page():
     """Main Page."""
     state = me.state(AppState)
-    with page_scaffold():  # pylint: disable=not-context-manager
+    with page_scaffold(page_name="home"):  # pylint: disable=not-context-manager
         home_page_content(state)
 
 @me.page(path="/veo", title="Veo - GenMedia Creative Studio")
 def veo_page():
-    veo_content(me.state(AppState))
+    with page_scaffold(page_name="veo"):
+        veo_content(me.state(AppState))
 
 @me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
 def motion_portrait_page():
-    motion_portraits_content(me.state(AppState))
+    with page_scaffold(page_name="motion_portraits"):
+        motion_portraits_content(me.state(AppState))
 
 @me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
 def lyria_page():
-    lyria_content(me.state(AppState))
+    with page_scaffold(page_name="lyria"):
+        lyria_content(me.state(AppState))
 
 @me.page(path="/config", title="GenMedia Creative Studio - Config")
 def config_page():
-    config_page_contents(me.state(AppState))
+    with page_scaffold(page_name="config"):
+        config_page_contents(me.state(AppState))
 
 @me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
 def imagen_page():
-    imagen_content(me.state(AppState))
+    with page_scaffold(page_name="imagen"):
+        imagen_content(me.state(AppState))
 
 @me.page(path="/library", title="GenMedia Creative Studio - Library")
 def library_page():
-    library_content(me.state(AppState))
+    with page_scaffold(page_name="library"):
+        library_content(me.state(AppState))
 
 @me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
 def edit_images_page():
-    edit_images_content(me.state(AppState))
+    with page_scaffold(page_name="edit_images"):
+        edit_images_content(me.state(AppState))
 
 @me.page(path="/gemini-tts", title="GenMedia Creative Studio - Gemini TTS")
 def gemini_tts_route():
-    gemini_tts_page()
+    with page_scaffold(page_name="gemini-tts"):
+        gemini_tts_page()
 
 @me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
 def vto_page():
-    vto()
+    with page_scaffold(page_name="vto"):
+        vto()
 
 @me.page(path="/starter-pack", title="GenMedia Creative Studio - Starter Pack")
 def starter_pack_route():
-    starter_pack_page()
+    with page_scaffold(page_name="starter-pack"):
+        starter_pack_page()
 
 @me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
 def recontextualize_page():
-    recontextualize()
+    with page_scaffold(page_name="recontextualize"):
+        recontextualize()
 
 @me.page(path="/character_consistency", title="GenMedia Creative Studio - Character Consistency")
 def character_consistency_page():
-    character_consistency_page_content()
+    with page_scaffold(page_name="character_consistency"):
+        character_consistency_page_content()
 
 @me.page(path="/about", title="About - GenMedia Creative Studio")
 def about_page():
-    about_page_content()
+    with page_scaffold(page_name="about"):
+        about_page_content()
+
+
+@me.page(path="/gemini_image_generation", title="Gemini Image Generation - GenMedia Creative Studio")
+def gemini_image_generation_page():
+    with page_scaffold(page_name="gemini_image_generation"):
+        gemini_image_gen_page_content()
+
 
 # Test page routes are left as is, they don't need the scaffold
 me.page(path="/test_character_consistency", title="Test Character Consistency")(test_character_consistency_page)
-me.page(path="/test_gemini_image_gen", title="Test Gemini Image Gen")(test_gemini_image_gen_page)
 me.page(path="/test_index", title="Test Index")(test_index_page)
 me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(test_infinite_scroll_page)
 me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(test_pixie_compositor_page)

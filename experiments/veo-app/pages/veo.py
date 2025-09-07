@@ -60,8 +60,7 @@ def veo_content(app_state: me.state):
             with dialog_actions():  # pylint: disable=not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("Veo", "movie", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(

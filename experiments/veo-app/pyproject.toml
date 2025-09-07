@@ -21,6 +21,7 @@ dependencies = [
     "black>=25.1.0",
     "pytest>=8.4.1",
     "google-cloud-texttospeech>=2.27.0",
+    "google-cloud-logging>=3.12.1",
 ]
 
 [tool.ruff]

@@ -24,7 +24,7 @@ click==8.2.1
     #   uvicorn
 dataclasses-json==0.6.7
     # via babel-web (pyproject.toml)
-deepdiff==8.6.0
+deepdiff==8.6.1
     # via mesop
 deprecated==1.2.18
     # via opentelemetry-api
@@ -164,7 +164,7 @@ rich==14.1.0
     # via
     #   rich-toolkit
     #   typer
-rich-toolkit==0.15.0
+rich-toolkit==0.15.1
     # via fastapi-cli
 rsa==4.9.1
     # via google-auth

@@ -48,7 +48,7 @@ class PageState:
 )
 def test_worsfold_encoder_page():
     state = me.state(PageState)
-    with page_scaffold():  # pylint: disable=not-context-manager
+    with page_scaffold(page_name="test_worsfold_encoder"):  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
             header("Worsfold Encoder Test", "movie")
 

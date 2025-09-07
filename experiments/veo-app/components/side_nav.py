@@ -23,6 +23,7 @@ from components.styles import (
     SIDENAV_MAX_WIDTH,
     SIDENAV_MIN_WIDTH,
 )
+from components.svg_icon.svg_icon import svg_icon
 from state.state import AppState
 
 cfg = Default()
@@ -138,6 +139,16 @@ def menu_item(
     is_clickable = bool(route)
     button_key = route if is_clickable else f"item_{item_id}"
 
+    # List of custom icons that should use the svg_icon component
+    custom_icons = ["spark", "style", "scene"]
+
+    def render_icon(icon_name: str):
+        if icon_name in custom_icons:
+            with me.box(style=me.Style(width=24, height=24)):
+                svg_icon(icon_name=icon_name)
+        else:
+            me.icon(icon=icon_name)
+
     if minimized:  # minimized
         with me.box(
             style=me.Style(
@@ -155,7 +166,7 @@ def menu_item(
                 disabled=not is_clickable,
             ):
                 with me.tooltip(message=text):
-                    me.icon(icon=icon)
+                    render_icon(icon)
 
     else:  # expanded
         with me.content_button(
@@ -172,7 +183,7 @@ def menu_item(
                     align_items="center",
                 ),
             ):
-                me.icon(icon=icon)
+                render_icon(icon)
                 me.text(text, style=me.Style(text_align="left"))
 
 

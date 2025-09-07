@@ -72,7 +72,7 @@ def page():
     """Renders the Chirp3 HD TTS page."""
     state = me.state(Chirp3hdState)
 
-    with page_scaffold():  # pylint: disable=E1129
+    with page_scaffold(page_name="chirp_3hd"):  # pylint: disable=E1129
         with page_frame():  # pylint: disable=E1129
             header(
                 "Chirp3 HD Text-to-Speech",
