@@ -42,6 +42,41 @@ config = Default()
 veo_model = VeoModelSetup.init()
 
 
+def on_veo_load(e: me.LoadEvent):
+    """Handles page load events, including query parameters for deep linking."""
+    state = me.state(PageState)
+    source_image_uri = me.query_params.get("source_image_uri")
+    veo_model_param = me.query_params.get("veo_model")
+
+    if source_image_uri:
+        # Set the image from the query parameter
+        state.reference_image_gcs = source_image_uri
+        state.reference_image_uri = source_image_uri.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
+        )
+        # Switch to the Image-to-Video tab
+        state.veo_mode = "i2v"
+        # Provide a default prompt for a better user experience
+        state.veo_prompt_input = "Animate this image with subtle motion."
+
+    if veo_model_param:
+        state.veo_model = veo_model_param
+
+    yield
+
+
+@me.page(
+    path="/veo",
+    title="Veo - GenMedia Creative Studio",
+    on_load=on_veo_load,
+)
+def veo_page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="veo"):  # pylint: disable=not-context-manager
+        veo_content(state)
+
+
 def veo_content(app_state: me.state):
     """Veo Mesop Page."""
     state = me.state(PageState)

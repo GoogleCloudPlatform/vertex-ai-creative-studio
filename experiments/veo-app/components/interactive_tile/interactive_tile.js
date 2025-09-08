@@ -10,6 +10,7 @@ class InteractiveTile extends LitElement {
     description: { type: String },
     route: { type: String },
     videoUrl: { type: String },
+    videoObjectPosition: { type: String },
     defaultBgColor: { type: String },
     defaultTextColor: { type: String },
     hoverBgColor: { type: String },
@@ -26,6 +27,7 @@ class InteractiveTile extends LitElement {
     this.description = '';
     this.route = '';
     this.videoUrl = '';
+    this.videoObjectPosition = 'center';
     this.defaultBgColor = '';
     this.defaultTextColor = '';
     this.hoverBgColor = '';
@@ -101,14 +103,23 @@ class InteractiveTile extends LitElement {
     }
     .background-video {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      min-width: 100%;
-      min-height: 100%;
-      width: auto;
-      height: auto;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       z-index: 1;
+    }
+
+    /* --- New styles for stable hover effect --- */
+    .card .hover-label, .card .description {
+      display: none;
+    }
+    .card.is-hovered .icon-container, .card.is-hovered .label {
+      display: none;
+    }
+    .card.is-hovered .hover-label, .card.is-hovered .description {
+      display: block;
     }
   `;
 
@@ -125,36 +136,35 @@ class InteractiveTile extends LitElement {
     }
 
     const contentContainerStyles = {
-      backgroundColor: hasVideo ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+      backgroundColor: hasVideo ? 'rgba(0, 0, 0, 0.15)' : 'transparent',
       textShadow: hasVideo ? '1px 1px 2px rgba(0,0,0,0.7)' : 'none',
+    };
+
+    const videoStyles = {
+      objectPosition: this.videoObjectPosition,
     };
 
     return html`
       <div
-        class="card"
+        class="card ${this.isHovered ? 'is-hovered' : ''}"
         style=${styleMap(cardStyles)}
         @mouseover=${this.handleMouseOver}
         @mouseout=${this.handleMouseOut}
         @click=${this.handleClick}
       >
         ${hasVideo
-          ? html`<video class="background-video" autoplay loop muted playsinline .src=${this.videoUrl}></video>`
+          ? html`<video class="background-video" style=${styleMap(videoStyles)} autoplay loop muted playsinline .src=${this.videoUrl}></video>`
           : ''
         }
 
         <div class="content-container" style=${styleMap(contentContainerStyles)}>
-          ${this.isHovered
-            ? html`
-                <div class="hover-label">${this.label}</div>
-                <div class="description">${this.description}</div>
-              `
-            : html`
-                <div class="icon-container">
-                  <svg-icon .iconName=${this.icon}></svg-icon>
-                </div>
-                <div class="label">${this.label}</div>
-              `
-          }
+          <!-- All elements are now always present in the HTML -->
+          <div class="icon-container">
+            <svg-icon .iconName=${this.icon}></svg-icon>
+          </div>
+          <div class="label">${this.label}</div>
+          <div class="hover-label">${this.label}</div>
+          <div class="description">${this.description}</div>
         </div>
       </div>
     `;

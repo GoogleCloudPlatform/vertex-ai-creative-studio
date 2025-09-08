@@ -35,6 +35,14 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
 
+@me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
+def edit_images_page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="edit_images"):  # pylint: disable=not-context-manager
+        content(state)
+
+
 config = Default()
 
 _BOX_STYLE = me.Style(

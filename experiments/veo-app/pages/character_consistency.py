@@ -28,6 +28,15 @@ from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
 
 
+@me.page(
+    path="/character_consistency",
+    title="GenMedia Creative Studio - Character Consistency",
+)
+def page():
+    with page_scaffold(page_name="character_consistency"):
+        character_consistency_page_content()
+
+
 @me.stateclass
 class PageState:
     """Character Consistency Page State"""

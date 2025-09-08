@@ -48,6 +48,27 @@ from models.model_setup import (
 from models.shop_the_look_models import (
     BestImageAccuracy,
 )
+from pydantic import BaseModel, Field
+
+
+class Transformation(BaseModel):
+    title: str = Field(
+        ...,
+        description="""A short, three-word maximum title for the transformation
+        button.""",
+    )
+    prompt: str = Field(
+        ..., description="The detailed prompt to be used for image generation."
+    )
+
+
+class TransformationPrompts(BaseModel):
+    transformations: list[Transformation] = Field(
+        ...,
+        description="A list of three interesting transformation instructions.",
+        min_length=3,
+        max_length=3,
+    )
 
 
 # Initialize client and default model ID for rewriter
@@ -744,3 +765,45 @@ def describe_images_and_look(
     )
 
     return ArticleDescriptionWrapper.model_validate_json(response.text)
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def generate_transformation_prompts(image_uris: list[str]) -> list[Transformation]:
+    """Generate three transformation prompts for a given image."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=TransformationPrompts.model_json_schema(),
+        temperature=0.8,
+    )
+
+    prompt_text = """Analyze these images and come up with 3 interesting transformations.
+    
+    For each transformation, provide a short title (max 3 words) and a detailed prompt for the image generation model.
+    
+    Some example prompts might be
+    * paper portrait: transform this image as if it were created with 3d paper overlays, with a modern color pallete
+    * hologram: identify the main object in the scene and transform it into a hologram.
+    * steampunk: Draw an ornate, glowing copper-colored outline with subtle gear motifs around the object 
+    * enamel pinL turn the primary subject into an enamel pin
+    * felt ornament: turn the primary subject into a felt ornament suitable for a holiday tree
+    * mini snack food: Create a high-resolution image of a minimalist, realistic-looking miniature snack food. The snack should be held between a person's thumb and index finger. The style should be on a clean and white background with studio lighting, soft shadows, and shallow depth of field. The snack should appear extremely small but hyper-detailed and appear to be a professional-grade product image.
+    * linkedin pop-out: A photorealistic portrait is presented within a #FFFFFF white circular frame. The image inside the circle captures the subject from the chest up. The subject is leaning his chin on his crossed arms, in a casual, relaxed style, as if looking out of a window. The subject's arms extend out of the circular boundary, overlapping the boundary. These arms, complete with hands, breach the edge of the white circle creating a compelling 3D pop-out effect. The arm MUST cross the boundary of the crop. The lighting is soft and even.
+    
+    """
+
+    prompt_parts = [prompt_text]
+    for uri in image_uris:
+        prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="image/png"))
+
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+
+    prompts = TransformationPrompts.model_validate_json(response.text)
+    return prompts.transformations

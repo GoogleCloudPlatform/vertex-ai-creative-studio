@@ -35,8 +35,8 @@ from state.state import AppState
     title="Shop the Look",
 )
 def page():
-    with page_scaffold(page_name="shop_the_look"):
-        with page_frame():
+    with page_scaffold(page_name="shop_the_look"): # pylint: disable=E1129:not-context-manager
+        with page_frame():  # pylint: disable=E1129:not-context-manager
             header("Shop the Look", icon="apparel", current_status=me.state(PageState).current_status)
             with me.box(
                 style=me.Style(

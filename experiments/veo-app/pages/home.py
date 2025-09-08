@@ -24,7 +24,23 @@ from components.page_scaffold import page_frame, page_scaffold
 from config.default import get_welcome_page_config
 from state.state import AppState
 
-GROUP_ORDER = ["foundation", "workflows", "studio"]
+
+@me.page(
+    path="/home",
+    title="GenMedia Creative Studio - v.next",
+    security_policy=me.SecurityPolicy(
+        dangerously_disable_trusted_types=True,
+    ),
+    stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@20..48,100..700,0..1,-50..200,0..100&icon_names=spark",
+    ],
+)
+def page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="home"):  # pylint: disable=E1129:not-context-manager
+        with page_frame():
+            home_page_content(state)
 
 
 def handle_tile_click(e: me.WebEvent):
@@ -33,82 +49,86 @@ def handle_tile_click(e: me.WebEvent):
         me.navigate(route)
 
 
+GROUP_ORDER = ["foundation", "workflows", "studio"]
+
+
 def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
     """Home Page"""
     with me.box(
         style=me.Style(
             background=me.theme_var("background"),
-            padding=me.Padding(top=24, left=24, right=24, bottom=24),
             display="flex",
             flex_direction="column",
         )
     ):
-                header("GenMedia Creative Studio", "home")
+        header("GenMedia Creative Studio", "home")
 
-                # Group pages by the "group" key
-                grouped_pages: Dict[str, List[Dict]] = defaultdict(list)
-                pages_to_display = [
-                    page
-                    for page in get_welcome_page_config()
-                    if page.get("display") != "Home"
-                ]
+        # Group pages by the "group" key
+        grouped_pages: Dict[str, List[Dict]] = defaultdict(list)
+        pages_to_display = [
+            page
+            for page in get_welcome_page_config()
+            if page.get("display") != "Home"
+        ]
 
-                for page_data in pages_to_display:
-                    group_name = page_data.get("group")
-                    if group_name:
-                        grouped_pages[group_name].append(page_data)
+        for page_data in pages_to_display:
+            group_name = page_data.get("group")
+            if group_name:
+                grouped_pages[group_name].append(page_data)
 
-                # Render each group based on GROUP_ORDER
-                for group_name in GROUP_ORDER:
-                    items_in_group = grouped_pages.get(
-                        group_name
-                    )  # Get items for the current group
+        # Render each group based on GROUP_ORDER
+        for group_name in GROUP_ORDER:
+            items_in_group = grouped_pages.get(
+                group_name
+            )  # Get items for the current group
 
-                    if (
-                        not items_in_group
-                    ):  # Skip if group is not in data or has no items
-                        continue
+            if (
+                not items_in_group
+            ):  # Skip if group is not in data or has no items
+                continue
 
-                    # Group Title
-                    me.text(
-                        group_name.replace("_", " ").title(),
-                        style=me.Style(
-                            font_size="1.2rem",
-                            font_weight="bold",
-                            margin=me.Margin(top=24, bottom=12),
-                            color=me.theme_var("on-surface"),
-                        ),
+            # Group Title
+            me.text(
+                group_name.replace("_", " ").title(),
+                style=me.Style(
+                    font_size="1.2rem",
+                    font_weight="bold",
+                    margin=me.Margin(top=24, bottom=12),
+                    color=me.theme_var("on-surface"),
+                ),
+            )
+
+            # Row for tiles in this group
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    flex_wrap="wrap",
+                    gap=16,
+                    justify_content="flex-start",
+                    margin=me.Margin(bottom=24),
+                ),
+            ):
+                for page_data in items_in_group:
+                    route = page_data.get("route")
+                    icon = page_data.get("icon", "broken_image")
+                    display_name = page_data.get("display", "Unnamed Page")
+                    description = page_data.get(
+                        "description", "Explore this capability."
                     )
+                    video_url = page_data.get("video_url", "")
+                    video_object_position = page_data.get("video_object_position", "center")
 
-                    # Row for tiles in this group
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_direction="row",
-                            flex_wrap="wrap",
-                            gap=16,
-                            justify_content="flex-start",
-                            margin=me.Margin(bottom=24),
-                        ),
-                    ):
-                        for page_data in items_in_group:
-                            route = page_data.get("route")
-                            icon = page_data.get("icon", "broken_image")
-                            display_name = page_data.get("display", "Unnamed Page")
-                            description = page_data.get(
-                                "description", "Explore this capability."
-                            )
-                            video_url = page_data.get("video_url", "")
-
-                            interactive_tile(
-                                label=display_name,
-                                icon=icon,
-                                description=description,
-                                route=route,
-                                video_url=video_url,
-                                on_tile_click=handle_tile_click,
-                                default_bg_color=me.theme_var("secondary-container"),
-                                default_text_color=me.theme_var("on-secondary-container"),
-                                hover_bg_color=me.theme_var("surface-container-high"),
-                                hover_text_color=me.theme_var("on-tertiary-container"),
-                            )
+                    interactive_tile(
+                        label=display_name,
+                        icon=icon,
+                        description=description,
+                        route=route,
+                        video_url=video_url,
+                        video_object_position=video_object_position,
+                        on_tile_click=handle_tile_click,
+                        default_bg_color=me.theme_var("secondary-container"),
+                        default_text_color=me.theme_var("on-secondary-container"),
+                        hover_bg_color=me.theme_var("surface-container-high"),
+                        hover_text_color=me.theme_var("on-tertiary-container"),
+                    )

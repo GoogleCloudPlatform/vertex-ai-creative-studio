@@ -30,6 +30,8 @@ class VeoModelConfig:
     max_samples: int
     default_samples: int
     supports_prompt_enhancement: bool
+    supported_durations: Optional[List[int]] = None
+
 
 # This list is the single source of truth for all VEO model configurations.
 VEO_MODELS: List[VeoModelConfig] = [
@@ -54,12 +56,13 @@ VEO_MODELS: List[VeoModelConfig] = [
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9", "9:16"],
         resolutions=["720p", "1080p"],
-        min_duration=8,
+        min_duration=4,
         max_duration=8,
         default_duration=8,
         max_samples=2,
         default_samples=1,
         supports_prompt_enhancement=False,
+        supported_durations=[4, 6, 8],
     ),
     VeoModelConfig(
         version_id="3.0-fast",
@@ -68,12 +71,13 @@ VEO_MODELS: List[VeoModelConfig] = [
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9", "9:16"],
         resolutions=["720p", "1080p"],
-        min_duration=8,
+        min_duration=4,
         max_duration=8,
         default_duration=8,
         max_samples=2,
         default_samples=1,
         supports_prompt_enhancement=False,
+        supported_durations=[4, 6, 8],
     ),
 ]
 

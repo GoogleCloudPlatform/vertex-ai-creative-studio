@@ -31,8 +31,14 @@ def generation_controls():
     # Correct state if it's inconsistent with the new model's configuration.
     if state.aspect_ratio not in selected_config.supported_aspect_ratios:
         state.aspect_ratio = selected_config.supported_aspect_ratios[0]
-    if not (selected_config.min_duration <= state.video_length <= selected_config.max_duration):
+    
+    # Handle duration correction
+    if selected_config.supported_durations:
+        if state.video_length not in selected_config.supported_durations:
+            state.video_length = selected_config.default_duration
+    elif not (selected_config.min_duration <= state.video_length <= selected_config.max_duration):
         state.video_length = selected_config.default_duration
+
     if state.resolution not in selected_config.resolutions:
         state.resolution = selected_config.resolutions[0]
     if state.veo_mode not in selected_config.supported_modes:
@@ -57,13 +63,17 @@ def generation_controls():
             label="length",
             options=[
                 me.SelectOption(label=f"{i} seconds", value=str(i))
-                for i in range(selected_config.min_duration, selected_config.max_duration + 1)
+                for i in (selected_config.supported_durations or range(selected_config.min_duration, selected_config.max_duration + 1))
             ],
             appearance="outline",
             style=me.Style(),
             value=str(state.video_length),
             on_selection_change=on_selection_change_length,
-            disabled=selected_config.min_duration == selected_config.max_duration,
+            disabled=(
+                len(selected_config.supported_durations) <= 1
+                if selected_config.supported_durations
+                else selected_config.min_duration == selected_config.max_duration
+            ),
         )
 
         # Resolution Selector

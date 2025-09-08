@@ -57,21 +57,22 @@ class PageState:
 @me.page(path="/recontextualize")
 def recontextualize():
     """Imagen Product Recontext page"""
-    state = me.state(PageState)
+    with page_scaffold(page_name="recontextualize"):  # pylint: disable=not-context-manager
+        state = me.state(PageState)
 
-    if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
-            me.text(f'About {RECONTEXT_INFO["title"]}', type="headline-6")
-            me.markdown(RECONTEXT_INFO["description"])
-            me.divider()
-            me.text("Current Settings", type="headline-6")
-            me.text(f"Product Images: {state.uploaded_image_gcs_uris}")
-            me.text(f"Prompt: {state.prompt}")
-            me.text(f"Model: {config.MODEL_IMAGEN_PRODUCT_RECONTEXT}")
-            with me.box(style=me.Style(margin=me.Margin(top=16))):
-                me.button("Close", on_click=close_info_dialog, type="stroked")
+        if state.info_dialog_open:
+            with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
+                me.text(f'About {RECONTEXT_INFO["title"]}', type="headline-6")
+                me.markdown(RECONTEXT_INFO["description"])
+                me.divider()
+                me.text("Current Settings", type="headline-6")
+                me.text(f"Product Images: {state.uploaded_image_gcs_uris}")
+                me.text(f"Prompt: {state.prompt}")
+                me.text(f"Model: {config.MODEL_IMAGEN_PRODUCT_RECONTEXT}")
+                with me.box(style=me.Style(margin=me.Margin(top=16))):
+                    me.button("Close", on_click=close_info_dialog, type="stroked")
 
-    with page_frame():  # pylint: disable=not-context-manager
+        with page_frame():  # pylint: disable=not-context-manager
             header("Product in Scene", "scene_based_layout", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(

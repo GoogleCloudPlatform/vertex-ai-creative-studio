@@ -30,33 +30,34 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
-from config import default as config
+import pages.shop_the_look
 from app_factory import app
 from components.page_scaffold import page_scaffold
-from pages.about import about_page_content
-from pages.character_consistency import character_consistency_page_content
-from pages.config import config_page_contents
+from config import default as config
+from pages import about as about_page
+from pages import character_consistency as character_consistency_page
+from pages import chirp_3hd as chirp_3hd_page
+from pages import config as config_page
+from pages import gemini_image_generation as gemini_image_generation_page
+from pages import gemini_tts as gemini_tts_page
+from pages import home as home_page
+from pages import imagen as imagen_page
+from pages import library as library_page
+from pages import lyria as lyria_page
+from pages import portraits as motion_portraits
+from pages import recontextualize as recontextualize_page
+from pages import starter_pack as starter_pack_page
+from pages import veo
+from pages import vto as vto_page
+from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
-from pages.gemini_tts import page as gemini_tts_page
-from pages.chirp_3hd import page as chirp_3hd_page
-from pages.home import home_page_content
-from pages.imagen import imagen_content
-from pages.library import library_content
-from pages.lyria import lyria_content
-from pages.portraits import motion_portraits_content
-from pages.recontextualize import recontextualize
-import pages.shop_the_look
 from pages.test_character_consistency import page as test_character_consistency_page
-from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.veo import veo_content
-from pages.vto import vto
-from pages.starter_pack import page as starter_pack_page
 from state.state import AppState
 
 
@@ -160,107 +161,49 @@ async def set_request_context(request: Request, call_next):
     )
     return response
 
-@me.page(
-    path="/home",
-    title="GenMedia Creative Studio - v.next",
-    security_policy=me.SecurityPolicy(
-        dangerously_disable_trusted_types=True,
-    ),
-    stylesheets=[
-        "https://fonts.googleapis.com/css2?family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@20..48,100..700,0..1,-50..200,0..100&icon_names=spark",
-    ]
-)
-def home_page():
-    """Main Page."""
-    state = me.state(AppState)
-    with page_scaffold(page_name="home"):  # pylint: disable=not-context-manager
-        home_page_content(state)
-
-@me.page(path="/veo", title="Veo - GenMedia Creative Studio")
-def veo_page():
-    with page_scaffold(page_name="veo"):
-        veo_content(me.state(AppState))
-
-@me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
-def motion_portrait_page():
-    with page_scaffold(page_name="motion_portraits"):
-        motion_portraits_content(me.state(AppState))
-
-@me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
-def lyria_page():
-    with page_scaffold(page_name="lyria"):
-        lyria_content(me.state(AppState))
-
-@me.page(path="/config", title="GenMedia Creative Studio - Config")
-def config_page():
-    with page_scaffold(page_name="config"):
-        config_page_contents(me.state(AppState))
-
-@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
-def imagen_page():
-    with page_scaffold(page_name="imagen"):
-        imagen_content(me.state(AppState))
-
-@me.page(path="/library", title="GenMedia Creative Studio - Library")
-def library_page():
-    with page_scaffold(page_name="library"):
-        library_content(me.state(AppState))
-
-@me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
-def edit_images_page():
-    with page_scaffold(page_name="edit_images"):
-        edit_images_content(me.state(AppState))
-
-@me.page(path="/gemini-tts", title="GenMedia Creative Studio - Gemini TTS")
-def gemini_tts_route():
-    with page_scaffold(page_name="gemini-tts"):
-        gemini_tts_page()
-
-@me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
-def vto_page():
-    with page_scaffold(page_name="vto"):
-        vto()
-
-@me.page(path="/starter-pack", title="GenMedia Creative Studio - Starter Pack")
-def starter_pack_route():
-    with page_scaffold(page_name="starter-pack"):
-        starter_pack_page()
-
-@me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
-def recontextualize_page():
-    with page_scaffold(page_name="recontextualize"):
-        recontextualize()
-
-@me.page(path="/character_consistency", title="GenMedia Creative Studio - Character Consistency")
-def character_consistency_page():
-    with page_scaffold(page_name="character_consistency"):
-        character_consistency_page_content()
-
-@me.page(path="/about", title="About - GenMedia Creative Studio")
-def about_page():
-    with page_scaffold(page_name="about"):
-        about_page_content()
-
-
-@me.page(path="/gemini_image_generation", title="Gemini Image Generation - GenMedia Creative Studio")
-def gemini_image_generation_page():
-    with page_scaffold(page_name="gemini_image_generation"):
-        gemini_image_gen_page_content()
-
 
 # Test page routes are left as is, they don't need the scaffold
-me.page(path="/test_character_consistency", title="Test Character Consistency")(test_character_consistency_page)
+me.page(path="/test_character_consistency", title="Test Character Consistency")(
+    test_character_consistency_page
+)
 me.page(path="/test_index", title="Test Index")(test_index_page)
-me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(test_infinite_scroll_page)
-me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(test_pixie_compositor_page)
+me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(
+    test_infinite_scroll_page
+)
+me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(
+    test_pixie_compositor_page
+)
 me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
-me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(test_vto_prompt_generator_page)
-me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(test_worsfold_encoder_page)
+me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
+    test_vto_prompt_generator_page
+)
+me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
+    test_worsfold_encoder_page
+)
 
 
 @app.get("/")
-def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/home")
+def root_redirect(request: Request) -> RedirectResponse:
+    """Redirects to /welcome for first-time users, otherwise to /home."""
+    # Check if our tracking cookie exists on the incoming request.
+    if request.cookies.get("has_visited_welcome"):
+        # If it does, send the user to the regular home page.
+        return RedirectResponse(url="/home")
+    else:
+        # If it doesn't, it's a first-time visit.
+        # Create a response that will send the user to the welcome page.
+        response = RedirectResponse(url="/welcome")
+
+        # Before sending the response, set our cookie on it.
+        # The browser will save this cookie for future visits.
+        # max_age=31536000 sets the cookie to expire in 1 year.
+        response.set_cookie(
+            key="has_visited_welcome",
+            value="true",
+            max_age=31536000,
+            httponly=True,
+        )
+        return response
 
 
 # Use this to mount the static files for the Mesop app
@@ -313,4 +256,3 @@ if __name__ == "__main__":
         timeout_graceful_shutdown=0,
         proxy_headers=True,
     )
-

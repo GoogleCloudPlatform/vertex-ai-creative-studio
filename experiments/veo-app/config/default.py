@@ -42,6 +42,7 @@ class NavItem(BaseModel):
     feature_flag_not: Optional[str] = None
     description: Optional[str] = None
     video_url: Optional[str] = None
+    video_object_position: Optional[str] = None
 
 
 class NavConfig(BaseModel):

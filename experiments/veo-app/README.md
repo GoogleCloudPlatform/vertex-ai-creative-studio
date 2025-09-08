@@ -40,7 +40,7 @@
 
 This is the next gen version of GenMedia Creative Studio
 
-![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/04484a0c-05fa-4a91-9ddc-9a073c1e4861)
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/da5ad223-aa6e-413c-b36e-5d63e5d5b758)
 
 ![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
 

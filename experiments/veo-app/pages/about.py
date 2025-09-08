@@ -63,22 +63,22 @@ def render_section(section_data: dict):
 
 def about_page_content():
     """About page."""
-    with page_frame():  # pylint: disable=not-context-manager
-            header("About This Application", "info")
+    with page_frame():
+        header("About This Application", "info")
 
-            if ABOUT_PAGE_CONTENT:
-                # Render header
-                me.text(ABOUT_PAGE_CONTENT["header"]["title"], type="headline-4")
-                me.markdown(ABOUT_PAGE_CONTENT["header"]["introduction"])
-                me.divider()
+        if ABOUT_PAGE_CONTENT:
+            # Render header
+            me.text(ABOUT_PAGE_CONTENT["header"]["title"], type="headline-4")
+            me.markdown(ABOUT_PAGE_CONTENT["header"]["introduction"])
+            me.divider()
 
-                # Render each section
-                for section in ABOUT_PAGE_CONTENT.get("sections", []):
-                    render_section(section)
-            else:
-                me.text(
-                    "Could not load the About page content. Please ensure 'config/about_content.json' is valid."
-                )
+            # Render each section
+            for section in ABOUT_PAGE_CONTENT.get("sections", []):
+                render_section(section)
+        else:
+            me.text(
+                "Could not load the About page content. Please ensure 'config/about_content.json' is valid."
+            )
 
 
 @me.page(
@@ -86,4 +86,5 @@ def about_page_content():
     title="About - GenMedia Creative Studio",
 )
 def page():
-    about_page_content()
+    with page_scaffold(page_name="about"):
+        about_page_content()

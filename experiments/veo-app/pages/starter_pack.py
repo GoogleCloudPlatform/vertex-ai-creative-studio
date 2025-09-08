@@ -37,93 +37,94 @@ from config.default import Default
     title="Starter Pack",
 )
 def page():
-    with page_frame():  # pylint: disable=E1129
-            header("Starter Pack", "style")
-            with me.box(
-                style=me.Style(
-                    display="grid",
-                    grid_template_columns="1fr 1fr",
-                    gap=16,
-                    padding=me.Padding.all(16),
-                )
-            ):
-                with me.box():
-                    #me.text("Inputs", type="headline-5")
-                    tabs = [
-                        Tab(
-                            label="Look to Starter Pack",
-                            content=look_to_starter_pack_content,
-                            selected=me.state(StarterPackState).selected_tab_index == 0,
-                        ),
-                        Tab(
-                            label="Starter Pack to Look",
-                            content=starter_pack_to_look_content,
-                            selected=me.state(StarterPackState).selected_tab_index == 1,
-                        ),
-                    ]
-                    tab_group(tabs, on_tab_click=on_tab_click)
+    with page_scaffold(page_name="starter-pack"):  # pylint: disable=E1129
+        with page_frame():  # pylint: disable=E1129
+                header("Starter Pack", "style")  # pylint: disable=E1129
+                with me.box(
+                    style=me.Style(
+                        display="grid",
+                        grid_template_columns="1fr 1fr",
+                        gap=16,
+                        padding=me.Padding.all(16),
+                    )
+                ):
+                    with me.box():
+                        #me.text("Inputs", type="headline-5")
+                        tabs = [
+                            Tab(
+                                label="Look to Starter Pack",
+                                content=look_to_starter_pack_content,
+                                selected=me.state(StarterPackState).selected_tab_index == 0,
+                            ),
+                            Tab(
+                                label="Starter Pack to Look",
+                                content=starter_pack_to_look_content,
+                                selected=me.state(StarterPackState).selected_tab_index == 1,
+                            ),
+                        ]
+                        tab_group(tabs, on_tab_click=on_tab_click)
 
-                with me.box(style=me.Style(display="flex", flex_direction="column")):
-                    #me.text("Outputs", type="headline-5")
-                    if me.state(StarterPackState).selected_tab_index == 0:
-                        with me.box(style=me.Style(margin=me.Margin(top=16))):
-                            me.text("Generated Starter Pack", type="headline-6")
-                            with me.box(
-                                style=me.Style(
-                                    border=me.Border.all(
-                                        me.BorderSide(width=1, style="solid", color="#ccc")
-                                    ),
-                                    border_radius=8,
-                                    padding=me.Padding.all(16),
-                                    margin=me.Margin(top=8),
-                                    height=400,
-                                    display="flex",
-                                    align_items="center",
-                                    justify_content="center",
-                                )
-                            ):
-                                if me.state(StarterPackState).is_generating_starter_pack:
-                                    me.progress_spinner()
-                                elif me.state(StarterPackState).generated_starter_pack_uri:
-                                    me.image(
-                                        src=gcs_uri_to_https_url(me.state(StarterPackState).generated_starter_pack_uri),
-                                        style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
+                    with me.box(style=me.Style(display="flex", flex_direction="column")):
+                        #me.text("Outputs", type="headline-5")
+                        if me.state(StarterPackState).selected_tab_index == 0:
+                            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                                me.text("Generated Starter Pack", type="headline-6")
+                                with me.box(
+                                    style=me.Style(
+                                        border=me.Border.all(
+                                            me.BorderSide(width=1, style="solid", color="#ccc")
+                                        ),
+                                        border_radius=8,
+                                        padding=me.Padding.all(16),
+                                        margin=me.Margin(top=8),
+                                        height=400,
+                                        display="flex",
+                                        align_items="center",
+                                        justify_content="center",
                                     )
-                                else:
-                                    me.text("Output will appear here")
-                            if me.state(StarterPackState).look_image_uri or me.state(StarterPackState).generated_starter_pack_uri:
-                                with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
-                                    me.button("Clear", on_click=on_click_clear_starter_pack, type="stroked")
+                                ):
+                                    if me.state(StarterPackState).is_generating_starter_pack:
+                                        me.progress_spinner()
+                                    elif me.state(StarterPackState).generated_starter_pack_uri:
+                                        me.image(
+                                            src=gcs_uri_to_https_url(me.state(StarterPackState).generated_starter_pack_uri),
+                                            style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
+                                        )
+                                    else:
+                                        me.text("Output will appear here")
+                                if me.state(StarterPackState).look_image_uri or me.state(StarterPackState).generated_starter_pack_uri:
+                                    with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
+                                        me.button("Clear", on_click=on_click_clear_starter_pack, type="stroked")
 
-                    if me.state(StarterPackState).selected_tab_index == 1:
-                        with me.box(style=me.Style(margin=me.Margin(top=16))):
-                            me.text("Generated Look", type="headline-6")
-                            with me.box(
-                                style=me.Style(
-                                    border=me.Border.all(
-                                        me.BorderSide(width=1, style="solid", color="#ccc")
-                                    ),
-                                    border_radius=8,
-                                    padding=me.Padding.all(16),
-                                    margin=me.Margin(top=8),
-                                    height=400,
-                                    display="flex",
-                                    align_items="center",
-                                    justify_content="center",
-                                )
-                            ):
-                                if me.state(StarterPackState).is_generating_look:
-                                    me.progress_spinner()
-                                elif me.state(StarterPackState).generated_look_uri:
-                                    me.image(
-                                        src=gcs_uri_to_https_url(me.state(StarterPackState).generated_look_uri),
-                                        style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
+                        if me.state(StarterPackState).selected_tab_index == 1:
+                            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                                me.text("Generated Look", type="headline-6")
+                                with me.box(
+                                    style=me.Style(
+                                        border=me.Border.all(
+                                            me.BorderSide(width=1, style="solid", color="#ccc")
+                                        ),
+                                        border_radius=8,
+                                        padding=me.Padding.all(16),
+                                        margin=me.Margin(top=8),
+                                        height=400,
+                                        display="flex",
+                                        align_items="center",
+                                        justify_content="center",
                                     )
-                                else:
-                                    me.text("Output will appear here")
-                            if me.state(StarterPackState).starter_pack_image_uri or me.state(StarterPackState).model_image_uri or me.state(StarterPackState).generated_look_uri:
-                                with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
-                                    me.button("Clear", on_click=on_click_clear_look, type="stroked")
+                                ):
+                                    if me.state(StarterPackState).is_generating_look:
+                                        me.progress_spinner()
+                                    elif me.state(StarterPackState).generated_look_uri:
+                                        me.image(
+                                            src=gcs_uri_to_https_url(me.state(StarterPackState).generated_look_uri),
+                                            style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
+                                        )
+                                    else:
+                                        me.text("Output will appear here")
+                                if me.state(StarterPackState).starter_pack_image_uri or me.state(StarterPackState).model_image_uri or me.state(StarterPackState).generated_look_uri:
+                                    with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
+                                        me.button("Clear", on_click=on_click_clear_look, type="stroked")
 
 @me.component
 def look_to_starter_pack_content():
@@ -282,14 +283,14 @@ def on_click_generate_virtual_model(e: me.ClickEvent):
 
     gcs_uri = model.generate_virtual_model()
     state.model_image_uri = gcs_uri
-    add_media_item(
-        user_email=app_state.user_email,
-        model=cfg.MODEL_IMAGEN4_FAST,
-        mime_type="image/png",
-        gcs_uris=[gcs_uri],
-        comment="virtual model",
-        source_images_gcs=[]
-    )
+    #add_media_item(
+    #    user_email=app_state.user_email,
+    #    model=cfg.MODEL_IMAGEN4_FAST,
+    #    mime_type="image/png",
+    #    gcs_uris=[gcs_uri],
+    #    comment="virtual model",
+    #    source_images_gcs=[]
+    #)
     state.is_generating_virtual_model = False
     yield
 

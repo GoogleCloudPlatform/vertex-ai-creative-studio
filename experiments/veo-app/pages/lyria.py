@@ -37,6 +37,13 @@ from config.default import ABOUT_PAGE_CONTENT
 
 cfg = Default()
 
+@me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
+def lyria_page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="lyria"):  # pylint: disable=not-context-manager
+        lyria_content(state)
+
 
 @me.stateclass
 class PageState:

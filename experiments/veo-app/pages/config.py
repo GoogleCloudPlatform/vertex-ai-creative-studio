@@ -25,6 +25,14 @@ from config.default import Default
 from state.state import AppState  
 
 
+@me.page(path="/config", title="GenMedia Creative Studio - Config")
+def config_page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="config"):  # pylint: disable=not-context-manager
+        config_page_contents(state)  
+
+
 def get_config_table(app_state: AppState):
     """Construct a table of the Defaults, including optional new attributes"""
 

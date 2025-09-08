@@ -16,19 +16,21 @@
 
 """A component for displaying media item details, including a carousel."""
 
+import os
+from typing import Callable
+
 import mesop as me
 
 from common.metadata import MediaItem
-import os
 from components.download_button.download_button import download_button
 
-from typing import Callable
 
 @me.stateclass
 class CarouselState:
     """State for the image carousel."""
 
     current_index: int = 0
+    current_index_gcsuri: str
 
 
 def on_next(e: me.ClickEvent) -> None:
@@ -49,6 +51,22 @@ def on_prev(e: me.ClickEvent) -> None:
     """
     state = me.state(CarouselState)
     state.current_index -= 1
+
+
+def on_send_to_veo(e: me.ClickEvent):
+    """Navigates to the Veo page with the selected image as a query parameter."""
+    state = me.state(CarouselState)
+
+    # Convert back to GCS URI to pass a clean identifier
+    gcs_uri = state.current_index_gcsuri.replace(
+        "https://storage.mtls.cloud.google.com/", "gs://"
+    )
+
+    me.navigate(
+        url="/veo",
+        query_params={"source_image_uri": gcs_uri, "veo_model": "3.0-fast"},
+    )
+    yield
 
 
 @me.component
@@ -202,11 +220,15 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                             width="100px", height="auto", border_radius="8px"
                         ),
                     )
-    with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16))):
+    with me.box(
+        style=me.Style(
+            display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16)
+        )
+    ):
         with me.content_button(
-                on_click=on_click_permalink,
-                key=item.id or "",  # Ensure key is not None
-            ):
+            on_click=on_click_permalink,
+            key=item.id or "",  # Ensure key is not None
+        ):
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -220,5 +242,21 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
 
         if image_url:
             gcs_uri = item.gcs_uris[state.current_index]
-            filename = os.path.basename(gcs_uri.split('?')[0])
+            state.current_index_gcsuri = gcs_uri
+            filename = os.path.basename(gcs_uri.split("?")[0])
             download_button(url=gcs_uri, filename=filename)
+            with (
+                me.content_button(
+                    on_click=on_send_to_veo,
+                ),
+                me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        align_items="center",
+                        gap=8,
+                    )
+                ),
+            ):
+                me.icon("slideshow")
+                me.text("Veo")

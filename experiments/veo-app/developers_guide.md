@@ -194,13 +194,21 @@ This pattern is the preferred way to manage model capabilities and other complex
 
 ## How to Add a New Page
 
-Adding a new page to the application is a straightforward process. Here are the steps:
+Adding a new page to the application follows a streamlined, modular pattern that keeps page-specific logic self-contained.
 
 ### Step 1: Create the Page File
 
-Create a new Python file in the `pages/` directory. The name of the file should be descriptive of the page's purpose (e.g., `my_new_page.py`).
+Create a new Python file in the `pages/` directory (e.g., `my_new_page.py`). This file will contain all the logic for your page.
 
-In this file, define a function that will contain the UI for your page. This function should accept the application state as an argument.
+### Step 2: Define the Page Structure
+
+Inside your new file, define the core components of your page. A typical page file includes:
+
+1.  **State Class:** If your page has its own state, define a state class using `@me.stateclass` at the top of the file.
+2.  **UI Content Function:** Create a function that builds the UI for your page (e.g., `my_new_page_content()`). This function should contain the main Mesop components, headers, and other UI elements.
+3.  **Page Route Function:** Create the main page entry point function, typically named `page()`. This function must:
+    *   Be decorated with `@me.page(path="/my_new_page", title="...")`.
+    *   Wrap the page's content in the standard layout components: `page_scaffold` and `page_frame`.
 
 **`pages/my_new_page.py`:**
 ```python
@@ -209,36 +217,42 @@ from state.state import AppState
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 
-def my_new_page_content(app_state: AppState):
-    with page_scaffold():
-        with page_frame():
-            header("My New Page", "rocket_launch")
-            me.text("Welcome to my new page!")
+# 1. Define page-specific state (if needed)
+@me.stateclass
+class PageState:
+    my_value: str = "Hello"
+
+# 2. Define the UI content
+def my_new_page_content():
+    state = me.state(PageState)
+    with page_frame():
+        header("My New Page", "rocket_launch")
+        me.text(f"Welcome to my new page! My value is: {state.my_value}")
+
+# 3. Define the page route and layout
+@me.page(
+    path="/my_new_page",
+    title="My New Page - GenMedia Creative Studio",
+)
+def page():
+    with page_scaffold(page_name="my_new_page"):
+        my_new_page_content()
 ```
 
-### Step 2: Register the Page in `main.py`
+### Step 3: Register the Page in `main.py`
 
-Next, you need to register your new page in `main.py` so that the application knows how to serve it.
+To make your new page discoverable by the application, you only need to import its module in `main.py`. This allows Mesop's page discovery mechanism to find the `@me.page` decorator.
 
-1.  Import your new page function at the top of `main.py`:
+1.  Add a single import statement to the top of `main.py`:
     ```python
-    from pages.my_new_page import my_new_page_content
+    from pages import my_new_page as my_new_page_page
     ```
 
-2.  Add a new `@me.page` decorator to define the route and other page settings:
-    ```python
-    @me.page(
-        path="/my_new_page",
-        title="My New Page - GenMedia Creative Studio",
-        on_load=on_load,
-    )
-    def my_new_page():
-        my_new_page_content(me.state(AppState))
-    ```
+No other changes are needed in `main.py`.
 
-### Step 3: Add the Page to the Navigation
+### Step 4: Add the Page to the Navigation
 
-To make your new page accessible to users, you need to add it to the side navigation.
+To make your new page accessible to users, add it to the side navigation by editing `config/navigation.json`.
 
 1.  Open the `config/navigation.json` file.
 2.  Add a new JSON object to the `pages` array for your new page. Make sure to give it a unique `id`.
@@ -259,7 +273,7 @@ To make your new page accessible to users, you need to add it to the side naviga
 }
 ```
 
-### Step 4: (Optional) Control with a Feature Flag
+### Step 5: (Optional) Control with a Feature Flag
 
 If you want to control the visibility of your new page with an environment variable, you can add a `feature_flag` to its entry in `navigation.json`.
 
@@ -276,7 +290,7 @@ If you want to control the visibility of your new page with an environment varia
 
 Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PAGE_ENABLED` environment variable is set to `True` in your `.env` file.
 
-That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
+That's it! When you restart the application, your new, self-contained page will be available.
 
 ## Adding a Generative Workflow
 

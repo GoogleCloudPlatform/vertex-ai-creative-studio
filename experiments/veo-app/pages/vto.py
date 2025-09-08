@@ -15,6 +15,9 @@
 import random
 import uuid
 import json
+from dataclasses import field
+from pathlib import Path
+
 
 import mesop as me
 
@@ -29,7 +32,6 @@ from models.image_models import generate_virtual_models
 from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
 from models.vto import generate_vto_image
 from state.state import AppState
-from state.vto_state import PageState
 from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
 
@@ -55,6 +57,33 @@ with open("config/about_content.json", "r") as f:
     VTO_INFO = next(
         (s for s in about_content["sections"] if s.get("id") == "vto"), None
     )
+
+
+@me.stateclass
+class PageState:
+    """VTO Page State"""
+
+    person_image_file: me.UploadedFile = None
+    person_image_gcs: str = ""
+    product_image_file: me.UploadedFile = None
+    product_image_gcs: str = ""
+    result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    vto_sample_count: int = 4
+    vto_base_steps: int = 32
+    is_loading: bool = False
+    is_generating_person_image: bool = False
+    error_dialog_open: bool = False
+    error_message: str = ""
+
+    info_dialog_open: bool = False
+
+    # Load options once
+    _options: dict = field(default_factory=dict, init=False)
+
+    def __post_init__(self):
+        config_path = Path(__file__).parent.parent / "config/virtual_model_options.json"
+        with open(config_path, "r") as f:
+            self._options = json.load(f)
 
 
 def on_upload_person(e: me.UploadEvent):
@@ -207,7 +236,6 @@ def close_info_dialog(e: me.ClickEvent):
     state.info_dialog_open = False
     yield
 
-
 def close_error_dialog(e: me.ClickEvent):
     """Close the error dialog."""
     state = me.state(PageState)
@@ -215,8 +243,8 @@ def close_error_dialog(e: me.ClickEvent):
     yield
 
 
-@me.page(path="/vto")
-def vto():
+@me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
+def page():
     state = me.state(PageState)
 
     if state.error_dialog_open:
@@ -238,8 +266,9 @@ def vto():
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_frame():  # pylint: disable=not-context-manager
-            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog)
+    with page_scaffold(page_name="vto"):  # pylint: disable=E1129
+        with page_frame():  # pylint: disable=E1129
+            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog) # pylint: disable=E1129
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Person Image Section

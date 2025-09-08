@@ -14,7 +14,8 @@
       "route": "/imagen",
       "group": "foundation",
       "mode": "image",
-      "description": "Generate images from text prompts using Imagen."
+      "description": "Generate images from text prompts using Imagen.",
+      "video_url": "https://deepmind.google/api/blob/website/media/imagen__page_cover.mp4"
     },
     {
       "id": 8,
@@ -33,7 +34,8 @@
       "route": "/veo",
       "group": "foundation",
       "mode": "video",
-      "description": "Generate videos from text or image prompts using Veo."
+      "description": "Generate videos from text or image prompts using Veo.",
+      "video_url": "https://deepmind.google/api/blob/website/media/veo__cover_s0RKXWX.mp4"
     },
     {
       "id": 12,
@@ -43,7 +45,8 @@
       "route": "/gemini_image_generation",
       "group": "foundation",
       "mode": "image",
-      "description": "Generate images from text prompts using Gemini."
+      "description": "Generate images from text prompts using Gemini.",
+      "video_url": "https://deepmind.google/api/blob/website/media/gemini-image__page_cover.mp4"
     },
     {
       "id": 14,
@@ -52,7 +55,9 @@
       "route": "/gemini-tts",
       "group": "foundation",
       "mode": "speech",
-      "description": "Gemini's latest Text to Speech mode"
+      "description": "Gemini's latest Text to Speech mode",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_header.mp4",
+      "video_object_position": "bottom"
     },
     {
       "id": 15,
@@ -61,7 +66,9 @@
       "route": "/chirp-3hd",
       "group": "foundation",
       "mode": "speech",
-      "description": "Generate high-definition speech from text using Chirp 3."
+      "description": "Generate high-definition speech from text using Chirp 3.",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_realtime_header.mp4",
+      "video_object_position": "bottom"
     },
     {
       "id": 20,
@@ -71,7 +78,9 @@
       "group": "foundation",
       "feature_flag": "LYRIA_PROJECT_ID",
       "mode": "music",
-      "description": "Generate music from text prompts using Lyria."
+      "description": "Generate music from text prompts using Lyria.",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_header.mp4",
+      "video_object_position": "bottom"
     },
 
     {

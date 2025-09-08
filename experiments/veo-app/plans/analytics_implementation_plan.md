@@ -23,6 +23,33 @@ This document outlines the two-stage plan to introduce robust, configurable anal
 
 ---
 
+### Stage 1B: Fixing Session ID Propagation
+
+**The Problem:**
+The `session_id` created in the FastAPI middleware is not being correctly read into the `AppState`. Initial attempts to read this value in the `AppState.__init__` method proved to be unstable, causing a low-level `h11` server protocol error. This indicates that the `__init__` method of a state class is too early in the application lifecycle to safely access request data.
+
+The current method for retrieving `user_email` is similarly fragile, as it relies on an incorrect `flask.request` object.
+
+**The Goal:**
+Correctly and safely propagate both the `user_email` and `session_id` from the request context to the `AppState` so they can be included in all analytics logs.
+
+**The Correct Pattern: `on_load` Handler**
+The officially supported and stable way to access request-time information in Mesop is with a page's `on_load` handler. This ensures the logic runs at a safe and predictable point in the page lifecycle, after the server and state have been initialized but before the page is rendered. This is the only stable and supported pattern for accessing request-scoped data like the IAP-provided `user_email` or the `session_id` cookie.
+
+**Proposed Implementation:**
+
+1.  **Remove Fragile `__init__`:** Delete the `__init__` method entirely from `state/state.py` and remove the incorrect `from flask import request` import. This eliminates the source of the instability.
+
+2.  **Create a Central `on_load` Handler:** In `main.py`, create a single handler function (e.g., `on_page_load`). This function will contain the logic to read both `user_email` and `session_id` from the request context (`me.request().environ`) and update the `AppState`.
+
+3.  **Apply Handler to All Pages:** In `main.py`, add the `on_load=on_page_load` parameter to every `@me.page` decorator. 
+
+**Impact and Tradeoffs:**
+- **Impact:** This requires a one-time modification to every page route defined in `main.py`.
+- **Benefit:** This is the most robust solution. It centralizes the session logic in one function, uses the framework's intended pattern, guarantees stability, and fixes the propagation for both `session_id` and `user_email` correctly.
+
+---
+
 ## Stage 2: Full OpenTelemetry (OTel) Integration
 
 **Goal:** Upgrade the observability stack to a full distributed tracing solution using the OpenTelemetry standard. This will provide deep performance insights and debugging capabilities.

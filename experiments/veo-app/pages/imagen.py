@@ -25,12 +25,10 @@ from config.default import ABOUT_PAGE_CONTENT
 from state.imagen_state import PageState
 
 
-@me.page(
-    path="/imagen",
-    title="Imagen Creative Studio",
-)
+@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
 def imagen_page():
-    imagen_content(me.state(PageState))
+    with page_scaffold(page_name="imagen"):  # pylint: disable=E1129:not-context-manager
+        imagen_content(me.state(PageState))
 
 
 def imagen_content(app_state: me.state):

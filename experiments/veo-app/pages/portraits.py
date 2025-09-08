@@ -96,6 +96,14 @@ from config.portrait_styles import PORTRAIT_STYLES
 from config.veo_models import VEO_MODELS, get_veo_model_config
 
 
+@me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
+def motion_portraits_page():
+    """Main Page."""
+    state = me.state(AppState)
+    with page_scaffold(page_name="motion_portraits"):  # pylint: disable=not-context-manager
+        motion_portraits_content(state)
+
+
 def motion_portraits_content(app_state: me.state):
     """Motion portraits Mesop Page"""
 
