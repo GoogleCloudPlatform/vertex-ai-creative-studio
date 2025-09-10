@@ -14,6 +14,7 @@
 
 import mesop as me
 
+from common.utils import gcs_uri_to_https_url
 from state.veo_state import PageState
 
 
@@ -35,10 +36,7 @@ def video_display():
             if state.is_loading:
                 me.progress_spinner()
             elif state.result_video:
-                video_url = state.result_video.replace(
-                    "gs://",
-                    "https://storage.mtls.cloud.google.com/",
-                )
+                video_url = gcs_uri_to_https_url(state.result_video)
                 print(f"video_url: {video_url}")
                 me.video(
                     src=video_url,

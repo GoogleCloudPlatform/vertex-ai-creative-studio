@@ -19,6 +19,7 @@ import mesop as me
 
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -233,8 +234,7 @@ def on_generate(e: me.ClickEvent):
             state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count
         )
         state.result_images = [
-            uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-            for uri in result_gcs_uris
+            gcs_uri_to_https_url(uri) for uri in result_gcs_uris
         ]
         add_media_item(
             user_email=app_state.user_email,

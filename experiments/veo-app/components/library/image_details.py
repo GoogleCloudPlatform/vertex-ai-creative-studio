@@ -22,6 +22,7 @@ from typing import Callable
 import mesop as me
 
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.download_button.download_button import download_button
 
 
@@ -58,9 +59,7 @@ def on_send_to_veo(e: me.ClickEvent):
     state = me.state(CarouselState)
 
     # Convert back to GCS URI to pass a clean identifier
-    gcs_uri = state.current_index_gcsuri.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    gcs_uri = https_url_to_gcs_uri(state.current_index_gcsuri)
 
     me.navigate(
         url="/veo",
@@ -96,9 +95,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
         )
     ):
         # Image display
-        image_url = item.gcs_uris[state.current_index].replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        image_url = gcs_uri_to_https_url(item.gcs_uris[state.current_index])
         me.image(
             src=image_url,
             style=me.Style(
@@ -166,9 +163,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                         )
                     ):
                         me.text("Person Image")
-                        person_url = person_gcs_uri.replace(
-                            "gs://", "https://storage.mtls.cloud.google.com/"
-                        )
+                        person_url = gcs_uri_to_https_url(person_gcs_uri)
                         me.image(
                             src=person_url,
                             style=me.Style(
@@ -188,9 +183,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                         )
                     ):
                         me.text("Product Image")
-                        product_url = product_gcs_uri.replace(
-                            "gs://", "https://storage.mtls.cloud.google.com/"
-                        )
+                        product_url = gcs_uri_to_https_url(product_gcs_uri)
                         me.image(
                             src=product_url,
                             style=me.Style(
@@ -213,9 +206,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
             ):
                 for uri in item.source_images_gcs:
                     me.image(
-                        src=uri.replace(
-                            "gs://", "https://storage.mtls.cloud.google.com/"
-                        ),
+                        src=gcs_uri_to_https_url(uri),
                         style=me.Style(
                             width="100px", height="auto", border_radius="8px"
                         ),

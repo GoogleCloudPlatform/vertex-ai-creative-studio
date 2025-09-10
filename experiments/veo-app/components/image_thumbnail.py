@@ -14,6 +14,7 @@
 
 import mesop as me
 from typing import Callable
+from common.utils import gcs_uri_to_https_url
 
 @me.component
 def image_thumbnail(image_uri: str, index: int, on_remove: Callable, icon_size: int = 18):
@@ -22,7 +23,7 @@ def image_thumbnail(image_uri: str, index: int, on_remove: Callable, icon_size: 
     box_dimension = icon_size + 8
     
     with me.box(style=me.Style(position="relative", width=100, height=100)):
-        me.image(src=image_uri.replace("gs://", "https://storage.mtls.cloud.google.com/"), style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
+        me.image(src=gcs_uri_to_https_url(image_uri), style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
         with me.box(
             on_click=on_remove,
             key=str(index),

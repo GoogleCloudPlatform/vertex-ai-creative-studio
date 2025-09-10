@@ -19,7 +19,7 @@ import time
 import mesop as me
 import datetime # Required for timestamp
 
-from common.analytics import track_click
+from common.analytics import track_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from config.default import Default
 from config.imagen_models import IMAGEN_MODELS, get_imagen_model_config
@@ -58,7 +58,7 @@ def generation_controls():
             "Prompt for image generation",
             style=me.Style(font_weight=500),
         )
-        me.box(style=me.Style(height=16))
+        me.box(style=me.Style(height=8))
         me.textarea(
             key=str(state.image_textarea_key),
             on_blur=on_blur_image_prompt,
@@ -69,7 +69,7 @@ def generation_controls():
             value=state.image_prompt_placeholder
             or state.image_prompt_input,  # Show input if placeholder is also input
         )
-        me.box(style=me.Style(height=12))
+        me.box(style=me.Style(height=8))
         with me.box(
             style=me.Style(display="flex", justify_content="space-between")
         ):
@@ -343,3 +343,4 @@ def on_click_rewrite_prompt(e: me.ClickEvent):
     finally:
         state.is_loading = False  # Hide spinner
         yield
+

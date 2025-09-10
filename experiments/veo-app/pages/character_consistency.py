@@ -19,6 +19,7 @@ import mesop as me
 
 from common.metadata import get_media_item_by_id
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from models.character_consistency import generate_character_video
@@ -89,9 +90,7 @@ def character_consistency_page_content():
                 with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=10, justify_content="center")):
                     for uri in state.uploaded_image_gcs_uris:
                         me.image(
-                            src=uri.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            ),
+                            src=gcs_uri_to_https_url(uri),
                             style=me.Style(width=200, height=200, object_fit="contain", border_radius="12px",
                                 box_shadow="0 2px 4px rgba(0,0,0,0.1)"),
                         )
@@ -215,15 +214,15 @@ def on_generate_click(e: me.ClickEvent):
             if step_result.data:
                 if "candidate_image_gcs_uris" in step_result.data:
                     state.candidate_image_urls = [
-                        uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+                        gcs_uri_to_https_url(uri)
                         for uri in step_result.data["candidate_image_gcs_uris"]
                     ]
                 if "best_image_gcs_uri" in step_result.data:
-                    state.best_image_url = step_result.data["best_image_gcs_uri"].replace("gs://", "https://storage.mtls.cloud.google.com/")
+                    state.best_image_url = gcs_uri_to_https_url(step_result.data["best_image_gcs_uri"])
                 if "outpainted_image_gcs_uri" in step_result.data:
-                    state.outpainted_image_url = step_result.data["outpainted_image_gcs_uri"].replace("gs://", "https://storage.mtls.cloud.google.com/")
+                    state.outpainted_image_url = gcs_uri_to_https_url(step_result.data["outpainted_image_gcs_uri"])
                 if "video_gcs_uri" in step_result.data:
-                    state.final_video_url = step_result.data["video_gcs_uri"].replace("gs://", "https://storage.mtls.cloud.google.com/")
+                    state.final_video_url = gcs_uri_to_https_url(step_result.data["video_gcs_uri"])
             yield
 
         state.status_message = f"Workflow complete! Total time: {state.total_generation_time:.2f} seconds"

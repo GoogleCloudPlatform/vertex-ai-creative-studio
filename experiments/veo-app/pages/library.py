@@ -29,6 +29,7 @@ from common.metadata import (
     get_media_for_page,  # This might need adjustment if we want truly accurate filtered counts server-side
     get_media_item_by_id,
 )
+from common.utils import gcs_uri_to_https_url
 from components.dialog import (
     dialog,
     dialog_actions,
@@ -73,9 +74,7 @@ class PageState:
     selected_values: list[str] = field(
         default_factory=lambda: ["all"]
     )  # Default to "all" media types
-    error_filter_value: str = (
-        "all"  # New state for error filter: "all", "no_errors", "only_errors"
-    )
+    error_filter_value: str = "all"  # New state for error filter: "all", "no_errors", "only_errors"
     user_filter: str = "all"  # New state for user filter: "all", "mine"
     initial_url_param_processed: bool = False
     url_item_not_found_message: Optional[str] = None
@@ -311,19 +310,8 @@ def library_content(app_state: me.state):
                         elif mime_type.startswith("audio/"):
                             media_type_group = "audio"
 
-                        item_url = (
-                            m_item.gcsuri.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            )
-                            if m_item.gcsuri
-                            else (
-                                m_item.gcs_uris[0].replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                )
-                                if m_item.gcs_uris
-                                else ""
-                            )
-                        )
+                        gcs_uri = m_item.gcsuri if m_item.gcsuri else (m_item.gcs_uris[0] if m_item.gcs_uris else None)
+                        item_url = gcs_uri_to_https_url(gcs_uri)
 
                         if media_type_group == "image":
                             prompt_full = m_item.rewritten_prompt or m_item.prompt or ""
@@ -680,7 +668,8 @@ def handle_page_change(e: me.ClickEvent):
     if (
         1
         <= new_page
-        <= (
+        <=
+        (
             (pagestate.total_media + pagestate.media_per_page - 1)
             // pagestate.media_per_page
             if pagestate.media_per_page > 0 and pagestate.total_media > 0
@@ -772,6 +761,5 @@ def on_refresh_click(e: me.ClickEvent):
 def page():
     """The main entry point for the library page."""
     app_state = me.state(AppState)
-    with page_scaffold(page_name="library"):
+    with page_scaffold(page_name="library"):  # pylint: disable=E1129:not-context-manager
         library_content(app_state)
-

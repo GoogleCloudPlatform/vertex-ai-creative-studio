@@ -17,6 +17,7 @@ from typing import Callable, List
 import mesop as me
 
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 from components.library.events import LibrarySelectionChangeEvent
 
 
@@ -51,9 +52,7 @@ def library_image_selector(
                             style=me.Style(cursor="pointer"),
                         ):
                             me.image(
-                                src=image_uri.replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                ),
+                                src=gcs_uri_to_https_url(image_uri),
                                 style=me.Style(
                                     width="100%",
                                     border_radius=8,
@@ -67,9 +66,7 @@ def library_image_selector(
                         style=me.Style(cursor="pointer"),
                     ):
                         me.image(
-                            src=item.gcsuri.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            ),
+                            src=gcs_uri_to_https_url(item.gcsuri),
                             style=me.Style(
                                 width="100%",
                                 border_radius=8,

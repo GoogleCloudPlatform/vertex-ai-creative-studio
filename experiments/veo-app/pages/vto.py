@@ -23,6 +23,7 @@ import mesop as me
 
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
@@ -93,9 +94,7 @@ def on_upload_person(e: me.UploadEvent):
     gcs_url = store_to_gcs(
         "vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
-    state.person_image_gcs = gcs_url.replace(
-        "gs://", "https://storage.mtls.cloud.google.com/"
-    )
+    state.person_image_gcs = gcs_uri_to_https_url(gcs_url)
     yield
 
 
@@ -106,14 +105,10 @@ def on_library_chooser(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     if e.chooser_id == "person_library_chooser":
         print("STATE: person image")
-        state.person_image_gcs = e.gcs_uri.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.person_image_gcs = gcs_uri_to_https_url(e.gcs_uri)
     elif e.chooser_id == "product_library_chooser":
         print("STATE: prod image")
-        state.product_image_gcs = e.gcs_uri.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.product_image_gcs = gcs_uri_to_https_url(e.gcs_uri)
     yield
 
 
@@ -124,9 +119,7 @@ def on_upload_product(e: me.UploadEvent):
     gcs_url = store_to_gcs(
         "vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
-    state.product_image_gcs = gcs_url.replace(
-        "gs://", "https://storage.mtls.cloud.google.com/"
-    )
+    state.product_image_gcs = gcs_uri_to_https_url(gcs_url)
     yield
 
 
@@ -162,9 +155,7 @@ def on_click_generate_person(e: me.ClickEvent):
         # The result from generate_virtual_models is a GCS URI, so we can use it directly
         gcs_url = image_urls[0]
 
-        state.person_image_gcs = gcs_url.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.person_image_gcs = gcs_uri_to_https_url(gcs_url)
 
     except Exception as e:
         state.error_message = str(e)
@@ -190,8 +181,7 @@ def on_generate(e: me.ClickEvent):
         )
         print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_images = [
-            uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-            for uri in result_gcs_uris
+            gcs_uri_to_https_url(uri) for uri in result_gcs_uris
         ]
         add_media_item(
             user_email=app_state.user_email,

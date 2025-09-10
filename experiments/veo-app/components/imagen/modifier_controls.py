@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mesop as me
+from components.styles import _BOX_STYLE
 
 from state.imagen_state import PageState
 
@@ -27,7 +28,7 @@ def modifier_controls():
                 display="flex",
                 justify_content="space-between",  # This might crowd if many items
                 flex_wrap="wrap",  # Allow wrapping for smaller screens
-                gap="16px",  # Use gap for spacing
+                gap="8px",  # Use gap for spacing
                 width="100%",
             )
         ):
@@ -143,8 +144,8 @@ _BOX_STYLE = me.Style(
     background=me.theme_var("surface"),  # Use theme variable for background
     border_radius=12,
     box_shadow=me.theme_var("shadow_elevation_2"),  # Use theme variable for shadow
-    padding=me.Padding.all(16),  # Simpler padding
+    #padding=me.Padding.all(16),  # Simpler padding
     display="flex",
     flex_direction="column",
-    margin=me.Margin(bottom=28),
+    #margin=me.Margin(bottom=28),
 )

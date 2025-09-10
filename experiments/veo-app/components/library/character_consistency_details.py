@@ -15,6 +15,7 @@
 
 import mesop as me
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 import os
 from components.download_button.download_button import download_button
 
@@ -24,11 +25,8 @@ from typing import Callable
 @me.component
 def character_consistency_details(item: MediaItem, on_click_permalink: Callable):
     """Renders the details for a character consistency item."""
-    item_display_url = (
-        item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        if item.gcsuri
-        else (item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/") if item.gcs_uris else "")
-    )
+    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    item_display_url = gcs_uri_to_https_url(gcs_uri)
     
     with me.box(
         style=me.Style(
@@ -51,9 +49,7 @@ def character_consistency_details(item: MediaItem, on_click_permalink: Callable)
                     margin=me.Margin(bottom=16),
                 ),
             )
-            best_candidate_url = item.best_candidate_image.replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
-            )
+            best_candidate_url = gcs_uri_to_https_url(item.best_candidate_image)
             me.text(
                 "Best Candidate Image:",
                 style=me.Style(
@@ -84,10 +80,7 @@ def character_consistency_details(item: MediaItem, on_click_permalink: Callable)
                     for src_image_uri in item.source_character_images[
                         :3
                     ]:
-                        src_url = src_image_uri.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        )
+                        src_url = gcs_uri_to_https_url(src_image_uri)
                         me.image(
                             src=src_url,
                             style=me.Style(

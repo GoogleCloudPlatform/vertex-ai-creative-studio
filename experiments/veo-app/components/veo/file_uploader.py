@@ -49,6 +49,7 @@ def file_uploader(on_upload_image, on_upload_last_image, on_library_select):
             align_items="center",
             flex_basis="max(480px, calc(50% - 48px))",
             padding=me.Padding(bottom=15),
+            margin=me.Margin(top=6),
         ),
     ):
         if state.veo_mode == "t2v":

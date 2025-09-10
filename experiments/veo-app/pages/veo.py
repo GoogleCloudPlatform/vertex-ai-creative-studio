@@ -18,9 +18,11 @@ import time
 
 import mesop as me
 
+from common.analytics import track_model_call
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -51,9 +53,7 @@ def on_veo_load(e: me.LoadEvent):
     if source_image_uri:
         # Set the image from the query parameter
         state.reference_image_gcs = source_image_uri
-        state.reference_image_uri = source_image_uri.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.reference_image_uri = gcs_uri_to_https_url(source_image_uri)
         # Switch to the Image-to-Video tab
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
@@ -141,8 +141,6 @@ def veo_content(app_state: me.state):
 
                     # Renders the generation quality controls (e.g., aspect ratio, length)
                     generation_controls()
-
-    
 
                 file_uploader(
                     on_upload_image, on_upload_last_image, on_veo_image_from_library,
@@ -412,9 +410,7 @@ def on_upload_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.reference_image_gcs = gcs_path
-        state.reference_image_uri = gcs_path.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.reference_image_uri = gcs_uri_to_https_url(gcs_path)
         state.reference_image_mime_type = e.file.mime_type
         print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
     except Exception as ex:
@@ -433,9 +429,7 @@ def on_upload_last_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.last_reference_image_gcs = gcs_path
-        state.last_reference_image_uri = gcs_path.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.last_reference_image_uri = gcs_uri_to_https_url(gcs_path)
         state.last_reference_image_mime_type = e.file.mime_type
     except Exception as ex:
         state.error_message = f"Failed to upload image: {ex}"
@@ -451,33 +445,8 @@ def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
         or e.chooser_id == "first_frame_library_chooser"
     ):
         state.reference_image_gcs = e.gcs_uri
-        state.reference_image_uri = e.gcs_uri.replace(
-            "gs://", f"https://storage.mtls.cloud.google.com/"
-        )
+        state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
     elif e.chooser_id == "last_frame_library_chooser":
         state.last_reference_image_gcs = e.gcs_uri
-        state.last_reference_image_uri = e.gcs_uri.replace(
-            "gs://", f"https://storage.mtls.cloud.google.com/"
-        )
+        state.last_reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
     yield
-
-
-# def on_upload_image(e: me.UploadEvent):
-#     """Upload image to GCS and update state."""
-#     state = me.state(PageState)
-#     try:
-#         # Store the uploaded file to GCS
-#         gcs_path = store_to_gcs(
-#             "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
-#         )
-#         # Update the state with the new image details
-#         state.reference_image_gcs = gcs_path
-#         state.reference_image_uri = gcs_path.replace(
-#             "gs://", "https://storage.mtls.cloud.google.com/"
-#         )
-#         state.reference_image_mime_type = e.file.mime_type
-#         print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
-#     except Exception as ex:
-#         state.error_message = f"Failed to upload image: {ex}"
-#         state.show_error_dialog = True
-#     yield

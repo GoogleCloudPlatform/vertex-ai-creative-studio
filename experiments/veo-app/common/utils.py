@@ -97,8 +97,33 @@ def print_keys(obj, prefix=""):
             # Current behavior: treats list items as potentially new objects to explore.
             print_keys(item, prefix + f"  [{i}] ")  # indicate list index in prefix
 
-def gcs_uri_to_https_url(gcs_uri: str) -> str:
-    """Converts a GCS URI to a public HTTPS URL."""
-    if gcs_uri and gcs_uri.startswith("gs://"):
-        return gcs_uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+GCS_PUBLIC_URL_PREFIX = "https://storage.mtls.cloud.google.com/"
+
+
+def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
+    """
+    Converts a GCS URI to a publicly accessible URL.
+
+    Handles None, empty strings, and already-formatted URLs gracefully.
+    """
+    if not gcs_uri:
+        return ""
+    if gcs_uri.startswith("https://"):
+        return gcs_uri
+    if gcs_uri.startswith("gs://"):
+        return gcs_uri.replace("gs://", GCS_PUBLIC_URL_PREFIX)
+    # Return as-is if it's not a recognized format
     return gcs_uri
+
+
+def https_url_to_gcs_uri(url: str | None) -> str:
+    """
+    Converts a public GCS HTTPS URL back to a gs:// URI.
+    """
+    if not url:
+        return ""
+    if url.startswith("gs://"):
+        return url
+    if url.startswith(GCS_PUBLIC_URL_PREFIX):
+        return url.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+    return url

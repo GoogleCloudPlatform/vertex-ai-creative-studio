@@ -230,20 +230,9 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 
 - **API Error Handling:** When an API returns an "Internal error" with an Operation ID, it signifies a server-side issue. The best course of action is to wait and retry, and if the problem persists, report the Operation ID to Google Cloud support.
 
-- **GCS URI Construction:** When working with GCS URIs, be mindful of duplicate prefixes. The `store_to_gcs` function returns a full `gs://` URI, so do not prepend the prefix again in the calling function. This applies to both creating display URLs (e.g., `https://storage.mtls.cloud.google.com/`) and passing URIs to the API.
-
-### 1. Initial Scaffolding and Page Creation
-
-- **File Structure:** Following the existing architecture, we created three new files:
-    - `pages/vto.py`: For the UI and page logic.
-    - `state/vto_state.py`: For managing the page's state.
-    - `models/vto.py`: For handling the VTO model interaction.
-- **Page Registration:** The new page was registered in `main.py` and added to the navigation in `config/navigation.json`.
-
-### 2. File Uploads and GCS Integration
-
-- **GCS Uploads:** We used the existing `common/storage.py` module to upload the person and product images to Google Cloud Storage.
-- **Displaying GCS Images:** We learned that the `me.image` component requires a public HTTPS URL, not a `gs://` URI. The correct way to display GCS images is to replace `gs://` with `https://storage.mtls.cloud.google.com/`.
+- **GCS URI Handling:** To ensure consistency and maintainability, always use the central utility functions in `common/utils.py` for converting between GCS URIs and public HTTPS URLs.
+    - **`gcs_uri_to_https_url(gcs_uri)`:** Use this function to convert a `gs://` URI to a public URL suitable for display in `me.image` or `me.video`.
+    - **`https_url_to_gcs_uri(url)`:** Use this function to convert a public URL back to a `gs://` URI, which is often required before passing a URL to a model API.
 
 ### 3. Interacting with the VTO Model
 

@@ -28,66 +28,51 @@ def advanced_controls():
         return
 
     with me.box(style=_BOX_STYLE):
-        with me.box(
-            style=me.Style(
-                display="flex",
-                justify_content="space-between",
-                flex_wrap="wrap",
-                gap="16px",
-                width="100%",
-            )
-        ):
-            if state.show_advanced:
-                with me.content_button(on_click=on_click_advanced_controls):
-                    with me.tooltip(message="Hide advanced controls"):
-                        with me.box(style=me.Style(display="flex")):
-                            me.icon("expand_less")
-            else:
-                with me.content_button(on_click=on_click_advanced_controls):
-                    with me.tooltip(message="Show advanced controls"):
-                        with me.box(style=me.Style(display="flex")):
-                            me.icon("expand_more")
-
-        if state.show_advanced:
-            with me.box(
-                style=me.Style(
-                    display="flex",
-                    flex_direction="row",
-                    flex_wrap="wrap",
-                    gap="16px",
-                    margin=me.Margin(top=16),
-                )
+        with me.accordion():
+            with me.expansion_panel(
+                title="Advanced Controls",
+                expanded=state.show_advanced,
+                on_toggle=on_advanced_toggle,
             ):
-                me.input(
-                    label="Negative prompt phrases",
-                    on_blur=on_blur_image_negative_prompt,
-                    value=state.image_negative_prompt_input,
-                    key=str(state.image_negative_prompt_key),
-                    style=me.Style(min_width="300px", flex_grow=2),
-                )
-                me.select(
-                    label="Number of images",
-                    value=str(state.imagen_image_count),
-                    options=[
-                        me.SelectOption(label=str(i), value=str(i))
-                        for i in range(1, selected_config.max_samples + 1)
-                    ],
-                    on_selection_change=on_select_image_count,
-                    style=me.Style(min_width="155px", flex_grow=1),
-                )
-                me.checkbox(
-                    label="Watermark (SynthID)",
-                    checked=state.imagen_watermark,
-                    disabled=True,
-                    key="imagen_watermark",
-                )
-                me.input(
-                    label="Seed (0 for random)",
-                    value=str(state.imagen_seed),
-                    on_blur=on_blur_imagen_seed,
-                    type="number",
-                    style=me.Style(min_width="155px", flex_grow=1),
-                )
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        flex_wrap="wrap",
+                        gap="16px",
+                        margin=me.Margin(top=16),
+                    )
+                ):
+                    me.input(
+                        label="Negative prompt phrases",
+                        on_blur=on_blur_image_negative_prompt,
+                        value=state.image_negative_prompt_input,
+                        key=str(state.image_negative_prompt_key),
+                        style=me.Style(min_width="300px", flex_grow=2),
+                    )
+                    me.select(
+                        label="Number of images",
+                        value=str(state.imagen_image_count),
+                        options=[
+                            me.SelectOption(label=str(i), value=str(i))
+                            for i in range(1, selected_config.max_samples + 1)
+                        ],
+                        on_selection_change=on_select_image_count,
+                        style=me.Style(min_width="155px", flex_grow=1),
+                    )
+                    me.checkbox(
+                        label="Watermark (SynthID)",
+                        checked=state.imagen_watermark,
+                        disabled=True,
+                        key="imagen_watermark",
+                    )
+                    me.input(
+                        label="Seed (0 for random)",
+                        value=str(state.imagen_seed),
+                        on_blur=on_blur_imagen_seed,
+                        type="number",
+                        style=me.Style(min_width="155px", flex_grow=1),
+                    )
 
 
 def on_blur_image_negative_prompt(e: me.InputBlurEvent):
@@ -107,9 +92,9 @@ def on_select_image_count(e: me.SelectSelectionChangeEvent):
         state.imagen_image_count = 4  # Or some other default / error state handling
 
 
-def on_click_advanced_controls(e: me.ClickEvent):
+def on_advanced_toggle(e: me.ExpansionPanelToggleEvent):
     """Toggles visibility of advanced controls."""
-    me.state(PageState).show_advanced = not me.state(PageState).show_advanced
+    me.state(PageState).show_advanced = e.opened
 
 
 def on_blur_imagen_seed(e: me.InputBlurEvent):
@@ -129,7 +114,7 @@ _BOX_STYLE = me.Style(
     background=me.theme_var("surface"),
     border_radius=12,
     box_shadow=me.theme_var("shadow_elevation_2"),
-    padding=me.Padding.all(16),
+    #padding=me.Padding.all(16),
     display="flex",
     flex_direction="column",
     margin=me.Margin(bottom=28),

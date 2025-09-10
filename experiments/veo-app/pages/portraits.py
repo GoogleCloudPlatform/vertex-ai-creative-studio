@@ -29,6 +29,7 @@ from tenacity import (
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -421,9 +422,7 @@ def motion_portraits_content(app_state: me.state):
                                 margin=me.Margin(bottom=10),
                             ),
                         )
-                        video_url = state.result_video.replace(
-                            "gs://", "https://storage.mtls.cloud.google.com/"
-                        )
+                        video_url = gcs_uri_to_https_url(state.result_video)
                         print(f"Displaying result video: {video_url}")
                         me.video(
                             src=video_url,
@@ -560,9 +559,7 @@ def on_click_upload(e: me.UploadEvent):
     )
     state.reference_image_gcs = destination_blob_name
     # url
-    state.reference_image_uri = destination_blob_name.replace(
-        "gs://", f"https://storage.mtls.cloud.google.com/"
-    )
+    state.reference_image_uri = gcs_uri_to_https_url(destination_blob_name)
     # log
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
@@ -573,9 +570,7 @@ def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
     """Portrait image from library handler."""
     state = me.state(PageState)
     state.reference_image_gcs = e.gcs_uri
-    state.reference_image_uri = e.gcs_uri.replace(
-        "gs://", f"https://storage.mtls.cloud.google.com/"
-    )
+    state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
     yield
 
 

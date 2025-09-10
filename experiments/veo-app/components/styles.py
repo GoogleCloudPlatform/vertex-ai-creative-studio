@@ -35,7 +35,7 @@ _BOX_STYLE = me.Style(
     padding=me.Padding.all(16),  # Simpler padding
     display="flex",
     flex_direction="column",
-    margin=me.Margin(bottom=28),
+    margin=me.Margin(bottom=6),
 )
 
 # Styles moved from pages/styles.py

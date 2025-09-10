@@ -15,6 +15,7 @@
 
 import mesop as me
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 from components.pill import pill
 
 
@@ -114,10 +115,7 @@ def render_video_preview(item: MediaItem, item_url: str):
             )
         ):
             if item.reference_image:
-                ref_img_url = item.reference_image.replace(
-                    "gs://",
-                    "https://storage.mtls.cloud.google.com/",
-                )
+                ref_img_url = gcs_uri_to_https_url(item.reference_image)
                 me.image(
                     src=ref_img_url,
                     style=me.Style(
@@ -128,10 +126,7 @@ def render_video_preview(item: MediaItem, item_url: str):
                     ),
                 )
             if item.last_reference_image:
-                last_ref_img_url = item.last_reference_image.replace(
-                    "gs://",
-                    "https://storage.mtls.cloud.google.com/",
-                )
+                last_ref_img_url = gcs_uri_to_https_url(item.last_reference_image)
                 me.image(
                     src=last_ref_img_url,
                     style=me.Style(

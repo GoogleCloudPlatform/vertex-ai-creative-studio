@@ -16,6 +16,8 @@
 
 import { LitElement, html, css } from 'https://esm.sh/lit';
 
+const GCS_PUBLIC_URL_PREFIX = 'https://storage.mtls.cloud.google.com/';
+
 class InfiniteScrollLibrary extends LitElement {
   static properties = {
     items: { type: Array },
@@ -87,7 +89,16 @@ class InfiniteScrollLibrary extends LitElement {
   }
 
   _formatGcsUri(uri) {
-    return uri.replace('gs://', 'https://storage.mtls.cloud.google.com/');
+    if (!uri) {
+      return "";
+    }
+    if (uri.startsWith("https://")) {
+      return uri;
+    }
+    if (uri.startsWith("gs://")) {
+      return uri.replace('gs://', GCS_PUBLIC_URL_PREFIX);
+    }
+    return uri;
   }
 }
 

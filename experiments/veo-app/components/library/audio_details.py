@@ -16,6 +16,7 @@
 import json
 import mesop as me
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 from datetime import datetime
 import os
 from components.download_button.download_button import download_button
@@ -25,11 +26,8 @@ from typing import Callable
 @me.component
 def audio_details(item: MediaItem, on_click_permalink: Callable):
     """Renders the details for an audio item."""
-    item_display_url = (
-        item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        if item.gcsuri
-        else (item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/") if item.gcs_uris else "")
-    )
+    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    item_display_url = gcs_uri_to_https_url(gcs_uri)
 
     with me.box(
         style=me.Style(

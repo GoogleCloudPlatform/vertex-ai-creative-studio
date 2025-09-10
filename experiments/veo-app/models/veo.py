@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from common.utils import gcs_uri_to_https_url
+
 from common.error_handling import GenerationError
 from config.default import Default
 from config.veo_models import get_veo_model_config

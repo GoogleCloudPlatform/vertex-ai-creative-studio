@@ -20,21 +20,15 @@ from typing import Callable
 import mesop as me
 
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 from components.download_button.download_button import download_button
 
 
 @me.component
 def video_details(item: MediaItem, on_click_permalink: Callable):
     """Renders the details for a video item."""
-    item_display_url = (
-        item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        if item.gcsuri
-        else (
-            item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/")
-            if item.gcs_uris
-            else ""
-        )
-    )
+    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    item_display_url = gcs_uri_to_https_url(gcs_uri)
 
     with me.box(
         style=me.Style(
@@ -103,9 +97,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
         me.text(f"Resolution: {item.resolution or '720p'}")
 
         if item.reference_image:
-            ref_url = item.reference_image.replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
-            )
+            ref_url = gcs_uri_to_https_url(item.reference_image)
             me.text(
                 "Reference Image:",
                 style=me.Style(
@@ -123,9 +115,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                 ),
             )
         if item.last_reference_image:
-            last_ref_url = item.last_reference_image.replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
-            )
+            last_ref_url = gcs_uri_to_https_url(item.last_reference_image)
             me.text(
                 "Last Reference Image:",
                 style=me.Style(font_weight="500", margin=me.Margin(top=8)),

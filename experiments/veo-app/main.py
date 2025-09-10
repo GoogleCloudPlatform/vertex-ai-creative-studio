@@ -129,7 +129,7 @@ async def add_global_csp(request: Request, call_next):
         "connect-src 'self' https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: blob: https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
+        "img-src 'self' data: blob: https://google-ai-skin-tone-research.imgix.net https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "media-src 'self' https://deepmind.google https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "worker-src 'self' blob:;"
     )

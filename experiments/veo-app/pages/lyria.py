@@ -21,6 +21,7 @@ import mesop as me
 import datetime # Required for timestamp
 
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
+from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import (
@@ -435,9 +436,7 @@ def on_click_lyria(e: me.ClickEvent):
     try:
         destination_blob_path = generate_music_with_lyria(prompt_for_api)
         gcs_uri_for_analysis_and_metadata = destination_blob_path
-        state.music_upload_uri = destination_blob_path.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        state.music_upload_uri = gcs_uri_to_https_url(destination_blob_path)
 
         print(f"Music generated: {state.music_upload_uri}")
         generated_successfully = True

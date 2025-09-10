@@ -18,9 +18,10 @@ from dataclasses import field
 
 import mesop as me
 
-from common.analytics import log_ui_click
+from common.analytics import log_ui_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
@@ -113,7 +114,7 @@ def gemini_image_gen_page_content():
                 ),
             ):
                 me.text(
-                    "Upload Images and Provide a Prompt",
+                    "Type a prompt or add images and a prompt",
                     style=me.Style(
                         margin=me.Margin(bottom=16),
                     ),
@@ -337,77 +338,108 @@ def gemini_image_gen_page_content():
                                         me.text(transformation["title"])
 
             # Right column (generated images)
-            with me.box(style=me.Style(flex_grow=1)):
+            with me.box(
+                style=me.Style(
+                    flex_grow=1,
+                    display="flex",
+                    flex_direction="column",
+                    align_items="center",
+                    justify_content="center",
+                    border_radius=12,
+                    padding=me.Padding.all(16),
+                    min_height=400,
+                )
+            ):
                 if state.generation_complete and not state.generated_image_urls:
                     me.text("No images returned.")
                 elif state.generated_image_urls:
-                    if len(state.generated_image_urls) == 1:
-                        # Display single, maximized image
-                        me.image(
-                            src=state.generated_image_urls[0],
-                            style=me.Style(
-                                width="100%",
-                                max_height="85vh",
-                                object_fit="contain",
-                                border_radius=8,
-                            ),
+                    # This box is to override the parent's centering styles
+                    with me.box(
+                        style=me.Style(
+                            width="100%",
+                            height="100%",
+                            display="flex",
+                            flex_direction="column",
                         )
-                    else:
-                        # Display multiple images in a gallery view
-                        with me.box(
-                            style=me.Style(
-                                display="flex", flex_direction="column", gap=16
-                            )
-                        ):
-                            # Main image
+                    ):
+                        if len(state.generated_image_urls) == 1:
+                            # Display single, maximized image
                             me.image(
-                                src=state.selected_image_url,
+                                src=state.generated_image_urls[0],
                                 style=me.Style(
                                     width="100%",
-                                    max_height="75vh",
+                                    max_height="85vh",
                                     object_fit="contain",
                                     border_radius=8,
                                 ),
                             )
-
-                            # Thumbnail strip
+                        else:
+                            # Display multiple images in a gallery view
                             with me.box(
                                 style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    gap=16,
-                                    justify_content="center",
+                                    display="flex", flex_direction="column", gap=16
                                 )
                             ):
-                                for url in state.generated_image_urls:
-                                    is_selected = url == state.selected_image_url
-                                    with me.box(
-                                        key=url,
-                                        on_click=on_thumbnail_click,
-                                        style=me.Style(
-                                            padding=me.Padding.all(4),
-                                            border=me.Border.all(
-                                                me.BorderSide(
-                                                    width=4,
-                                                    style="solid",
-                                                    color=me.theme_var("secondary")
-                                                    if is_selected
-                                                    else "transparent",
-                                                )
-                                            ),
-                                            border_radius=12,
-                                            cursor="pointer",
-                                        ),
-                                    ):
-                                        me.image(
-                                            src=url,
+                                # Main image
+                                me.image(
+                                    src=state.selected_image_url,
+                                    style=me.Style(
+                                        width="100%",
+                                        max_height="75vh",
+                                        object_fit="contain",
+                                        border_radius=8,
+                                    ),
+                                )
+
+                                # Thumbnail strip
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        gap=16,
+                                        justify_content="center",
+                                    )
+                                ):
+                                    for url in state.generated_image_urls:
+                                        is_selected = url == state.selected_image_url
+                                        with me.box(
+                                            key=url,
+                                            on_click=on_thumbnail_click,
                                             style=me.Style(
-                                                width=100,
-                                                height=100,
-                                                object_fit="cover",
-                                                border_radius=6,
+                                                padding=me.Padding.all(4),
+                                                border=me.Border.all(
+                                                    me.BorderSide(
+                                                        width=4,
+                                                        style="solid",
+                                                        color=me.theme_var("secondary")
+                                                        if is_selected
+                                                        else "transparent",
+                                                    )
+                                                ),
+                                                border_radius=12,
+                                                cursor="pointer",
                                             ),
-                                        )
+                                        ):
+                                            me.image(
+                                                src=url,
+                                                style=me.Style(
+                                                    width=100,
+                                                    height=100,
+                                                    object_fit="cover",
+                                                    border_radius=6,
+                                                ),
+                                            )
+                else:
+                    # Placeholder
+                    with me.box(
+                        style=me.Style(
+                            opacity=0.2,
+                            width=128,
+                            height=128,
+                            color=me.theme_var("on-surface-variant"),
+                        )
+                    ):
+                        svg_icon(icon_name="banana")
         snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
@@ -496,9 +528,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
@@ -513,9 +543,7 @@ def on_image_action_click(e: me.ClickEvent):
 
     # Prioritize the selected generated image
     if state.selected_image_url:
-        input_gcs_uri = state.selected_image_url.replace(
-            "https://storage.mtls.cloud.google.com/", "gs://"
-        )
+        input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     # Fallback to the first uploaded image
     elif state.uploaded_image_gcs_uris:
         input_gcs_uri = state.uploaded_image_gcs_uris[0]
@@ -542,9 +570,7 @@ def on_continue_click(e: me.ClickEvent):
         yield from show_snackbar(state, "Please select an image to continue with.")
         return
 
-    gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     state.uploaded_image_gcs_uris = [gcs_uri]
     state.generated_image_urls = []
     state.selected_image_url = ""
@@ -595,12 +621,18 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     yield
 
     try:
-        gcs_uris, execution_time = generate_image_from_prompt_and_images(
-            prompt=final_prompt,
-            images=input_gcs_uris,
-            gcs_folder="gemini_image_generations",
-            file_prefix="gemini_image",
-        )
+        with track_model_call(
+            model_name=cfg().GEMINI_IMAGE_GEN_MODEL,
+            prompt_length=len(final_prompt),
+            num_input_images=len(input_gcs_uris),
+            num_images_generated=state.num_images_to_generate,
+        ):
+            gcs_uris, execution_time = generate_image_from_prompt_and_images(
+                prompt=final_prompt,
+                images=input_gcs_uris,
+                gcs_folder="gemini_image_generations",
+                file_prefix="gemini_image",
+            )
 
         state.generation_time = execution_time
 
@@ -624,8 +656,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             )
         else:
             state.generated_image_urls = [
-                uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-                for uri in gcs_uris
+                gcs_uri_to_https_url(uri) for uri in gcs_uris
             ]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
@@ -698,9 +729,7 @@ def on_send_to_veo(e: me.ClickEvent):
         return
 
     # Convert back to GCS URI to pass a clean identifier
-    gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     me.navigate(
         url="/veo",

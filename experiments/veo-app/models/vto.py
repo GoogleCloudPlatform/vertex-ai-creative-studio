@@ -22,6 +22,7 @@ from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic import PredictResponse
 
 from common.storage import store_to_gcs
+from common.utils import https_url_to_gcs_uri
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VtoModelSetup
 
@@ -79,17 +80,13 @@ def generate_vto_image(
     instance = {
         "personImage": {
             "image": {
-                "gcsUri": person_gcs_url.replace(
-                    "https://storage.mtls.cloud.google.com/", "gs://"
-                )
+                "gcsUri": https_url_to_gcs_uri(person_gcs_url)
             }
         },
         "productImages": [
             {
                 "image": {
-                    "gcsUri": product_gcs_url.replace(
-                        "https://storage.mtls.cloud.google.com/", "gs://"
-                    )
+                    "gcsUri": https_url_to_gcs_uri(product_gcs_url)
                 }
             }
         ],

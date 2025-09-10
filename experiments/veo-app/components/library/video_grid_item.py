@@ -15,6 +15,7 @@
 
 import mesop as me
 from common.metadata import MediaItem
+from common.utils import gcs_uri_to_https_url
 from components.pill import pill
 
 
@@ -22,11 +23,8 @@ from components.pill import pill
 def video_grid_item(item: MediaItem):
     """Renders a grid item for a video media type."""
     item_duration_str = f"{item.duration} sec" if item.duration is not None else "N/A"
-    item_url = (
-        item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        if item.gcsuri
-        else (item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/") if item.gcs_uris else "")
-    )
+    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    item_url = gcs_uri_to_https_url(gcs_uri)
 
     with me.box(
         style=me.Style(
@@ -98,10 +96,7 @@ def video_grid_item(item: MediaItem):
             )
         ):
             if item.reference_image:
-                ref_img_url = item.reference_image.replace(
-                    "gs://",
-                    "https://storage.mtls.cloud.google.com/",
-                )
+                ref_img_url = gcs_uri_to_https_url(item.reference_image)
                 me.image(
                     src=ref_img_url,
                     style=me.Style(
@@ -112,10 +107,7 @@ def video_grid_item(item: MediaItem):
                     ),
                 )
             if item.last_reference_image:
-                last_ref_img_url = item.last_reference_image.replace(
-                    "gs://",
-                    "https://storage.mtls.cloud.google.com/",
-                )
+                last_ref_img_url = gcs_uri_to_https_url(item.last_reference_image)
                 me.image(
                     src=last_ref_img_url,
                     style=me.Style(
