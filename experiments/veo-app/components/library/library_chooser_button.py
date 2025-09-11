@@ -17,7 +17,7 @@ from typing import Callable, Optional
 
 import mesop as me
 
-from common.metadata import MediaItem, get_media_for_page
+from common.metadata import MediaItem, get_media_for_page_optimized
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_image_selector import library_image_selector
@@ -52,9 +52,8 @@ def library_chooser_button(
         yield
 
         # Fetch fresh data every time the dialog is opened
-        state.media_items = get_media_for_page(
-            1, 20, ["images"], sort_by_timestamp=True
-        )
+        items, _ = get_media_for_page_optimized(20, ["images"])
+        state.media_items = items
         state.is_loading = False
         yield
 

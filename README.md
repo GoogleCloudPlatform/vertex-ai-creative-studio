@@ -25,7 +25,6 @@ Here's a glimpse of what you'll find:
 *   **Promptlandia:** A powerful web app to analyze, refine, and improve your prompts.
 *   **Veo Genetic Prompt Optimizer:** An automated system to evolve and refine high-level "metaprompts" for Veo.
 *   **Character & Item Consistency:** Workflows for maintaining consistency for characters and items across video scenes.
-*   **VeoStart:** A prompt creation assistant for Veo.
 
 **Image Generation & Analysis**
 *   **Virtual Try-On:** A notebook for virtually trying on outfits at scale.

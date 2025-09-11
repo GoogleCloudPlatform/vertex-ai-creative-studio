@@ -83,7 +83,8 @@ main() {
         echo -e "${BLUE}Installing all MCP servers...${NC}"
         for d in $(find_mcp_servers); do
           echo "Installing $d..."
-          if ! (cd "$d" && go install); then
+          # Run go mod tidy to prevent checksum mismatch errors
+          if ! (cd "$d" && go mod tidy && go install); then
             echo -e "${RED}ERROR: Failed to install $d. Please check the output above for details.${NC}"
             exit 1
           fi
@@ -98,7 +99,8 @@ main() {
       *) 
         if [ -n "$server" ]; then
           echo -e "${BLUE}Installing $server...${NC}"
-          if (cd "$server" && go install); then
+                    # Run go mod tidy to prevent checksum mismatch errors
+          if (cd "$server" && go mod tidy && go install); then
             echo -e "${GREEN}$server has been installed successfully.${NC}"
           else
             echo -e "${RED}ERROR: Failed to install $server. Please check the output above for details.${NC}"

@@ -58,6 +58,7 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
+from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
 
 
@@ -126,7 +127,7 @@ async def add_global_csp(request: Request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://cdn.jsdelivr.net; "
-        "connect-src 'self' https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
+        "connect-src 'self' https://esm.sh https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: blob: https://google-ai-skin-tone-research.imgix.net https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "

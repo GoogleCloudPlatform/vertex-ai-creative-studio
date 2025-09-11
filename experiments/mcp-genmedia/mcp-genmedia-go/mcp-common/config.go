@@ -3,6 +3,7 @@ package common
 import (
 	"log"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -18,10 +19,15 @@ func LoadConfig() *Config {
 		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
 	}
 
+	genmediaBucket := GetEnv("GENMEDIA_BUCKET", "")
+	if genmediaBucket != "" {
+		genmediaBucket = strings.TrimPrefix(genmediaBucket, "gs://")
+	}
+
 	return &Config{
 		ProjectID:      projectID,
 		Location:       GetEnv("LOCATION", "us-central1"),
-		GenmediaBucket: GetEnv("GENMEDIA_BUCKET", ""),
+		GenmediaBucket: genmediaBucket,
 		ApiEndpoint:    os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
 	}
 }

@@ -26,17 +26,17 @@ terraform {
 }
 provider "google" {
   project = var.project_id
-  region = var.region
+  region  = var.region
   default_labels = {
-    app="genmedia-studio"
+    app = "genmedia-studio"
   }
 }
 
 provider "google-beta" {
   project = var.project_id
-  region = var.region
+  region  = var.region
   default_labels = {
-    app="genmedia-studio"
+    app = "genmedia-studio"
   }
 }
 
@@ -68,22 +68,22 @@ module "project-services" {
 /* There are times when IAP service account is not automatically provisioned, creating explicitly to be sure */
 resource "google_project_service_identity" "iap_sa" {
   provider = google-beta
-  project = var.project_id
-  service = "iap.googleapis.com"
+  project  = var.project_id
+  service  = "iap.googleapis.com"
 }
 
 resource "google_iap_web_iam_member" "initial_user_iap_access" {
-  for_each = toset(local.iap_user_list)
-  role     = "roles/iap.httpsResourceAccessor"
-  member   = "user:${each.key}"
-  depends_on = [ module.project-services ]
+  count      = var.use_lb && var.initial_user != null ? 1 : 0
+  role       = "roles/iap.httpsResourceAccessor"
+  member     = "user:${var.initial_user}"
+  depends_on = [module.project-services]
 }
 
 resource "google_cloud_run_service_iam_member" "iap_cloudrun_access" {
   location = google_cloud_run_v2_service.creative_studio.location
   service  = google_cloud_run_v2_service.creative_studio.name
-  role = "roles/run.invoker"
-  member = google_project_service_identity.iap_sa.member
+  role     = "roles/run.invoker"
+  member   = google_project_service_identity.iap_sa.member
 }
 
 module "lb-http" {
@@ -99,23 +99,21 @@ module "lb-http" {
   backends = {
     default = {
       description = "Creative Studio backend"
-      enable_cdn = false
+      enable_cdn  = false
       groups = [
         {
           group = google_compute_region_network_endpoint_group.cloudrun_neg[0].id
         }
       ]
       iap_config = {
-        enable               = true
-        oauth2_client_id     = var.iap_oauth_client_id
-        oauth2_client_secret = var.iap_oauth_client_secret
+        enable = true
       }
       log_config = {
         enable = true
       }
     }
   }
-  depends_on = [ module.project-services ]
+  depends_on = [module.project-services]
 }
 
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
@@ -126,7 +124,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
   cloud_run {
     service = google_cloud_run_v2_service.creative_studio.name
   }
-  depends_on = [ module.project-services ]
+  depends_on = [module.project-services]
 }
 
 /********************************************
@@ -140,43 +138,45 @@ resource "google_service_account" "creative_studio" {
 # Centralizing environment variables here and using for each in service declaration for simplicity
 locals {
   creative_studio_env_vars = {
-    PROJECT_ID          = var.project_id
-    LOCATION            = var.region
-    MODEL_ID            = var.model_id
-    VEO_MODEL_ID        = var.veo_model_id
-    VEO_EXP_MODEL_ID    = var.veo_exp_model_id
-    LYRIA_MODEL_VERSION = var.lyria_model_id
-    LYRIA_PROJECT_ID    = var.project_id
-    GENMEDIA_BUCKET     = module.creative_studio_asset_bucket.bucket.name
-    VIDEO_BUCKET        = module.creative_studio_asset_bucket.bucket.name
-    MEDIA_BUCKET        = module.creative_studio_asset_bucket.bucket.name
-    IMAGE_BUCKET        = module.creative_studio_asset_bucket.bucket.name
-    GCS_ASSETS_BUCKET   = module.creative_studio_asset_bucket.bucket.name
-    GENMEDIA_FIREBASE_DB= google_firestore_database.create_studio_asset_metadata.name
-    EDIT_IMAGES_ENABLED = var.edit_images_enabled
+    PROJECT_ID           = var.project_id
+    LOCATION             = var.region
+    MODEL_ID             = var.model_id
+    VEO_MODEL_ID         = var.veo_model_id
+    VEO_EXP_MODEL_ID     = var.veo_exp_model_id
+    LYRIA_MODEL_VERSION  = var.lyria_model_id
+    LYRIA_PROJECT_ID     = var.project_id
+    GENMEDIA_BUCKET      = module.creative_studio_asset_bucket.bucket.name
+    VIDEO_BUCKET         = module.creative_studio_asset_bucket.bucket.name
+    MEDIA_BUCKET         = module.creative_studio_asset_bucket.bucket.name
+    IMAGE_BUCKET         = module.creative_studio_asset_bucket.bucket.name
+    GCS_ASSETS_BUCKET    = module.creative_studio_asset_bucket.bucket.name
+    GENMEDIA_FIREBASE_DB = google_firestore_database.create_studio_asset_metadata.name
+    EDIT_IMAGES_ENABLED  = var.edit_images_enabled
   }
 }
 
 resource "google_cloud_run_v2_service" "creative_studio" {
-  provider              = google-beta
-  name                  = "creative-studio"
-  location              = var.region
-  project               = var.project_id
-  ingress               = var.use_lb ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
-  default_uri_disabled  = var.use_lb
-  deletion_protection   = false
-  launch_stage          = var.use_lb ? "GA" : "BETA"
+  provider             = google-beta
+  name                 = "creative-studio"
+  location             = var.region
+  project              = var.project_id
+  ingress              = var.use_lb ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
+  default_uri_disabled = var.use_lb
+  deletion_protection  = false
+  iap_enabled          = !var.use_lb
+  invoker_iam_disabled = !var.use_lb
+  launch_stage         = var.use_lb ? "GA" : "BETA"
 
   template {
     containers {
-        name = "creative-studio"
-        image = var.initial_container_image
-        resources {
-          limits = {
-            cpu = "1000m"
-            memory = "1024Mi"
-          }
+      name  = "creative-studio"
+      image = var.initial_container_image
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "1024Mi"
         }
+      }
       dynamic "env" {
         for_each = local.creative_studio_env_vars
         content {
@@ -191,7 +191,7 @@ resource "google_cloud_run_v2_service" "creative_studio" {
     }
   }
   lifecycle {
-    ignore_changes = [ template[0].containers[0].image, client ]
+    ignore_changes = [template[0].containers[0].image, client]
   }
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
@@ -200,72 +200,57 @@ resource "google_cloud_run_v2_service" "creative_studio" {
   ]
 }
 
-
-locals {
-  invoker_user_list = !var.use_lb ? distinct(compact(concat(
-    var.initial_user != null ? [var.initial_user] : [],
-    var.initial_users
-  ))) : []
-  iap_user_list = var.use_lb ? distinct(compact(concat(
-    var.initial_user != null ? [var.initial_user] : [],
-    var.initial_users
-  ))) : []
-}
-
-resource "google_cloud_run_service_iam_member" "initial_user_invokers" {
-  for_each = toset(local.invoker_user_list)
-  location = google_cloud_run_v2_service.creative_studio.location
-  project  = google_cloud_run_v2_service.creative_studio.project
-  service  = google_cloud_run_v2_service.creative_studio.name
-  role     = "roles/run.invoker"
-  member   = "user:${each.key}"
-}
-
 /* There are times when Vertex service account is not automatically provisioned, creating explicitly to be sure */
 resource "google_project_service_identity" "vertex_sa" {
   provider = google-beta
-  project = var.project_id
-  service = "aiplatform.googleapis.com"
+  project  = var.project_id
+  service  = "aiplatform.googleapis.com"
 }
 
 resource "google_project_iam_member" "vertex_sa_access" {
   project = var.project_id
   role    = "roles/aiplatform.serviceAgent"
-  member = google_project_service_identity.vertex_sa.member
+  member  = google_project_service_identity.vertex_sa.member
 }
 
 module "creative_studio_asset_bucket" {
-  source                    = "terraform-google-modules/cloud-storage/google"
-  version                   = "~>11.0"
-  project_id                = var.project_id
-  names                     = [ "creative-studio-${var.project_id}-assets" ]
-  location                  = var.region
-  force_destroy             = {
+  source     = "terraform-google-modules/cloud-storage/google"
+  version    = "~>11.0"
+  project_id = var.project_id
+  names      = ["creative-studio-${var.project_id}-assets"]
+  location   = var.region
+  force_destroy = {
     "creative-studio-${var.project_id}-assets" = var.enable_data_deletion
   }
-  set_admin_roles           = true
-  bucket_admins             = {}
-  admins                    = var.initial_user != null ? [ "user:${var.initial_user}" ] : (length(var.initial_users) > 0 ? [ "user:${var.initial_users[0]}" ] : [])
-  set_creator_roles         = true
-  bucket_creators           = {}
-  creators                  = [ google_service_account.creative_studio.member ]
-  set_viewer_roles          = true
-  bucket_viewers            = {}
-  viewers                   = [ google_service_account.creative_studio.member ]
-  public_access_prevention  = "enforced"
-  depends_on = [ module.project-services ]
+  set_admin_roles          = true
+  bucket_admins            = {}
+  admins                   = ["user:${var.initial_user}"]
+  set_creator_roles        = true
+  bucket_creators          = {}
+  creators                 = [google_service_account.creative_studio.member]
+  set_viewer_roles         = true
+  bucket_viewers           = {}
+  viewers                  = [google_service_account.creative_studio.member]
+  public_access_prevention = "enforced"
+  depends_on               = [module.project-services]
 }
 
 resource "google_storage_bucket_iam_member" "sa_bucket_viewer" {
   bucket = module.creative_studio_asset_bucket.bucket.name
-  role = "roles/storage.bucketViewer"
+  role   = "roles/storage.bucketViewer"
   member = google_service_account.creative_studio.member
 }
 
 resource "google_storage_bucket_iam_member" "sa_object_user" {
   bucket = module.creative_studio_asset_bucket.bucket.name
-  role = "roles/storage.objectUser"
+  role   = "roles/storage.objectUser"
   member = google_service_account.creative_studio.member
+}
+
+resource "google_project_iam_member" "creative_studio_sa_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = google_service_account.creative_studio.member
 }
 
 resource "google_firestore_database" "create_studio_asset_metadata" {
@@ -278,8 +263,27 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
   delete_protection_state           = var.enable_data_deletion ? "DELETE_PROTECTION_DISABLED" : "DELETE_PROTECTION_ENABLED"
   # Terraform docs / testing showed that deletion_policy is needed for db to be delete when using terraform destroy
   # See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/firestore_database#delete_protection_state-1
-  deletion_policy                   = var.enable_data_deletion ? "DELETE" : "ABANDON"
-  depends_on = [ module.project-services ]
+  deletion_policy = var.enable_data_deletion ? "DELETE" : "ABANDON"
+  depends_on      = [module.project-services]
+}
+
+resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
+  collection = "genmedia-library"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "mime_type"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+
+  depends_on = [
+    google_firestore_database.create_studio_asset_metadata
+  ]
 }
 
 resource "google_project_iam_member" "creative_studio_db_access" {
@@ -287,7 +291,7 @@ resource "google_project_iam_member" "creative_studio_db_access" {
   role    = "roles/datastore.user"
   member  = google_service_account.creative_studio.member
   condition {
-    title = "Access to Create Studio Asset Metadata DB"
+    title      = "Access to Create Studio Asset Metadata DB"
     expression = "resource.name==\"${google_firestore_database.create_studio_asset_metadata.id}\""
   }
 }
@@ -295,12 +299,6 @@ resource "google_project_iam_member" "creative_studio_db_access" {
 resource "google_project_iam_member" "creative_studio_vertex_access" {
   project = var.project_id
   role    = "roles/aiplatform.user"
-  member  = google_service_account.creative_studio.member
-}
-
-resource "google_project_iam_member" "creative_studio_service_usage_consumer" {
-  project = var.project_id
-  role    = "roles/serviceusage.serviceUsageConsumer"
   member  = google_service_account.creative_studio.member
 }
 
@@ -325,25 +323,25 @@ resource "google_project_iam_member" "build_logs_writer" {
 }
 
 module "source_bucket" {
-  source                   = "terraform-google-modules/cloud-storage/google"
-  version                  = "~>11.0"
-  project_id               = var.project_id
-  names                    = [ "run-resources-${var.project_id}-${var.region}" ]
-  location                 = var.region
-  force_destroy            = {
+  source     = "terraform-google-modules/cloud-storage/google"
+  version    = "~>11.0"
+  project_id = var.project_id
+  names      = ["run-resources-${var.project_id}-${var.region}"]
+  location   = var.region
+  force_destroy = {
     "run-resources-${var.project_id}-${var.region}" = var.enable_data_deletion
   }
   set_admin_roles          = true
   bucket_admins            = {}
-  admins                   = var.initial_user != null ? [ "user:${var.initial_user}" ] : (length(var.initial_users) > 0 ? [ "user:${var.initial_users[0]}" ] : [])
+  admins                   = ["user:${var.initial_user}"]
   set_creator_roles        = true
   bucket_creators          = {}
-  creators                 = [ google_service_account.cloudbuild.member ]
+  creators                 = [google_service_account.cloudbuild.member]
   set_viewer_roles         = true
   bucket_viewers           = {}
-  viewers                  = [ google_service_account.cloudbuild.member ]
+  viewers                  = [google_service_account.cloudbuild.member]
   public_access_prevention = "enforced"
-  depends_on = [ module.project-services ]
+  depends_on               = [module.project-services]
 }
 
 resource "google_artifact_registry_repository" "creative_studio" {
@@ -353,24 +351,24 @@ resource "google_artifact_registry_repository" "creative_studio" {
   vulnerability_scanning_config {
     enablement_config = "INHERITED"
   }
-  depends_on = [ module.project-services ]
+  depends_on = [module.project-services]
 }
 
 resource "google_artifact_registry_repository_iam_member" "readers" {
   repository = google_artifact_registry_repository.creative_studio.name
-  role   = "roles/artifactregistry.reader"
-  member = google_service_account.cloudbuild.member
+  role       = "roles/artifactregistry.reader"
+  member     = google_service_account.cloudbuild.member
 }
 
 resource "google_artifact_registry_repository_iam_member" "writers" {
   repository = google_artifact_registry_repository.creative_studio.name
-  role   = "roles/artifactregistry.writer"
-  member = google_service_account.cloudbuild.member
+  role       = "roles/artifactregistry.writer"
+  member     = google_service_account.cloudbuild.member
 }
 
 resource "google_cloud_run_service_iam_member" "build_service" {
   location = google_cloud_run_v2_service.creative_studio.location
   service  = google_cloud_run_v2_service.creative_studio.name
-  role = "roles/run.developer"
-  member = google_service_account.cloudbuild.member
+  role     = "roles/run.developer"
+  member   = google_service_account.cloudbuild.member
 }

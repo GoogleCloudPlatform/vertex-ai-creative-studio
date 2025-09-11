@@ -146,6 +146,15 @@
       "description": "Browse your generated media."
     },
     {
+      "id": 63,
+      "display": "Pixie Compositor",
+      "icon": "auto_fix_high",
+      "route": "/pixie_compositor",
+      "group": "studio",
+      "mode": ["image", "video"],
+      "description": "Pixie helps you combine generative media."
+    },
+    {
       "id": 65,
       "display": "About",
       "icon": "info",

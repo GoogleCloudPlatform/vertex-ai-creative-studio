@@ -24,7 +24,7 @@ We'd love to hear your feedback on these!
 * [Veo Genetic Prompt Optimizer](#veo-genetic-prompt-optimizer) - an automated system that uses a genetic algorithm to evolve and refine high-level "metaprompts," that guides Gemini to generate superior, task-specific prompts for Google's Veo video generation model.
 * [Veo 3 Character Consistency](#veo-3-character-consistency) - a workflow for generating a video of a person in a new scene while maintaining character consistency.
 * [Veo 3 Item Consistency](#veo-3-item-consistency) - a workflow for generating a video of an item in a new scene while maintaining item consistency.
-* [VeoStart](#veostart) - a prompt creator assistant for Veo 2 & Veo 3
+* VeoStart has graduated! See [V-Start](https://github.com/GoogleCloudPlatform/generative-ai/tree/main/vision/sample-apps/V-Start)
 
 **Audio**
 * [Creative Podcast Assistant](#creative-podcast-assistant) - a notebook example to create a podcast with genmedia services
@@ -87,9 +87,9 @@ See [Veo 3 Item Consistency](./veo3-item-consistency/)
 
 ## VeoStart
 
-VeoStart is a web-based tool designed to help users craft high-quality, effective prompts for Google's Veo video generation model. It provides a structured interface for building prompts from scratch and a gallery of examples to inspire creativity.
+VeoStart has graduated! - See [V-Start](https://github.com/GoogleCloudPlatform/generative-ai/tree/main/vision/sample-apps/V-Start).
 
-See [VeoStart](./VeoStart/)
+
 
 ## MCP Tools for Genmedia
 

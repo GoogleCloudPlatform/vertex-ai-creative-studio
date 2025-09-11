@@ -510,3 +510,154 @@ def get_media_for_page(
         print(f"Error fetching media from Firestore: {e}")
         # Optionally, you could re-raise or handle more gracefully
         return []
+
+
+def get_media_for_page_optimized(
+    page_size: int,
+    type_filters: list[str],
+    start_after=None,
+):
+    """
+    Fetches a paginated and filtered list of media items from Firestore
+    using server-side pagination and filtering.
+    """
+    try:
+        query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+
+        # Apply type filters using WHERE clauses
+        # Note: This requires Firestore indexes. For a single 'mime_type' startsWith,
+        # a single-field index on 'mime_type' might suffice. For combinations with
+        # sorting, a composite index is likely needed.
+        if "videos" in type_filters:
+            query = query.where("mime_type", ">=", "video/").where(
+                "mime_type", "<", "video0"
+            )
+        elif "images" in type_filters:
+            query = query.where("mime_type", ">=", "image/").where(
+                "mime_type", "<", "image0"
+            )
+        elif "music" in type_filters:
+            query = query.where("mime_type", ">=", "audio/").where(
+                "mime_type", "<", "audio0"
+            )
+
+        # Always sort by timestamp
+        query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
+
+        # Server-side pagination
+        if start_after:
+            query = query.start_after(start_after)
+
+        query = query.limit(page_size)
+
+        docs = list(query.stream())
+        media_items = []
+        for doc in docs:
+            # This reuses the same parsing logic as the original function
+            # A refactor could extract this parsing into a helper
+            raw_item_data = doc.to_dict()
+            if raw_item_data is None:
+                continue
+
+            timestamp_iso_str: Optional[str] = None
+            raw_timestamp = raw_item_data.get("timestamp")
+            if isinstance(raw_timestamp, datetime.datetime):
+                timestamp_iso_str = raw_timestamp.isoformat()
+            elif isinstance(raw_timestamp, str):
+                timestamp_iso_str = raw_timestamp  # Assuming it's already ISO format
+            elif hasattr(raw_timestamp, "isoformat"):  # For Firestore Timestamp objects
+                timestamp_iso_str = raw_timestamp.isoformat()
+
+            try:
+                gen_time = (
+                    float(raw_item_data.get("generation_time"))
+                    if raw_item_data.get("generation_time") is not None
+                    else None
+                )
+            except (ValueError, TypeError):
+                gen_time = None
+
+            try:
+                item_duration = (
+                    float(raw_item_data.get("duration"))
+                    if raw_item_data.get("duration") is not None
+                    else None
+                )
+            except (ValueError, TypeError):
+                item_duration = None
+
+            media_item = MediaItem(
+                id=doc.id,
+                aspect=str(raw_item_data.get("aspect"))
+                if raw_item_data.get("aspect") is not None
+                else None,
+                gcsuri=str(raw_item_data.get("gcsuri"))
+                if raw_item_data.get("gcsuri") is not None
+                else None,
+                gcs_uris=raw_item_data.get("gcs_uris", []),
+                source_images_gcs=raw_item_data.get("source_images_gcs", []),
+                prompt=str(raw_item_data.get("prompt"))
+                if raw_item_data.get("prompt") is not None
+                else None,
+                generation_time=gen_time,
+                timestamp=timestamp_iso_str,
+                reference_image=str(raw_item_data.get("reference_image"))
+                if raw_item_data.get("reference_image") is not None
+                else None,
+                last_reference_image=str(raw_item_data.get("last_reference_image"))
+                if raw_item_data.get("last_reference_image") is not None
+                else None,
+                negative_prompt=str(raw_item_data.get("negative_prompt"))
+                if raw_item_data.get("negative_prompt") is not None
+                else None,
+                enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
+                duration=item_duration,
+                error_message=str(raw_item_data.get("error_message"))
+                if raw_item_data.get("error_message") is not None
+                else None,
+                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
+                if raw_item_data.get("rewritten_prompt") is not None
+                else None,
+                comment=str(raw_item_data.get("comment"))
+                if raw_item_data.get("comment") is not None
+                else None,
+                resolution=str(raw_item_data.get("resolution"))
+                if raw_item_data.get("resolution") is not None
+                else None,
+                media_type=str(raw_item_data.get("media_type"))
+                if raw_item_data.get("media_type") is not None
+                else None,
+                source_character_images=raw_item_data.get(
+                    "source_character_images", []
+                ),
+                character_description=str(raw_item_data.get("character_description"))
+                if raw_item_data.get("character_description") is not None
+                else None,
+                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
+                if raw_item_data.get("imagen_prompt") is not None
+                else None,
+                veo_prompt=str(raw_item_data.get("veo_prompt"))
+                if raw_item_data.get("veo_prompt") is not None
+                else None,
+                candidate_images=raw_item_data.get("candidate_images", []),
+                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
+                if raw_item_data.get("best_candidate_image") is not None
+                else None,
+                outpainted_image=str(raw_item_data.get("outpainted_image"))
+                if raw_item_data.get("outpainted_image") is not None
+                else None,
+                raw_data=raw_item_data,
+            )
+            media_items.append(media_item)
+        
+        last_doc = docs[-1] if docs else None
+        return media_items, last_doc
+
+    except Exception as e:
+        print(f"Error fetching media from Firestore (optimized): {e}")
+        return [], None
+
+
+
+
+

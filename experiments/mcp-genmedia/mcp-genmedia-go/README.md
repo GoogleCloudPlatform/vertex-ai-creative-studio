@@ -125,6 +125,7 @@ This repository provides AI application samples for:
 
 *   [Google ADK (Agent Development Kit)](../sample-agents/adk/README.md)
 *   [Google Firebase Genkit](../sample-agents/genkit/README.md)
+*   [Google Gemini CLI](../sample-agents/geminicli/README.md)
 
 
 ## Available Go MCP Servers:
@@ -172,7 +173,7 @@ All servers in this project are configured using environment variables. While so
 *   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
-*   `PORT` (string): Used for the port to listen on when started as a HTTP/SSE server. Defaults to `8080` if not set.
+*   `PORT` (string): Specifies the port for the `http` transport. If not set, it defaults to `8080`. Note that for the `sse` transport, most servers use a hardcoded port (typically `8081`) to avoid conflicts.
 
 *Example:*
 ```bash

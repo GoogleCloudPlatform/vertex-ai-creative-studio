@@ -17,7 +17,7 @@ from typing import Callable, Optional
 
 import mesop as me
 
-from common.metadata import MediaItem, get_media_for_page
+from common.metadata import MediaItem, get_media_for_page_optimized, db, config
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.video_infinite_scroll_library import video_infinite_scroll_library
@@ -30,7 +30,6 @@ class State:
     active_chooser_key: str = ""
     is_loading: bool = False
     media_items: list[MediaItem] = field(default_factory=list)
-    current_page: int = 1
     has_more_items: bool = True
 
 
@@ -49,32 +48,36 @@ def video_chooser_button(
         state.active_chooser_key = e.key
         state.show_dialog = True
         state.is_loading = True
-        state.current_page = 1
         state.media_items = []
         state.has_more_items = True
         yield
 
-        items = get_media_for_page(state.current_page, 20, ["videos"], sort_by_timestamp=True)
+        items, last_doc = get_media_for_page_optimized(20, ["videos"])
         print(f"Found {len(items)} videos in the library.")
         state.media_items = items
         state.is_loading = False
-        if not items:
+        if not last_doc:
             state.has_more_items = False
         yield
 
     def handle_load_more(e: me.WebEvent):
         """Load the next page of videos when the user scrolls to the bottom."""
-        if state.is_loading or not state.has_more_items:
+        if state.is_loading or not state.has_more_items or not state.media_items:
             return
 
         state.is_loading = True
-        state.current_page += 1
         yield
 
-        new_items = get_media_for_page(state.current_page, 20, ["video"], sort_by_timestamp=True)
+        last_item_id = state.media_items[-1].id
+        last_doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(last_item_id).get()
+
+        new_items, last_doc = get_media_for_page_optimized(
+            20, ["videos"], start_after=last_doc_ref
+        )
         if new_items:
             state.media_items.extend(new_items)
-        else:
+        
+        if not last_doc:
             state.has_more_items = False
         state.is_loading = False
         yield

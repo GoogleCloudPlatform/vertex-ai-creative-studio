@@ -22,6 +22,10 @@ dependencies = [
     "pytest>=8.4.1",
     "google-cloud-texttospeech>=2.27.0",
     "google-cloud-logging>=3.12.1",
+    "moviepy>=2.0.0",
+    "scipy",
+    "scikit-image",
+    "opencv-python",
 ]
 
 [tool.ruff]
