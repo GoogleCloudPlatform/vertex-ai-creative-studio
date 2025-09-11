@@ -17,22 +17,18 @@ options:
 substitutions:
   _IMAGE_NAME: creative-studio/creative-studio:latest
 steps:
-  - name: 'gcr.io/k8s-skaffold/pack'
-    id: 'pre-buildpack'
-    args:
-    - /bin/sh 
-    - -c
-    - "pack config default-builder gcr.io/buildpacks/builder:latest && pack config trusted-builders add gcr.io/buildpacks/builder:latest"
-  - name: 'gcr.io/k8s-skaffold/pack'
-    id: 'pack'
-    args:
-    - /bin/sh
-    - -c
-    - "pack build $LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME --network cloudbuild"
+  # Build the Docker image using the Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push image to Artifact Registry'
-    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME']
+    id: 'Build'
+    args: [ 'build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '.' ]
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push'
+    args: [ 'push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME' ]
+  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Deploy'
     entrypoint: gcloud
-    id: Update Cloud Run Image
-    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION' ]    
+    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION' ]
+images:
+- '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME'    
