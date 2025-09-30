@@ -55,7 +55,7 @@ firebase-admin==6.9.0
     # via veo-app (pyproject.toml)
 flask==3.1.2
     # via mesop
-fonttools==4.60.0
+fonttools==4.60.1
     # via matplotlib
 google-api-core==2.25.1
     # via
