@@ -802,24 +802,7 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     yield
 
     try:
-        gif_uri = convert_mp4_to_gif(state.concatenated_video_url)
-        state.gif_url = gif_uri
-
-        # Log to Firestore
-        add_media_item_to_firestore(
-            MediaItem(
-                gcsuri=gif_uri,
-                user_email=app_state.user_email,
-                timestamp=datetime.datetime.now(datetime.timezone.utc),
-                mime_type="image/gif",
-                source_images_gcs=[
-                    state.concatenated_video_url
-                ],  # Source is the concatenated video
-                comment="Produced by Pixie Compositor",
-                model="pixie-compositor-v1-gif",
-            )
-        )
-
+        state.gif_url = convert_mp4_to_gif(state.concatenated_video_url, user_email=app_state.user_email)
     except Exception as ex:
         state.error_message = f"An error occurred during GIF conversion: {ex}"
     finally:

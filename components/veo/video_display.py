@@ -16,9 +16,10 @@ from typing import Callable
 import mesop as me
 
 from common.utils import gcs_uri_to_https_url
+from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
-
+from models.video_processing import convert_mp4_to_gif
 
 @me.component
 def video_display(on_thumbnail_click: Callable):
@@ -37,6 +38,7 @@ def video_display(on_thumbnail_click: Callable):
             with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=24))):
                 me.progress_spinner()
             me.text(state.timing if state.timing else "Generating video...", style=me.Style(margin=me.Margin(top=16)))
+            state.gif_url = ""
             return
 
         if not state.result_videos:
@@ -90,6 +92,12 @@ def video_display(on_thumbnail_click: Callable):
                     on_click=on_click_extend,
                     disabled=True if state.video_extend_length == 0 else False,
                 )
+            
+            me.button("Convert to GIF", key=main_video_url, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
+
+            if state.is_converting_gif:
+                with me.box(style=me.Style(display="flex", justify_content="center")):
+                    me.progress_spinner()
 
         # Thumbnail strip for multiple videos
         if len(state.result_videos) > 1:
@@ -113,6 +121,21 @@ def video_display(on_thumbnail_click: Callable):
                             on_click=on_thumbnail_click,
                         )
 
+        if state.gif_url:
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="column",
+                    align_items="center",
+                    gap=10,
+                )
+            ):
+                me.text("Video as GIF:", type="headline-5")
+                me.image(
+                    src=state.gif_url,
+                    style=me.Style(width="100%", max_width="480px", border_radius=8),
+                )
+
 
 def on_selection_change_extend_length(e: me.SelectSelectionChangeEvent):
     """Adjust the video extend length in seconds based on user event"""
@@ -130,3 +153,16 @@ def on_click_extend(e: me.ClickEvent):
     )
     print(f"Continue the scene {state.veo_prompt_input} ...")
     yield
+
+def on_convert_to_gif_click(e: me.ClickEvent):
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+    state.is_converting_gif = True
+    yield
+
+    try:
+        print(f"Converting {e.key} to GIF ...")
+        state.gif_url = gcs_uri_to_https_url(convert_mp4_to_gif(e.key, user_email=app_state.user_email))
+    finally:
+        state.is_converting_gif = False
+        yield

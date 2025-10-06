@@ -18,6 +18,7 @@ import uuid
 
 import cv2
 import numpy as np
+from common.metadata import MediaItem, add_media_item_to_firestore
 from google.cloud import storage
 from moviepy import *
 from moviepy import VideoFileClip, afx, vfx
@@ -381,13 +382,11 @@ def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
 # --- GIF Conversion --- #
 
 
-def convert_mp4_to_gif(
-    gcs_uri: str, fps: int = 10, resize_factor: float | None = None
-) -> str:
+def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, fps: int = 10, resize_factor: float | None = None) -> str:
     with tempfile.TemporaryDirectory() as tmpdir:
-        local_path = _download_videos_to_temp([gcs_uri], tmpdir)[0]
+        local_path = _download_videos_to_temp([source_video_gcs_uri], tmpdir)[0]
 
-        output_filename = f"{os.path.splitext(os.path.basename(local_path))[0]}.gif"
+        output_filename = f"{os.path.splitext(os.path.basename(local_path))[0]}{uuid.uuid4()}.gif"
         output_path = os.path.join(tmpdir, output_filename)
 
         clip = VideoFileClip(local_path)
@@ -398,5 +397,18 @@ def convert_mp4_to_gif(
         clip.write_gif(output_path, fps=fps)
         clip.close()
 
-        final_gcs_uri = _upload_to_gcs(output_path, "generated_gifs", "image/gif")
-        return final_gcs_uri
+        gif_uri = _upload_to_gcs(output_path, "generated_gifs", "image/gif")
+
+        add_media_item_to_firestore(
+            MediaItem(
+                gcsuri=gif_uri,
+                user_email=user_email,
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                mime_type="image/gif",
+                source_images_gcs=[source_video_gcs_uri], # Source is the concatenated video
+                comment="Produced by Pixie Compositor",
+                model="pixie-compositor-v1-gif",
+            )
+        )
+
+        return gif_uri

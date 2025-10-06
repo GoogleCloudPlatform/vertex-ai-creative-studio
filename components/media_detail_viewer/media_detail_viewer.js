@@ -1,6 +1,7 @@
 import { LitElement, css, html } from "https://esm.sh/lit";
 import { SvgIcon } from "../svg_icon/svg_icon.js";
 import "../download_button/download_button.js"; // Import the download button component
+import "../convert_to_gif_button/convert_to_gif_button.js";
 
 class MediaDetailViewer extends LitElement {
   static styles = css`
@@ -63,12 +64,12 @@ class MediaDetailViewer extends LitElement {
     .next-btn {
       right: 10px;
     }
-    .source-images {
+    .sources {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
-    .source-images img {
+    .sources img {
       width: 100px;
       height: 100px;
       object-fit: cover;
@@ -167,6 +168,27 @@ class MediaDetailViewer extends LitElement {
     this.dispatchEvent(new MesopEvent(eventName, data));
   }
 
+  _handleGifConversion(event) {
+    if (event.detail.error)
+      console.error('Conversion failed:', event.detail.error);
+
+    const container = this.shadowRoot.getElementById('gif-container');
+
+    const header = document.createElement('h5');
+    header.textContent = 'Converted GIF';
+
+    container.appendChild(header);
+
+    const gifViewer = document.createElement('img');
+    gifViewer.src = event.detail.url;
+    gifViewer.id = 'converted-gif-viewer';
+    gifViewer.style.width="100%";
+    gifViewer.style.maxWidth="480px";
+    gifViewer.style.borderRadius=8;
+
+    container.appendChild(gifViewer);
+  }
+
   renderPrimaryAsset() {
     const urls = JSON.parse(this.primaryUrlsJson);
     if (urls.length === 0) return html``;
@@ -213,6 +235,21 @@ class MediaDetailViewer extends LitElement {
     `;
   }
 
+  renderSourceImages() {
+    try {
+      const sourceUrls = JSON.parse(this.sourceUrlsJson);
+      if (sourceUrls.length === 0) return html``;
+
+      return html`
+        <h3>Sources</h3>
+        <div class="sources">
+          ${sourceUrls.map((url) => url.endsWith(".mp4") ? html`<video width="160" height="120" .src=${url} controls autoplay></video>` : html`<img .src=${url} />`)}
+        </div>
+      `;
+    } catch (e) {
+      return html`${e}`;
+    }
+  }
 
   renderMetadata() {
     try {
@@ -291,6 +328,7 @@ class MediaDetailViewer extends LitElement {
                 ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
         ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
         <mwc-button id="copy-link-btn" outlined @click=${handleCopyLink}><svg-icon slot="icon" .iconName=${'link'}></svg-icon>Copy Link</mwc-button>
+        ${this.mediaType === 'video' ? html`<convert-to-gif-button .url=${gcsUri} @conversion-complete=${this._handleGifConversion}></convert-to-gif-button>` : ""}
       </div>
     `;
   }
@@ -301,6 +339,8 @@ class MediaDetailViewer extends LitElement {
         <div class="left-column">
           <div class="main-asset">${this.renderPrimaryAsset()}</div>
           ${this.renderActions()}
+          ${this.renderSourceImages()}
+          <div id='gif-container' display="flex" flex-direction="column" align-items="center" gap="10"></div>
         </div>
         <div class="right-column">
           <div class="tabs">

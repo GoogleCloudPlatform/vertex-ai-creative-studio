@@ -43,6 +43,7 @@ from components.page_scaffold import (
 from config.default import ABOUT_PAGE_CONTENT, Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import VideoGenerationRequest, generate_video
+from models.video_processing import convert_mp4_to_gif
 from pages.styles import (
     _BOX_STYLE_CENTER_DISTRIBUTED,
     _BOX_STYLE_CENTER_DISTRIBUTED_MARGIN,
@@ -77,6 +78,9 @@ class PageState:
     auto_enhance_prompt: bool = False
 
     generated_scene_direction: str = ""
+    
+    gif_url: str = ""
+    is_converting_gif: bool = False
 
     veo_model: str = "2.0"
     veo_prompt_input: str = ""
@@ -395,6 +399,7 @@ def motion_portraits_content(app_state: me.state):
             ):
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN):
                     if state.is_loading:
+                        state.gif_url = ""
                         with me.box(
                             style=me.Style(
                                 display="flex",
@@ -442,6 +447,28 @@ def motion_portraits_content(app_state: me.state):
                                     margin=me.Margin(top=10), font_size="0.9em"
                                 ),
                             )
+                            
+                        me.button("Convert to GIF", key=state.result_video, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
+                        
+                        if state.is_converting_gif:
+                            with me.box(style=me.Style(display="flex", justify_content="center")):
+                                me.progress_spinner()
+                                
+                        
+                    if state.gif_url:
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="column",
+                                align_items="center",
+                                gap=10,
+                            )
+                        ):
+                            me.text("Video as GIF:", type="headline-5")
+                            me.image(
+                                src=state.gif_url,
+                                style=me.Style(width="100%", max_width="480px", border_radius=8),
+                            )
 
                     if state.generated_scene_direction and not state.is_loading:
                         with me.expansion_panel(title="Generated Scene Direction"):
@@ -484,6 +511,19 @@ def motion_portraits_content(app_state: me.state):
                             style=me.Style(color="red", white_space="pre-wrap"),
                         )
 
+
+def on_convert_to_gif_click(e: me.ClickEvent):
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+    state.is_converting_gif = True
+    yield
+
+    try:
+        print(f"Converting {e.key} to GIF ...")
+        state.gif_url = gcs_uri_to_https_url(convert_mp4_to_gif(e.key, user_email=app_state.user_email))
+    finally:
+        state.is_converting_gif = False
+        yield
 
 @track_click(element_id="portraits_clear_button")
 def on_click_clear_reference_image(e: me.ClickEvent):

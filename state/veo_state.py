@@ -73,10 +73,14 @@ class PageState:
     rewriter_name: str
 
     is_loading: bool = False
+    is_converting_gif: bool = False
+    
+    gif_url: str = ""
+
     show_error_dialog: bool = False
     error_message: str = ""
     result_videos: list[str] = field(default_factory=list)
     selected_video_url: str = ""
     timing: str
-
+    
     person_generation: str = "Allow (All ages)"

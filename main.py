@@ -32,8 +32,10 @@ from pydantic import BaseModel
 
 import pages.shop_the_look
 from app_factory import app
+from common.utils import gcs_uri_to_https_url
 from components.page_scaffold import page_scaffold
 from config import default as config
+from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
 from pages import character_consistency as character_consistency_page
 from pages import chirp_3hd as chirp_3hd_page
@@ -89,6 +91,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/convert_to_gif")
+def convert_to_gif(gcs_uri: str, request: Request):
+    """Converts an MP4 video to a GIF and saves it to GCS."""
+    try:
+        uri = convert_mp4_to_gif(gcs_uri, request.scope["MESOP_USER_EMAIL"])
+
+        return {"url": gcs_uri_to_https_url(uri)}
+    except Exception as e:
+        error_message = str(e)
+        print(f"Error generating GIF: {error_message}")
+        return {"error": error_message}, 500
 
 @app.get("/api/get_signed_url")
 def get_signed_url(gcs_uri: str):
