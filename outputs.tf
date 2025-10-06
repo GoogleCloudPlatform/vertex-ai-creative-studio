@@ -19,6 +19,11 @@ output "load-balancer-ip" {
   description = "IP Address that should be used for DNS A record for the domain provided."
 }
 
+output "assets-bucket" {
+  value       = google_storage_bucket.assets.name
+  description = "Name of the GCS bucket where assets are stored."
+}
+
 output "cloud-run-app-url" {
   value       = !var.use_lb ? "https://${google_cloud_run_v2_service.creative_studio.name}-${data.google_project.project.number}.${google_cloud_run_v2_service.creative_studio.location}.run.app" : ""
   description = "The Cloud Run URL where the website can be reached."
