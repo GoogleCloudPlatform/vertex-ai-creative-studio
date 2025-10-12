@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:8080", "http://0.0.0.0:8080"],
+    "origin": ["http://localhost:8080", "http://0.0.0.0:8080", "https://creative-studio.chinoy.com"],
     "method": ["GET"],
     "responseHeader": ["Content-Type"],
     "maxAgeSeconds": 3600

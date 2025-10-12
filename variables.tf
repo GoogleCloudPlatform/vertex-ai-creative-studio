@@ -24,6 +24,12 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "location" {
+  description = "gemini location"
+  type = string
+  default = "global"
+}
+
 variable "use_lb" {
   description = "Run load balancer on HTTPS and provision managed certificate with provided `domain`."
   type        = bool
@@ -43,9 +49,9 @@ variable "initial_container_image" {
 }
 
 variable "model_id" {
-  description = "Veo model ID to use for video generation"
+  description = "Gemini model ID to use for analysis and text generation"
   type        = string
-  default     = "gemini-2.5-flash"
+  default     = "gemini-2.5-flash-preview-09-2025"
 }
 
 variable "veo_model_id" {

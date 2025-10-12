@@ -153,7 +153,7 @@ locals {
   asset_bucket_name = "creative-studio-${var.project_id}-assets"
   creative_studio_env_vars = {
     PROJECT_ID            = var.project_id
-    LOCATION              = var.region
+    LOCATION              = var.location
     MODEL_ID              = var.model_id
     VEO_MODEL_ID          = var.veo_model_id
     VEO_EXP_MODEL_ID      = var.veo_exp_model_id
@@ -263,16 +263,6 @@ resource "google_storage_bucket" "assets" {
   autoclass {
     enabled = false
   }
-  set_admin_roles           = true
-  bucket_admins             = {}
-  admins                    = var.initial_user != null ? [ "user:${var.initial_user}" ] : (length(var.initial_users) > 0 ? [ "user:${var.initial_users[0]}" ] : [])
-  set_creator_roles         = true
-  bucket_creators           = {}
-  creators                  = [ google_service_account.creative_studio.member ]
-  set_viewer_roles          = true
-  bucket_viewers            = {}
-  viewers                   = [ google_service_account.creative_studio.member ]
-  depends_on = [ module.project-services ]
   cors {
     origin          = local.cors_domains
     method          = ["GET"]
@@ -281,10 +271,16 @@ resource "google_storage_bucket" "assets" {
   }
 }
 
+moved {
+  from = module.creative_studio_asset_bucket.google_storage_bucket.buckets["creative-studio-generative-bazaar-001-assets"]
+  to   = google_storage_bucket.assets
+}
+
 resource "google_storage_bucket_iam_member" "admins" {
-  bucket = google_storage_bucket.assets.name
-  role   = "roles/storage.objectAdmin"
-  member = "user:${var.initial_user}"
+  for_each = toset(var.initial_users)
+  bucket   = google_storage_bucket.assets.name
+  role     = "roles/storage.objectAdmin"
+  member   = "user:${each.key}"
 }
 
 resource "google_storage_bucket_iam_member" "creators" {
@@ -310,6 +306,8 @@ resource "google_storage_bucket_iam_member" "sa_object_user" {
   role   = "roles/storage.objectUser"
   member = google_service_account.creative_studio.member
 }
+
+
 
 resource "google_project_iam_member" "creative_studio_sa_token_creator" {
   project = var.project_id
