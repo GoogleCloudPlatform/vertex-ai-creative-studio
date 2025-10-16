@@ -69,7 +69,6 @@ def on_veo_load(e: me.LoadEvent):
         else:
             # Reconstruct the full GCS URI from the path for backward compatibility
             image_uri = f"gs://{image_path}"
-
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
         state.reference_image_uri = create_display_url(image_uri)
