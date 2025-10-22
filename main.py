@@ -55,6 +55,7 @@ from pages import pixie_compositor as pixie_compositor_page
 from pages import portraits as motion_portraits
 from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
+from pages import selfie as selfie_page
 from pages import test_proxy_caching as test_proxy_caching_page
 from pages import selfie as selfie_page
 from pages import veo
@@ -197,6 +198,8 @@ async def set_request_context(request: Request, call_next):
 
 
 # Test page routes are left as is, they don't need the scaffold
+me.page(path="/selfie", title="Selfie Capture")(selfie_page.page)
+
 me.page(path="/test_character_consistency", title="Test Character Consistency")(
     test_character_consistency_page
 )
