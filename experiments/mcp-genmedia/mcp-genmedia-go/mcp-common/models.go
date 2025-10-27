@@ -184,8 +184,8 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportedAspectRatios: []string{"16:9"},
 		SupportsGenerateAudio: true,
 	},
-	"veo-3.0-generate-preview": {
-		CanonicalName:         "veo-3.0-generate-preview",
+	"veo-3.0-generate-001": {
+		CanonicalName:         "veo-3.0-generate-001",
 		Aliases:               []string{"Veo 3"},
 		DefaultDuration:       8,
 		SupportedDurations:    []int32{4, 6, 8},
@@ -193,8 +193,17 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportedAspectRatios: []string{"16:9"},
 		SupportsGenerateAudio: true,
 	},
-	"veo-3.0-fast-generate-preview": {
-		CanonicalName:         "veo-3.0-fast-generate-preview",
+	// "veo-3.0-generate-preview": {
+	// 	CanonicalName:         "veo-3.0-generate-preview",
+	// 	Aliases:               []string{"Veo 3 preview"},
+	// 	MinDuration:           8,
+	// 	MaxDuration:           8,
+	// 	DefaultDuration:       8,
+	// 	MaxVideos:             2,
+	// 	SupportedAspectRatios: []string{"16:9"},
+	// },
+	"veo-3.0-fast-generate-001": {
+		CanonicalName:         "veo-3.0-fast-generate-001",
 		Aliases:               []string{"Veo 3 Fast"},
 		DefaultDuration:       8,
 		SupportedDurations:    []int32{4, 6, 8},
@@ -219,6 +228,33 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		MaxVideos:             2,
 		SupportedAspectRatios: []string{"16:9", "9:16"},
 		SupportsGenerateAudio: true,
+	},
+	// "veo-3.0-fast-generate-preview": {
+	// 	CanonicalName:         "veo-3.0-fast-generate-preview",
+	// 	Aliases:               []string{"Veo 3 Fast preview"},
+	// 	MinDuration:           8,
+	// 	MaxDuration:           8,
+	// 	DefaultDuration:       8,
+	// 	MaxVideos:             2,
+	// 	SupportedAspectRatios: []string{"16:9"},
+	// },
+	"veo-3.1-generate-preview": {
+		CanonicalName:         "veo-3.1-generate-preview",
+		Aliases:               []string{"Veo 3.1 preview"},
+		MinDuration:           8,
+		MaxDuration:           8,
+		DefaultDuration:       8,
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9"},
+	},
+	"veo-3.1-fast-generate-preview": {
+		CanonicalName:         "veo-3.1-fast-generate-preview",
+		Aliases:               []string{"Veo 3.1 Fast preview"},
+		MinDuration:           8,
+		MaxDuration:           8,
+		DefaultDuration:       8,
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9"},
 	},
 }
 
