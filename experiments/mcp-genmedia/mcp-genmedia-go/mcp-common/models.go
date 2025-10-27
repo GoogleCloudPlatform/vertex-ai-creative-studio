@@ -1,5 +1,3 @@
-
-
 // Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -123,18 +121,19 @@ func BuildImagenModelDescription() string {
 	return sb.String()
 }
 
-
 // --- Veo Model Configuration ---
 
 // VeoModelInfo holds the details for a specific Veo model.
 type VeoModelInfo struct {
-	CanonicalName         string
-	Aliases               []string
-	DefaultDuration       int32
-	SupportedDurations    []int32
-	MaxVideos             int32
-	SupportedAspectRatios []string
-	SupportsGenerateAudio bool
+	CanonicalName           string
+	Aliases                 []string
+	DefaultDuration         int32
+	SupportedDurations      []int32
+	MaxVideos               int32
+	SupportedAspectRatios   []string
+	SupportsGenerateAudio   bool
+	SupportsLastFrame       bool
+	SupportsReferenceImages bool
 }
 
 // SupportedVeoModels is the single source of truth for all supported Veo models.
@@ -239,22 +238,26 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 	// 	SupportedAspectRatios: []string{"16:9"},
 	// },
 	"veo-3.1-generate-preview": {
-		CanonicalName:         "veo-3.1-generate-preview",
-		Aliases:               []string{"Veo 3.1 preview"},
-		MinDuration:           8,
-		MaxDuration:           8,
-		DefaultDuration:       8,
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
+		CanonicalName:           "veo-3.1-generate-preview",
+		Aliases:                 []string{"Veo 3.1 preview"},
+		MinDuration:             8,
+		MaxDuration:             8,
+		DefaultDuration:         8,
+		MaxVideos:               2,
+		SupportedAspectRatios:   []string{"16:9", "9:16"},
+		SupportsLastFrame:       true,
+		SupportsReferenceImages: true,
 	},
 	"veo-3.1-fast-generate-preview": {
-		CanonicalName:         "veo-3.1-fast-generate-preview",
-		Aliases:               []string{"Veo 3.1 Fast preview"},
-		MinDuration:           8,
-		MaxDuration:           8,
-		DefaultDuration:       8,
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
+		CanonicalName:           "veo-3.1-fast-generate-preview",
+		Aliases:                 []string{"Veo 3.1 Fast preview"},
+		MinDuration:             8,
+		MaxDuration:             8,
+		DefaultDuration:         8,
+		MaxVideos:               2,
+		SupportedAspectRatios:   []string{"16:9", "9:16"},
+		SupportsLastFrame:       true,
+		SupportsReferenceImages: false,
 	},
 }
 

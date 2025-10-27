@@ -1,4 +1,4 @@
-# MCP Veo Server (Version: 1.3.7)
+# MCP Veo Server (Version: 1.12.0)
 
 This tool provides video generation capabilities using Google's Veo models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to allow LLMs and other MCP clients to generate videos from text prompts or source images.
 
@@ -33,6 +33,21 @@ The server exposes the following tools:
     *   `num_videos` (number, optional): Number of videos. Default: `1`. Min: `1`, Max: `4`.
     *   `aspect_ratio` (string, optional): Aspect ratio. Default: `"16:9"`.
     *   `duration` (number, optional): Duration in seconds. Default: `5`. Min: `5`, Max: `8`.
+
+### 3. `veo_interpolate` (Video Interpolation)
+
+*   **Description**: Generate a video by interpolating between a first and last frame. Can be guided by an optional text prompt and reference images. This feature is only available on specific models (e.g., `veo-3.1-generate-preview`).
+*   **Handler**: `veoInterpolationHandler`
+*   **Parameters**:
+    *   `first_frame_uri` (string, required): GCS URI of the first frame (start image) for video interpolation (e.g., "gs://your-bucket/first-frame.png").
+    *   `last_frame_uri` (string, required): GCS URI of the last frame (end image) for video interpolation (e.g., "gs://your-bucket/last-frame.png").
+    *   `first_frame_mime_type` (string, optional): MIME type of the first frame. Supported types are 'image/jpeg' and 'image/png'. If not provided, it will be inferred from the URI.
+    *   `last_frame_mime_type` (string, optional): MIME type of the last frame. Supported types are 'image/jpeg' and 'image/png'. If not provided, it will be inferred from the URI.
+    *   `reference_images` (string, optional): A JSON string representing an array of reference image objects. Each object must have a 'uri' (string) and a 'type' (string, either 'ASSET' or 'STYLE'). This feature is only available on specific models.
+        *   **Note**: `veo-3.1` models only support the `ASSET` type. The `STYLE` type is supported by models like `veo-2.0-generate-exp`.
+        *   Example: `'[{"uri": "gs://your-bucket/ref.png", "type": "ASSET"}]'`
+    *   `prompt` (string, optional): Optional text prompt to guide video generation.
+    *   All common parameters from `veo_t2v` (like `bucket`, `output_directory`, `model`, etc.) are also applicable.
 
 ## Environment Variable Configuration
 
@@ -113,8 +128,26 @@ Build the tool using `go build` or `go install`.
       "aspect_ratio": "16:9",
       "duration": 6,
       "bucket": "your-gcs-bucket/veo_i2v_outputs",
-      "output_directory": "./veo_videos_i2v"
     }
   }
 }
+
+### Video Interpolation (`veo_interpolate`)
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "veo_interpolate",
+    "arguments": {
+      "first_frame_uri": "gs://your-gcs-bucket/source_images/start_frame.png",
+      "last_frame_uri": "gs://your-gcs-bucket/source_images/end_frame.png",
+      "model": "veo-3.1-generate-preview",
+      "prompt": "A car transforming into a robot.",
+      "reference_images": "[{\"uri\": \"gs://your-gcs-bucket/style_images/cyberpunk.png\", \"type\": \"ASSET\"}]",
+      "bucket": "your-gcs-bucket/veo_interpolate_outputs",
+      "output_directory": "./veo_videos_interpolate"
+    }
+  }
+}
+```
 ```

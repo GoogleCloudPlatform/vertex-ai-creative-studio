@@ -18,18 +18,20 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"google.golang.org/genai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/genai"
 )
 
-	// veoTextToVideoHandler is the handler for the 'veo_t2v' tool.
+// veoTextToVideoHandler is the handler for the 'veo_t2v' tool.
 func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "veo_t2v")
@@ -64,7 +66,7 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 
 	select {
 	case <-ctx.Done():
-		log.Printf("Incoming t2v context for prompt \"%s\" was already canceled: %v", prompt, ctx.Err())
+		log.Printf("Incoming t2v context for prompt %s was already canceled: %v", prompt, ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
 		log.Printf("Handling Veo t2v request: Prompt=\"%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds, GenerateAudio=%t", prompt, gcsBucket, outputDir, model, numberOfVideos, finalAspectRatio, durationSecs, generateAudio)
@@ -146,7 +148,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 
 	select {
 	case <-ctx.Done():
-		log.Printf("Incoming i2v context for image_uri \"%s\" was already canceled: %v", imageURI, ctx.Err())
+		log.Printf("Incoming i2v context for image_uri %s was already canceled: %v", imageURI, ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
 		log.Printf("Handling Veo i2v request: ImageURI=\"%s\", MimeType=\"%s\", Prompt=\"%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds, GenerateAudio=%t", imageURI, mimeType, prompt, gcsBucket, outputDir, modelName, numberOfVideos, finalAspectRatio, durationSecs, generateAudio)
@@ -169,4 +171,145 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 	}
 
 	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, prompt, inputImage, config, "i2v")
+}
+
+// veoInterpolationHandler is the handler for the 'veo_interpolate' tool.
+func veoInterpolationHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "veo_interpolate")
+	defer span.End()
+
+	// Get first frame
+	firstFrameURI, ok := request.GetArguments()["first_frame_uri"].(string)
+	if !ok || strings.TrimSpace(firstFrameURI) == "" {
+		return mcp.NewToolResultError("first_frame_uri must be a non-empty GCS URI"), nil
+	}
+	if !strings.HasPrefix(firstFrameURI, "gs://") {
+		return mcp.NewToolResultError(fmt.Sprintf("invalid first_frame_uri '%s'. Must be a GCS URI starting with 'gs://'", firstFrameURI)), nil
+	}
+	firstFrameMimeType := inferMimeTypeFromURI(firstFrameURI)
+	if mt, ok := request.GetArguments()["first_frame_mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+		firstFrameMimeType = strings.ToLower(strings.TrimSpace(mt))
+	}
+	if firstFrameMimeType == "" {
+		return mcp.NewToolResultError(fmt.Sprintf("MIME type for first_frame_uri '%s' could not be inferred. Please specify 'first_frame_mime_type'.", firstFrameURI)), nil
+	}
+
+	// Get last frame
+	lastFrameURI, ok := request.GetArguments()["last_frame_uri"].(string)
+	if !ok || strings.TrimSpace(lastFrameURI) == "" {
+		return mcp.NewToolResultError("last_frame_uri must be a non-empty GCS URI"), nil
+	}
+	if !strings.HasPrefix(lastFrameURI, "gs://") {
+		return mcp.NewToolResultError(fmt.Sprintf("invalid last_frame_uri '%s'. Must be a GCS URI starting with 'gs://'", lastFrameURI)), nil
+	}
+	lastFrameMimeType := inferMimeTypeFromURI(lastFrameURI)
+	if mt, ok := request.GetArguments()["last_frame_mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+		lastFrameMimeType = strings.ToLower(strings.TrimSpace(mt))
+	}
+	if lastFrameMimeType == "" {
+		return mcp.NewToolResultError(fmt.Sprintf("MIME type for last_frame_uri '%s' could not be inferred. Please specify 'last_frame_mime_type'.", lastFrameURI)), nil
+	}
+
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	modelInfo, ok := common.SupportedVeoModels[modelName]
+	if !ok {
+		return mcp.NewToolResultError(fmt.Sprintf("Model '%s' is not a supported Veo model.", modelName)), nil
+	}
+
+	if !modelInfo.SupportsLastFrame {
+		return mcp.NewToolResultError(fmt.Sprintf("Interpolation with a last frame is not supported on model '%s'.", modelName)), nil
+	}
+
+	// Get reference images and check for support
+	var referenceImages []*genai.VideoGenerationReferenceImage
+	if refImagesJSON, ok := request.GetArguments()["reference_images"].(string); ok && strings.TrimSpace(refImagesJSON) != "" {
+		if !modelInfo.SupportsReferenceImages {
+			return mcp.NewToolResultError(fmt.Sprintf("Providing reference images is not supported on model '%s'.", modelName)), nil
+		}
+
+		var refImageInputs []struct {
+			URI  string `json:"uri"`
+			Type string `json:"type"`
+		}
+
+		if err := json.Unmarshal([]byte(refImagesJSON), &refImageInputs); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to parse 'reference_images' JSON: %v. Please provide a valid JSON array of objects, each with 'uri' and 'type'.", err)), nil
+		}
+
+		for _, input := range refImageInputs {
+			trimmedURI := strings.TrimSpace(input.URI)
+			if !strings.HasPrefix(trimmedURI, "gs://") {
+				log.Printf("Skipping invalid reference image URI: %v", trimmedURI)
+				continue
+			}
+			mimeType := inferMimeTypeFromURI(trimmedURI)
+			if mimeType == "" {
+				log.Printf("Skipping reference image with unknown MIME type: %s", trimmedURI)
+				continue
+			}
+
+			var refType genai.VideoGenerationReferenceType
+			switch strings.ToUpper(strings.TrimSpace(input.Type)) {
+			case "ASSET":
+				refType = genai.VideoGenerationReferenceTypeAsset
+			case "STYLE":
+				refType = genai.VideoGenerationReferenceTypeStyle
+			default:
+				log.Printf("Skipping reference image with invalid type '%s'. Must be 'ASSET' or 'STYLE'.", input.Type)
+				continue
+			}
+
+			imageForRef := &genai.Image{GCSURI: trimmedURI, MIMEType: mimeType}
+			referenceImages = append(referenceImages, &genai.VideoGenerationReferenceImage{Image: imageForRef, ReferenceType: refType})
+		}
+	}
+
+	prompt := ""
+	if promptArg, ok := request.GetArguments()["prompt"].(string); ok {
+		prompt = strings.TrimSpace(promptArg)
+	}
+
+	span.SetAttributes(
+		attribute.String("first_frame_uri", firstFrameURI),
+		attribute.String("last_frame_uri", lastFrameURI),
+		attribute.String("prompt", prompt),
+		attribute.String("gcs_bucket", gcsBucket),
+		attribute.String("output_dir", outputDir),
+		attribute.String("model", modelName),
+		attribute.String("aspect_ratio", finalAspectRatio),
+		attribute.Int("num_videos", int(numberOfVideos)),
+		attribute.Int("duration_secs", int(durationSecs)),
+	)
+
+	mcpServer := server.ServerFromContext(ctx)
+	var progressToken mcp.ProgressToken
+	if request.Params.Meta != nil {
+		progressToken = request.Params.Meta.ProgressToken
+	}
+
+	firstFrameImage := &genai.Image{
+		GCSURI:   firstFrameURI,
+		MIMEType: firstFrameMimeType,
+	}
+
+	lastFrameImage := &genai.Image{
+		GCSURI:   lastFrameURI,
+		MIMEType: lastFrameMimeType,
+	}
+
+	config := &genai.GenerateVideosConfig{
+		NumberOfVideos:  numberOfVideos,
+		AspectRatio:     finalAspectRatio,
+		OutputGCSURI:    gcsBucket,
+		DurationSeconds: &durationSecs,
+		LastFrame:       lastFrameImage,
+		ReferenceImages: referenceImages,
+	}
+
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, prompt, firstFrameImage, config, "interpolate")
 }

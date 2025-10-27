@@ -174,6 +174,39 @@ func main() {
 		return veoImageToVideoHandler(genAIClient, ctx, request)
 	})
 
+	var interpolationToolParams []mcp.ToolOption
+	interpolationToolParams = append(interpolationToolParams,
+		mcp.WithDescription("Generate a video by interpolating between a first and last frame, with an optional prompt and reference images. Video is saved to GCS and optionally downloaded locally."),
+		mcp.WithString("first_frame_uri",
+			mcp.Required(),
+			mcp.Description("GCS URI of the first frame (start image) for video interpolation (e.g., gs://your-bucket/first-frame.png)."),
+		),
+		mcp.WithString("last_frame_uri",
+			mcp.Required(),
+			mcp.Description("GCS URI of the last frame (end image) for video interpolation (e.g., gs://your-bucket/last-frame.png)."),
+		),
+		mcp.WithString("first_frame_mime_type",
+			mcp.Description("MIME type of the first frame. Supported types are 'image/jpeg' and 'image/png'. If not provided, it will be inferred from the URI."),
+		),
+		mcp.WithString("last_frame_mime_type",
+			mcp.Description("MIME type of the last frame. Supported types are 'image/jpeg' and 'image/png'. If not provided, it will be inferred from the URI."),
+		),
+		mcp.WithString("reference_images",
+			mcp.Description("Optional. A JSON string representing an array of reference image objects. Each object must have a 'uri' (string) and a 'type' (string, either 'ASSET' or 'STYLE'). Example: '[{\"uri\": \"gs://...\", \"type\": \"ASSET\"}]'"),
+		),
+		mcp.WithString("prompt",
+			mcp.Description("Optional text prompt to guide video generation."),
+		),
+	)
+	interpolationToolParams = append(interpolationToolParams, commonVideoParams...)
+
+	interpolationTool := mcp.NewTool("veo_interpolate",
+		interpolationToolParams...,
+	)
+	s.AddTool(interpolationTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return veoInterpolationHandler(genAIClient, ctx, request)
+	})
+
 	s.AddPrompt(mcp.NewPrompt("generate-video",
 		mcp.WithPromptDescription("Generates a video from a text prompt."),
 		mcp.WithArgument("prompt", mcp.ArgumentDescription("The text prompt to generate a video from."), mcp.RequiredArgument()),
