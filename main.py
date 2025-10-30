@@ -47,6 +47,7 @@ from pages import gemini_writers_workshop as gemini_writers_workshop_page
 from pages import guideline_analysis as guideline_analysis_page
 from pages import home as home_page
 from pages import imagen as imagen_page
+from pages import login as login_page
 from pages import interior_design_v2 as interior_design_page
 from pages import lyria as lyria_page
 from pages import object_rotation as object_rotation_page
@@ -70,11 +71,15 @@ from pages.test_svg import test_svg_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from state.state import AppState
+from common.simple_auth import check_authentication, is_route_protected
 
 
 class UserInfo(BaseModel):
     email: str | None
     agent: str | None
+
+class LoginRequest(BaseModel):
+    password: str
 
 
 # FastAPI server with Mesop
@@ -146,6 +151,49 @@ def get_signed_url(gcs_uri: str):
             )
         return {"error": error_message}, 500
 
+@app.post("/api/login")
+async def login(login_request: LoginRequest, request: Request):
+    """Handle simple password authentication."""
+    from common.simple_auth import verify_password, set_auth_cookie_headers
+    from fastapi.responses import JSONResponse
+    
+    cfg = config.Default()
+    
+    # If simple auth is not enabled, return error
+    if not cfg.SIMPLE_AUTH_ENABLED:
+        raise HTTPException(status_code=400, detail="Simple authentication is not enabled")
+    
+    # Verify password
+    if not verify_password(login_request.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    
+    # Get or create session ID
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    
+    # Create response with authentication cookie
+    response_data = {"success": True, "message": "Login successful"}
+    response = JSONResponse(content=response_data)
+    
+    # Set authentication cookie
+    response = set_auth_cookie_headers(response, session_id)
+    
+    return response
+
+@app.post("/api/logout")
+async def logout():
+    """Handle logout."""
+    from fastapi.responses import JSONResponse
+    
+    response_data = {"success": True, "message": "Logout successful"}
+    response = JSONResponse(content=response_data)
+    
+    # Clear authentication cookie
+    response.delete_cookie(key="auth_token", httponly=True, samesite="Lax")
+    
+    return response
+
 
 @app.middleware("http")
 async def add_global_csp(request: Request, call_next):
@@ -162,6 +210,27 @@ async def add_global_csp(request: Request, call_next):
     )
     return response
 
+
+@app.middleware("http")
+async def simple_auth_middleware(request: Request, call_next):
+    """Middleware to handle simple password authentication."""
+    from common.simple_auth import should_redirect_to_login
+    
+    cfg = config.Default()
+    
+    # Check if simple auth is enabled and if route should be protected
+    if cfg.SIMPLE_AUTH_ENABLED and is_route_protected(request.url.path):
+        is_authenticated = await check_authentication(request)
+        if not is_authenticated:
+            # For Mesop pages, redirect to login
+            if should_redirect_to_login(request.url.path):
+                return RedirectResponse(url="/login", status_code=302)
+            else:
+                # For API endpoints, return 403
+                raise HTTPException(status_code=403, detail="Access forbidden. Authentication required.")
+    
+    response = await call_next(request)
+    return response
 
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):

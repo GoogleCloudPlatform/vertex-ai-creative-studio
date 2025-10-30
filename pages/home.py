@@ -23,6 +23,7 @@ from components.interactive_tile.interactive_tile import interactive_tile
 from components.page_scaffold import page_frame, page_scaffold
 from config.default import get_welcome_page_config
 from state.state import AppState
+from common.auth_ui import get_auth_header_props
 
 
 @me.page(
@@ -61,7 +62,7 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
             flex_direction="column",
         )
     ):
-        header("GenMedia Creative Studio", "home")
+        header("GenMedia Creative Studio", "home", **get_auth_header_props())
 
         # Group pages by the "group" key
         grouped_pages: Dict[str, List[Dict]] = defaultdict(list)

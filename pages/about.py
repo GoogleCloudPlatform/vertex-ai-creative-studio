@@ -18,6 +18,7 @@ from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
 from config.default import ABOUT_PAGE_CONTENT
+from common.auth_ui import get_auth_header_props
 
 
 def render_section(section_data: dict):
@@ -67,7 +68,7 @@ def render_section(section_data: dict):
 def about_page_content():
     """About page."""
     with page_frame():  # pylint: disable=E1129:not-context-manager
-        header("About This Application", "info")
+        header("About This Application", "info", **get_auth_header_props())
 
         if ABOUT_PAGE_CONTENT:
             # Render header

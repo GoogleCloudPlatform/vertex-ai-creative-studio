@@ -25,6 +25,8 @@ class AppState:
     user_email: str = "anonymous@google.com"
     session_id: str = ""
     current_page: str = ""
+    is_authenticated: bool = False
+    login_error: str = ""
 
     def __init__(self):
         """Initializes the AppState, reading user info from the request context."""
@@ -212,4 +214,37 @@ def update_state(new_state: AppState):
     app_state.theme_mode = new_state.theme_mode
     app_state.user_email = new_state.user_email
     app_state.session_id = new_state.session_id
+    app_state.is_authenticated = new_state.is_authenticated
+    yield
+
+def set_authenticated(is_authenticated: bool):
+    """
+    Sets the authentication status.
+    """
+    app_state = me.state(AppState)
+    app_state.is_authenticated = is_authenticated
+    app_state.login_error = ""
+    yield
+
+def set_login_error(error_message: str):
+    """
+    Sets the login error message.
+    """
+    app_state = me.state(AppState)
+    app_state.login_error = error_message
+    yield
+
+def is_user_authenticated() -> bool:
+    """
+    Returns whether the user is authenticated via simple password auth.
+    """
+    return me.state(AppState).is_authenticated
+
+def logout_user():
+    """
+    Logs out the user by setting authentication to False.
+    """
+    app_state = me.state(AppState)
+    app_state.is_authenticated = False
+    app_state.login_error = ""
     yield

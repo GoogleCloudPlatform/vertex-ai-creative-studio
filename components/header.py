@@ -25,6 +25,7 @@ def header(
     show_info_button: bool = False,
     on_info_click: typing.Callable[..., None] | None = None,
     current_status: str = None,
+    show_logout_button: bool = False,
 ):
     """Render header component."""
     # List of custom icons that should use the svg_icon component
@@ -59,13 +60,42 @@ def header(
                 style=me.Style(font_family="Google Sans"),
             )
 
-        if show_info_button and on_info_click:
-            with (
-                me.content_button(
-                    type="icon",
-                    on_click=on_info_click,
-                    style=me.Style(margin=me.Margin(left="auto")),
-                ),
-                me.tooltip(message="About this page"),
-            ):
-                me.icon(icon="info_outline")
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                gap=8,
+                align_items="center",
+                margin=me.Margin(left="auto"),
+            )
+        ):
+            if show_info_button and on_info_click:
+                with (
+                    me.content_button(
+                        type="icon",
+                        on_click=on_info_click,
+                    ),
+                    me.tooltip(message="About this page"),
+                ):
+                    me.icon(icon="info_outline")
+            
+            if show_logout_button:
+                with (
+                    me.content_button(
+                        type="icon",
+                        on_click=on_logout_click,
+                    ),
+                    me.tooltip(message="Logout"),
+                ):
+                    me.icon(icon="logout")
+
+def on_logout_click(e: me.ClickEvent):
+    """Handle logout button click."""
+    from state.state import logout_user
+    from config.default import Default
+    
+    cfg = Default()
+    if cfg.SIMPLE_AUTH_ENABLED:
+        logout_user()
+        me.navigate("/login")
+        yield

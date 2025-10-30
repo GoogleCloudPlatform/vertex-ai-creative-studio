@@ -165,6 +165,12 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
+    # Simple Password Authentication
+    SIMPLE_AUTH_ENABLED: bool = os.environ.get("SIMPLE_AUTH_ENABLED", "false").lower() == "true"
+    SIMPLE_AUTH_PASSWORD: str = os.environ.get("SIMPLE_AUTH_PASSWORD", "demo123")
+    # Session timeout in seconds (default: 24 hours)
+    SESSION_TIMEOUT: int = int(os.environ.get("SESSION_TIMEOUT", "86400"))
+
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",
