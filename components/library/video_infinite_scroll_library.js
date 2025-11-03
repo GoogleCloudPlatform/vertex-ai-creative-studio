@@ -59,7 +59,7 @@ class VideoInfiniteScrollLibrary extends LitElement {
     return html`
       <div class="container" @scroll=${this._handleScroll}>
         ${this.items.map(item => html`
-          <video muted playsinline loop src="${this._formatGcsUri(item.uri)}" @click=${() => this._handleImageClick(item.uri)}></video>
+          <video muted playsinline loop src="${this._getSignedUrl(item.uri)}" @click=${() => this._handleImageClick(item.uri)}></video>
         `)}
         ${this.hasMoreItems ? html`<div class="loader">Loading...</div>` : ''}
       </div>
@@ -88,15 +88,18 @@ class VideoInfiniteScrollLibrary extends LitElement {
     this.dispatchEvent(new MesopEvent(this.imageSelectedEvent, { uri }));
   }
 
-  _formatGcsUri(uri) {
+  _getSignedUrl(uri) {
     if (!uri) {
       return "";
     }
-    if (uri.startsWith("https://")) {
+    if (uri.startsWith("https://") && !uri.startsWith(GCS_PUBLIC_URL_PREFIX)) {
       return uri;
     }
-    if (uri.startsWith("gs://")) {
-      return uri.replace('gs://', GCS_PUBLIC_URL_PREFIX);
+    if (uri.startsWith("gs://") || uri.startsWith(GCS_PUBLIC_URL_PREFIX)) {
+      // Convert to gs:// format if it's a direct GCS URL
+      const gcsUri = uri.startsWith("gs://") ? uri : uri.replace(GCS_PUBLIC_URL_PREFIX, "gs://");
+      // Return a placeholder that will be replaced by the actual signed URL
+      return `/api/get_signed_url_proxy?gcs_uri=${encodeURIComponent(gcsUri)}`;
     }
     return uri;
   }

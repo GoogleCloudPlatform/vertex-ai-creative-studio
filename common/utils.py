@@ -102,18 +102,36 @@ GCS_PUBLIC_URL_PREFIX = "https://storage.cloud.google.com/"
 
 def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
     """
-    Converts a GCS URI to a publicly accessible URL.
+    Converts a GCS URI to a publicly accessible URL via the proxy endpoint.
 
     Handles None, empty strings, and already-formatted URLs gracefully.
     """
     if not gcs_uri:
         return ""
-    if gcs_uri.startswith("https://"):
+    if gcs_uri.startswith("https://") and not gcs_uri.startswith(GCS_PUBLIC_URL_PREFIX):
         return gcs_uri
-    if gcs_uri.startswith("gs://"):
-        return gcs_uri.replace("gs://", GCS_PUBLIC_URL_PREFIX)
+    if gcs_uri.startswith("gs://") or gcs_uri.startswith(GCS_PUBLIC_URL_PREFIX):
+        # Convert to gs:// format if it's a direct GCS URL
+        gs_uri = gcs_uri if gcs_uri.startswith("gs://") else gcs_uri.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+        # Use the proxy endpoint to serve the content with proper authentication
+        from urllib.parse import quote
+        return f"/api/get_signed_url_proxy?gcs_uri={quote(gs_uri)}"
     # Return as-is if it's not a recognized format
     return gcs_uri
+
+
+def proxy_url_to_gcs_uri(proxy_url: str | None) -> str:
+    """
+    Converts a proxy URL back to a gs:// URI.
+    """
+    if not proxy_url:
+        return ""
+    if proxy_url.startswith("/api/get_signed_url_proxy?gcs_uri="):
+        from urllib.parse import unquote
+        # Extract the gcs_uri parameter from the proxy URL
+        gcs_uri_param = proxy_url.split("gcs_uri=")[1]
+        return unquote(gcs_uri_param)
+    return proxy_url
 
 
 def https_url_to_gcs_uri(url: str | None) -> str:
