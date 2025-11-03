@@ -1,3 +1,5 @@
+// Package common provides shared utilities for the MCP Genmedia servers.
+
 package common
 
 import (

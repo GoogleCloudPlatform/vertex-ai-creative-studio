@@ -1,3 +1,5 @@
+// Package main implements an MCP server for audio and video processing.
+
 package main
 
 import (

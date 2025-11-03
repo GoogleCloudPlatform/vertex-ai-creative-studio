@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package common provides shared utilities for the MCP Genmedia servers.
+
 package common
 
 import (
@@ -26,32 +28,56 @@ import (
 
 // ImagenModelInfo holds the details for a specific Imagen model.
 type ImagenModelInfo struct {
-	CanonicalName string
-	MaxImages     int32
-	Aliases       []string
+	CanonicalName         string
+	MaxImages             int32
+	Aliases               []string
+	SupportedAspectRatios []string
+	SupportedImageSizes   []string
 }
 
 // SupportedImagenModels is the single source of truth for all supported Imagen models.
 var SupportedImagenModels = map[string]ImagenModelInfo{
+	"imagen-3.0-generate-001": {
+		CanonicalName:         "imagen-3.0-generate-001",
+		MaxImages:             4,
+		Aliases:               []string{},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{},
+	},
+	"imagen-3.0-fast-generate-001": {
+		CanonicalName:         "imagen-3.0-fast-generate-001",
+		MaxImages:             4,
+		Aliases:               []string{"Imagen 3 Fast"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{},
+	},
 	"imagen-3.0-generate-002": {
-		CanonicalName: "imagen-3.0-generate-002",
-		MaxImages:     4,
-		Aliases:       []string{"Imagen 3"},
+		CanonicalName:         "imagen-3.0-generate-002",
+		MaxImages:             4,
+		Aliases:               []string{"Imagen 3"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{},
 	},
 	"imagen-4.0-generate-001": {
-		CanonicalName: "imagen-4.0-generate-001",
-		MaxImages:     4,
-		Aliases:       []string{"Imagen 4", "Imagen4"},
+		CanonicalName:         "imagen-4.0-generate-001",
+		MaxImages:             4,
+		Aliases:               []string{"Imagen 4", "Imagen4"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{"1K", "2K"},
 	},
 	"imagen-4.0-fast-generate-001": {
-		CanonicalName: "imagen-4.0-fast-generate-001",
-		MaxImages:     4,
-		Aliases:       []string{"Imagen 4 Fast", "Imagen4 Fast"},
+		CanonicalName:         "imagen-4.0-fast-generate-001",
+		MaxImages:             4,
+		Aliases:               []string{"Imagen 4 Fast", "Imagen4 Fast"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{"1K", "2K"},
 	},
 	"imagen-4.0-ultra-generate-001": {
-		CanonicalName: "imagen-4.0-ultra-generate-001",
-		MaxImages:     1,
-		Aliases:       []string{"Imagen 4 Ultra", "Imagen4 Ultra"},
+		CanonicalName:         "imagen-4.0-ultra-generate-001",
+		MaxImages:             1,
+		Aliases:               []string{"Imagen 4 Ultra", "Imagen4 Ultra"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		SupportedImageSizes:   []string{"1K", "2K"},
 	},
 }
 
@@ -84,7 +110,11 @@ func BuildImagenModelDescription() string {
 
 	for _, name := range sortedNames {
 		info := SupportedImagenModels[name]
-		sb.WriteString(fmt.Sprintf("- *%s* (Max Images: %d)", info.CanonicalName, info.MaxImages))
+		baseInfo := fmt.Sprintf("- *%s* (Max Images: %d, Ratios: %s)", info.CanonicalName, info.MaxImages, strings.Join(info.SupportedAspectRatios, ", "))
+		sb.WriteString(baseInfo)
+		if len(info.SupportedImageSizes) > 0 {
+			sb.WriteString(fmt.Sprintf(" (Sizes: %s)", strings.Join(info.SupportedImageSizes, ", ")))
+		}
 		if len(info.Aliases) > 0 {
 			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
 		}

@@ -67,10 +67,16 @@ check_path() {
 main() {
 
   if [[ -z "${PROJECT_ID}" ]]; then
-    echo -e "${RED}ERROR: The PROJECT_ID environment variable is not set.${NC}"
-    echo "Please set it before running the installer, for example:"
-    echo -e "  ${BLUE}export PROJECT_ID=$(gcloud config get project)${NC}"
-    exit 1
+    echo -e "${YELLOW}PROJECT_ID not set, attempting to retrieve from gcloud config...${NC}"
+    PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+    if [[ -z "${PROJECT_ID}" ]]; then
+      echo -e "${RED}ERROR: Could not retrieve PROJECT_ID from gcloud. Please set it manually.${NC}"
+      echo "For example: export PROJECT_ID=your-gcp-project-id"
+      exit 1
+    else
+      echo -e "${GREEN}Successfully retrieved PROJECT_ID: ${PROJECT_ID}${NC}"
+      export PROJECT_ID
+    fi
   fi
 
   check_go_installation

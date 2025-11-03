@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Veo models.
+
 package main
 
 import (
@@ -93,7 +95,7 @@ func callGenerateVideosAPI(
 	log.Printf("GenerateVideos operation (%s) initiated successfully. Operation Name: %s", callType, operation.Name)
 
 	if progressToken != nil && mcpServer != nil {
-		mcpServer.SendNotificationToClient(
+		if err := mcpServer.SendNotificationToClient(
 			ctx, // Use parentCtx for notifications as it's tied to the client request
 			"notifications/progress",
 			map[string]interface{}{
@@ -101,7 +103,9 @@ func callGenerateVideosAPI(
 				"message":       fmt.Sprintf("Video generation (%s) initiated. Polling for completion...", callType),
 				"status":        "initiated", // Add a status field
 			},
-		)
+		); err != nil {
+			log.Printf("Warning: Failed to send 'initiated' progress notification: %v", err)
+		}
 	}
 
 	pollingStartTime := time.Now()
@@ -124,7 +128,7 @@ func callGenerateVideosAPI(
 			// Send a proactive heartbeat notification BEFORE making the potentially slow network call.
 			// This resets the client's inactivity timer.
 			if progressToken != nil && mcpServer != nil {
-				mcpServer.SendNotificationToClient(
+				if err := mcpServer.SendNotificationToClient(
 					ctx,
 					"notifications/progress",
 					map[string]interface{}{
@@ -132,7 +136,9 @@ func callGenerateVideosAPI(
 						"message":       fmt.Sprintf("Checking video status (polling attempt %d)...", pollingAttempt),
 						"status":        "polling",
 					},
-				)
+				); err != nil {
+					log.Printf("Warning: Failed to send 'polling' progress notification: %v", err)
+				}
 			}
 
 			var getOpOpts genai.GetOperationConfig
@@ -146,7 +152,7 @@ func callGenerateVideosAPI(
 				}
 				// For other errors, notify and continue (could be transient)
 				if progressToken != nil && mcpServer != nil {
-					mcpServer.SendNotificationToClient(
+					if err := mcpServer.SendNotificationToClient(
 						ctx,
 						"notifications/progress",
 						map[string]interface{}{
@@ -154,7 +160,9 @@ func callGenerateVideosAPI(
 							"message":       fmt.Sprintf("Polling attempt %d for %s video encountered an issue. Retrying...", pollingAttempt, callType),
 							"status":        "polling_issue",
 						},
-					)
+					); err != nil {
+						log.Printf("Warning: Failed to send 'polling_issue' progress notification: %v", err)
+					}
 				}
 				continue // Continue polling
 			}
@@ -186,7 +194,9 @@ func callGenerateVideosAPI(
 					payload["progress"] = progressPercent
 					payload["total"] = 100
 				}
-				mcpServer.SendNotificationToClient(ctx, "notifications/progress", payload)
+				if err := mcpServer.SendNotificationToClient(ctx, "notifications/progress", payload); err != nil {
+					log.Printf("Warning: Failed to send 'processing' progress notification: %v", err)
+				}
 			}
 		}
 	}
@@ -201,7 +211,7 @@ func callGenerateVideosAPI(
 			finalStatus = "completed_with_error"
 			finalMessage = fmt.Sprintf("Video generation (%s) failed after %v.", callType, operationDuration.Round(time.Second))
 		}
-		mcpServer.SendNotificationToClient(
+		if err := mcpServer.SendNotificationToClient(
 			ctx,
 			"notifications/progress",
 			map[string]interface{}{
@@ -211,7 +221,9 @@ func callGenerateVideosAPI(
 				"progress":      100, // Mark as 100% complete
 				"total":         100,
 			},
-		)
+		); err != nil {
+			log.Printf("Warning: Failed to send final progress notification: %v", err)
+		}
 	}
 
 	if operation.Error != nil {

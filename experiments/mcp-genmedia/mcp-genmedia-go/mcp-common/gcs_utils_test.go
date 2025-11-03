@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -47,7 +46,7 @@ func TestDownloadFromGCS(t *testing.T) {
 	}
 
 	// Create a temporary file to upload
-	tempFile, err := ioutil.TempFile("", "gcs_test_*")
+	tempFile, err := os.CreateTemp("", "gcs_test_*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +70,7 @@ func TestDownloadFromGCS(t *testing.T) {
 	}
 
 	// Download the file
-	tempDir, err := ioutil.TempDir("", "gcs_test_download_*")
+	tempDir, err := os.MkdirTemp("", "gcs_test_download_*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +82,7 @@ func TestDownloadFromGCS(t *testing.T) {
 	}
 
 	// Verify the content
-	downloadedContent, err := ioutil.ReadFile(localPath)
+	downloadedContent, err := os.ReadFile(localPath)
 	if err != nil {
 		t.Fatal(err)
 	}

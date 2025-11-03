@@ -1,5 +1,8 @@
+# See <https://help.github.com/en/articles/about-code-owners>
+# for more info about CODEOWNERS file
+
 # Global owner
-* @GoogleCloudPlatform/google-cloud-aaie @ghchinoy
+* @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel
 
 ## v.next
 /experiments/veo-app/ @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel

@@ -2,14 +2,14 @@
 #    uv export --no-hashes --format requirements-txt
 annotated-types==0.7.0
     # via pydantic
-anyio==4.10.0
+anyio==4.11.0
     # via
     #   google-genai
     #   httpx
     #   mcp
     #   sse-starlette
     #   starlette
-authlib==1.6.3
+authlib==1.6.5
     # via google-adk
 cachetools==6.1.0
     # via google-auth
@@ -22,7 +22,7 @@ cffi==1.17.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.3.0
     # via
     #   google-adk
     #   uvicorn
@@ -36,11 +36,11 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.116.1
+fastapi==0.117.1
     # via google-adk
-google-adk==1.13.0
+google-adk==1.15.1
     # via adk-genmedia-agent
-google-api-core==2.25.1
+google-api-core==2.25.2
     # via
     #   google-api-python-client
     #   google-cloud-aiplatform
@@ -53,7 +53,7 @@ google-api-core==2.25.1
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.179.0
+google-api-python-client==2.183.0
     # via google-adk
 google-auth==2.40.3
     # via
@@ -73,13 +73,13 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.111.0
+google-cloud-aiplatform==1.115.0
     # via google-adk
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
 google-cloud-audit-log==0.3.2
     # via google-cloud-logging
-google-cloud-bigquery==3.36.0
+google-cloud-bigquery==3.38.0
     # via google-cloud-aiplatform
 google-cloud-core==2.4.3
     # via
@@ -127,13 +127,13 @@ grpc-google-iam-v1==0.14.2
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.74.0
+grpcio==1.75.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.74.0
+grpcio-status==1.75.1
     # via google-api-core
 h11==0.16.0
     # via
@@ -141,7 +141,7 @@ h11==0.16.0
     #   uvicorn
 httpcore==1.0.9
     # via httpx
-httplib2==0.30.0
+httplib2==0.31.0
     # via
     #   google-api-python-client
     #   google-auth-httplib2
@@ -158,11 +158,11 @@ idna==3.10
     #   requests
 importlib-metadata==8.7.0
     # via opentelemetry-api
-mcp==1.13.1
+mcp==1.14.1
     # via google-adk
 numpy==2.3.3
     # via shapely
-opentelemetry-api==1.36.0
+opentelemetry-api==1.37.0
     # via
     #   google-adk
     #   google-cloud-logging
@@ -176,7 +176,7 @@ opentelemetry-exporter-gcp-trace==1.9.0
     #   google-cloud-aiplatform
 opentelemetry-resourcedetector-gcp==1.9.0a0
     # via opentelemetry-exporter-gcp-trace
-opentelemetry-sdk==1.36.0
+opentelemetry-sdk==1.37.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -219,9 +219,9 @@ pyasn1==0.6.1
     #   rsa
 pyasn1-modules==0.4.2
     # via google-auth
-pycparser==2.22 ; platform_python_implementation != 'PyPy'
+pycparser==2.23 ; platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.11.9
+pydantic==2.11.10
     # via
     #   fastapi
     #   google-adk
@@ -233,7 +233,7 @@ pydantic-core==2.39.0
     # via pydantic
 pydantic-settings==2.10.1
     # via mcp
-pyparsing==3.2.4
+pyparsing==3.2.5
     # via httplib2
 python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
@@ -244,7 +244,7 @@ python-dotenv==1.1.1
     #   pydantic-settings
 python-multipart==0.0.20
     # via mcp
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via google-adk
 requests==2.32.5
     # via
@@ -255,7 +255,7 @@ requests==2.32.5
     #   opentelemetry-resourcedetector-gcp
 rsa==4.9.1
     # via google-auth
-shapely==2.1.1
+shapely==2.1.2
     # via google-cloud-aiplatform
 six==1.17.0
     # via python-dateutil
@@ -265,7 +265,7 @@ sqlalchemy==2.0.43
     # via google-adk
 sse-starlette==3.0.2
     # via mcp
-starlette==0.47.3
+starlette==0.48.0
     # via
     #   fastapi
     #   mcp
@@ -284,7 +284,7 @@ typing-extensions==4.15.0
     #   pydantic-core
     #   sqlalchemy
     #   typing-inspection
-typing-inspection==0.4.1
+typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
@@ -296,7 +296,7 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.5.0
     # via requests
-uvicorn==0.35.0
+uvicorn==0.36.1
     # via
     #   google-adk
     #   mcp

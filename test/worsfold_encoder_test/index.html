@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worsfold Encoder Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        display: grid;
+        place-content: center;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      #gif-container {
+        min-height: 200px;
+        border: 2px dashed #ccc;
+        padding: 1rem;
+        display: grid;
+        place-content: center;
+      }
+      img {
+        max-width: 100%;
+      }
+      pre {
+        background: #eee;
+        padding: 1rem;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+    </style>
+    <!-- Import the Lit component -->
+    <script
+      type="module"
+      src="../../../components/worsfold_encoder/worsfold_encoder.js"
+    ></script>
+  </head>
+  <body>
+    <h1>Worsfold Encoder Test Page</h1>
+
+    <!-- Instantiate the component -->
+    <worsfold-encoder id="encoder"></worsfold-encoder>
+
+    <button id="start-button">Start Encoding</button>
+
+    <h2>Result:</h2>
+    <div id="gif-container">
+      <img id="result-img" />
+      <p id="placeholder">GIF will appear here</p>
+    </div>
+
+    <h2>Logs:</h2>
+    <pre id="logs"></pre>
+
+    <script>
+      const encoder = document.getElementById('encoder');
+      const startButton = document.getElementById('start-button');
+      const resultImg = document.getElementById('result-img');
+      const placeholder = document.getElementById('placeholder');
+      const logs = document.getElementById('logs');
+
+      // --- Set properties on the component ---
+      // This is a placeholder URL. Replace with a real, CORS-accessible video URL for testing.
+      encoder.videoUrl = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4';
+
+      // --- Wire up the button ---
+      startButton.addEventListener('click', () => {
+        console.log('Starting encoding...');
+        logs.textContent = 'Starting encoding...\n';
+        resultImg.src = '';
+        placeholder.style.display = 'block';
+        // Set the startEncode property to true to trigger the encoding process
+        encoder.startEncode = true;
+      });
+
+      // --- Listen for events from the component ---
+      encoder.addEventListener('on-encode-complete', (e) => {
+        console.log('Encoding complete!', e.detail);
+        placeholder.style.display = 'none';
+        resultImg.src = e.detail;
+      });
+
+      encoder.addEventListener('on-progress', (e) => {
+        console.log('Progress:', e.detail);
+      });
+
+      encoder.addEventListener('on-log', (e) => {
+        console.log('Log:', e.detail);
+        logs.textContent += e.detail + '\n';
+      });
+    </script>
+  </body>
+</html>

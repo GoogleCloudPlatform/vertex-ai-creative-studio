@@ -1,4 +1,3 @@
-
 // Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Gemini models.
+
 package main
 
 import (
@@ -25,9 +26,9 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"google.golang.org/genai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/genai"
 )
 
 func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -42,6 +43,12 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	}
 
 	model, _ := request.GetArguments()["model"].(string)
+	if model == "nano-banana" || model == "nano banana" {
+		model = "gemini-2.5-flash-image"
+	}
+	if model == "" { // default
+		model = "gemini-2.5-flash-image"
+	}
 
 	outputDir := ""
 	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {

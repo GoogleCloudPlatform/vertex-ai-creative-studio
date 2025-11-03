@@ -1,0 +1,185 @@
+{
+  "pages": [
+    {
+      "id": 0,
+      "display": "Home",
+      "icon": "home",
+      "route": "/home",
+      "description": "The home page of the application."
+    },
+    {
+      "id": 6,
+      "display": "Imagen",
+      "icon": "image",
+      "route": "/imagen",
+      "group": "foundation",
+      "mode": "image",
+      "description": "Generate images from text prompts using Imagen.",
+      "video_url": "https://deepmind.google/api/blob/website/media/imagen__page_cover.mp4"
+    },
+    {
+      "id": 8,
+      "display": "Edit Images",
+      "icon": "edit",
+      "route": "/edit_images",
+      "group": "foundation",
+      "mode": "image",
+      "feature_flag": "EDIT_IMAGES_ENABLED",
+      "description": "Edit images using inpainting and outpainting."
+    },
+    {
+      "id": 10,
+      "display": "Veo",
+      "icon": "movie_filter",
+      "route": "/veo",
+      "group": "foundation",
+      "mode": "video",
+      "description": "Generate videos from text or image prompts using Veo.",
+      "video_url": "https://deepmind.google/api/blob/website/media/veo__cover_s0RKXWX.mp4"
+    },
+    {
+      "id": 12,
+      "display": "Gemini Image Generation",
+      "icon": "spark",
+      "icon_family": "Google Symbols",
+      "route": "/nano-banana",
+      "group": "foundation",
+      "mode": "image",
+      "description": "Generate images from text prompts using Gemini.",
+      "video_url": "https://deepmind.google/api/blob/website/media/gemini-image__page_cover.mp4"
+    },
+    {
+      "id": 14,
+      "display": "Gemini TTS",
+      "icon": "spark",
+      "route": "/gemini-tts",
+      "group": "foundation",
+      "mode": "speech",
+      "description": "Gemini's latest Text to Speech mode",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_header.mp4",
+      "video_object_position": "bottom"
+    },
+    {
+      "id": 15,
+      "display": "Chirp 3 HD",
+      "icon": "graphic_eq",
+      "route": "/chirp-3hd",
+      "group": "foundation",
+      "mode": "speech",
+      "description": "Generate high-definition speech from text using Chirp 3.",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_realtime_header.mp4",
+      "video_object_position": "bottom"
+    },
+    {
+      "id": 20,
+      "display": "Lyria",
+      "icon": "music_note",
+      "route": "/lyria",
+      "group": "foundation",
+      "feature_flag": "LYRIA_PROJECT_ID",
+      "mode": "music",
+      "description": "Generate music from text prompts using Lyria.",
+      "video_url": "https://deepmind.google/api/blob/website/media/lyria_header.mp4",
+      "video_object_position": "bottom"
+    },
+
+    {
+      "id": 30,
+      "display": "Virtual Try-On",
+      "icon": "checkroom",
+      "route": "/vto",
+      "group": "workflows",
+      "mode": ["video", "image"],
+      "description": "Virtually try on clothing items."
+    },
+    {
+      "id": 35,
+      "display": "Starter Pack",
+      "icon": "style",
+      "route": "/starter-pack",
+      "group": "workflows",
+      "mode": "image",
+      "description": "Generate a starter pack of images for a concept."
+    },
+    {
+      "id": 40,
+      "display": "Product in Scene",
+      "icon": "scene",
+      "route": "/recontextualize",
+      "group": "workflows",
+      "mode": "image",
+      "description": "Place a product in a generated scene."
+    },
+    {
+      "id": 50,
+      "display": "Motion Portraits",
+      "icon": "portrait",
+      "route": "/motion_portraits",
+      "group": "workflows",
+      "mode": "video",
+      "description": "Create animated portraits from a still image."
+    },
+    {
+      "id": 55,
+      "display": "Character Consistency",
+      "icon": "person",
+      "route": "/character_consistency",
+      "group": "workflows",
+      "mode": ["image", "video"],
+      "description": "Create consistent characters across multiple images and videos."
+    },
+    {
+      "id": 56,
+      "display": "Shop the Look",
+      "icon": "shopping_bag",
+      "route": "/shop_the_look",
+      "group": "workflows",
+      "mode": ["image", "video"],
+      "description": "Create a 'shop the look' experience from a model and clothing."
+    },
+    {
+      "id": 57,
+      "display": "Interior Design",
+      "icon": "chair",
+      "route": "/interior_design",
+      "group": "workflows",
+      "mode": "image",
+      "description": "Generate 3D views from floor plans."
+    },
+    {
+      "id": 60,
+      "display": "Library",
+      "icon": "perm_media",
+      "route": "/library_v2",
+      "group": "studio",
+      "description": "Browse your generated media."
+    },
+    {
+      "id": 63,
+      "display": "Pixie Compositor",
+      "icon": "auto_fix_high",
+      "route": "/pixie_compositor",
+      "group": "studio",
+      "mode": ["image", "video"],
+      "description": "Pixie helps you combine generative media."
+    },
+    {
+      "id": 65,
+      "display": "About",
+      "icon": "info",
+      "route": "/about",
+      "align": "bottom",
+      "group": "studio",
+      "description": "Information about GenMedia Creative Studio."
+    },
+    {
+      "id": 100,
+      "display": "Settings",
+      "icon": "settings",
+      "route": "/config",
+      "align": "bottom",
+      "group": "studio",
+      "description": "Configure application settings."
+    }
+  ]
+}

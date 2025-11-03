@@ -1,3 +1,5 @@
+// Package main implements an MCP server for Google's Chirp3 text-to-speech models.
+
 package main
 
 import (
@@ -26,12 +28,11 @@ import (
 )
 
 var (
-	projectID, location string
 	ttsClient           *texttospeech.Client // Global Text-to-Speech client
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
 	port                string
-	version             = "0.1.0" // Add prompt support
+	version             = "0.1.1" // Disable OTel by default
 )
 
 const (
@@ -202,11 +203,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global Text-to-Speech client...")
 	startupCtx, startupCancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -420,7 +423,7 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	}
 
 	// Handle custom pronunciations
-	pronunciationsParam, _ := request.GetArguments()["pronunciations"] // This will be []interface{} or nil
+	pronunciationsParam := request.GetArguments()["pronunciations"] // This will be []interface{} or nil
 	pronunciationEncodingStr, _ := request.GetArguments()["pronunciation_encoding"].(string)
 	if pronunciationEncodingStr == "" { // Apply default if not provided
 		pronunciationEncodingStr = "ipa"

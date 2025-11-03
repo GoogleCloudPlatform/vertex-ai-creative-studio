@@ -1,0 +1,1 @@
+gcloud builds submit . --project=$PROJECT_ID --gcs-source-staging-dir=gs://run-resources-$PROJECT_ID-$REGION/services/creative-studio --region=$REGION --service-account=projects/$PROJECT_ID/serviceAccounts/builds-creative-studio@$PROJECT_ID.iam.gserviceaccount.com

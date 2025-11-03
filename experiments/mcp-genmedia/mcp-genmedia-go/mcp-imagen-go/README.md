@@ -22,6 +22,13 @@ The following tool is exposed by this server:
     *   `gcs_bucket_uri` (string, optional): GCS URI prefix to store the generated images (e.g., "your-bucket/outputs/" or "gs://your-bucket/outputs/"). If provided, images are saved to GCS instead of returning bytes directly.
     *   `output_directory` (string, optional): If provided, specifies a local directory to save the generated image(s) to.
 
+### Resources
+
+The server exposes the following resources:
+
+*   `imagen://models`: Returns a JSON object detailing the supported Imagen models and their aliases. You can read this resource using `mcptools resources get imagen://models ./mcp-imagen-go`.
+*   `imagen://segmentation_classes`: Returns a JSON object of supported classes for semantic masking in image editing.
+
 ## Environment Variable Configuration
 
 The tool utilizes the following environment variables:

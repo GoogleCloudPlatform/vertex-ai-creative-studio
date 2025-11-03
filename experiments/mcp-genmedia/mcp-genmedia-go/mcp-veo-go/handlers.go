@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Veo models.
+
 package main
 
 import (
@@ -141,7 +143,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		log.Printf("Incoming i2v context for image_uri \"%s\" was already canceled: %v", imageURI, ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
-		log.Printf("Handling Veo i2v request: ImageURI=\"%%s\", MimeType=\"%%s\", Prompt=\"%%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds", imageURI, mimeType, prompt, gcsBucket, outputDir, modelName, numberOfVideos, finalAspectRatio, durationSecs)
+		log.Printf("Handling Veo i2v request: ImageURI=\"%s\", MimeType=\"%s\", Prompt=\"%s\", GCSBucket=%s, OutputDir='%s', Model=%s, NumVideos=%d, AspectRatio=%s, Duration=%ds", imageURI, mimeType, prompt, gcsBucket, outputDir, modelName, numberOfVideos, finalAspectRatio, durationSecs)
 	}
 
 	inputImage := &genai.Image{

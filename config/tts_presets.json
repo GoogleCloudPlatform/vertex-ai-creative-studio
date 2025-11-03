@@ -1,0 +1,60 @@
+{
+  "presets": [
+    {
+      "name": "Amused Conversation",
+      "language_code": "en-US",
+      "text": "[laughing] Oh, wow. I did NOT expect that to happen. [sigh] Seriously, can you believe it?",
+      "prompt": "You are having a casual conversation with a friend. Say the following in a friendly and amused way.",
+      "voice": "Callirrhoe"
+    },
+    {
+      "name": "Curious Question",
+      "language_code": "en-US",
+      "text": "OK, so... [uhm] I've been hearing a lot about this AI thing. Can you, like, explain to me what it's all about?",
+      "prompt": "Say the following in a curious way",
+      "voice": "Orus"
+    },
+    {
+      "name": "Terms of Service",
+      "language_code": "en-US",
+      "text": "[speaking quickly] Offer valid only at participating locations, not valid in combination with any other offer. [even faster] Availabilityandtermsmayvarycheckourwebsiteoryourlocalstoreforcompletedetailsandrestrictions.",
+      "prompt": "You are a legal announcer reading the terms and conditions at the end of a commercial. Read the following very quickly.",
+      "voice": "Kore"
+    },
+    {
+      "name": "Excited Announcer",
+      "language_code": "en-US",
+      "text": "[sound of an explosion] This summer, in a world where heroes are forged... get ready for an adventure like no other. One hero will rise.",
+      "prompt": "You are a movie trailer announcer. Say the following with an excited and dramatic tone.",
+      "voice": "Puck"
+    },
+    {
+      "name": "Documentary Narrator",
+      "language_code": "en-US",
+      "text": "Here, in the vast expanse of the Serengeti, the cycle of life plays out. [pause] Every day is a struggle for survival, a delicate dance between predator and prey.",
+      "prompt": "You are a documentary narrator. Speak in a calm, clear, and thoughtful voice.",
+      "voice": "Zubenelgenubi"
+    },
+    {
+      "name": "Urgent News Bulletin",
+      "language_code": "en-US",
+      "text": "[sound of a news alert] We interrupt this program with a breaking news story. We're getting reports... [pause] yes, we can now confirm there is a large traffic jam on the interstate. Avoid the area if possible.",
+      "prompt": "You are a news anchor delivering an urgent breaking news report. Speak clearly and with a sense of urgency.",
+      "voice": "Schedar"
+    },
+    {
+      "name": "Gentle Storyteller",
+      "language_code": "en-US",
+      "text": "[sound of a gentle harp strum] Once upon a time, in a cozy cottage deep in the woods, there lived a very brave little mouse. His name was Timothy, and he was about to have a very big adventure.",
+      "prompt": "You are telling a bedtime story to a child. Speak in a soft, gentle, and slightly magical voice.",
+      "voice": "Leda"
+    },
+    {
+      "name": "Sarcastic Teenager",
+      "language_code": "en-US",
+      "text": "[sigh] Oh, great. Another family dinner. I can hardly contain my excitement. [muttering] I wonder what thrilling stories I'll get to hear this time.",
+      "prompt": "You are a sarcastic teenager who is unenthusiastic about a family event. Say the following with a dry, slightly bored tone.",
+      "voice": "Fenrir"
+    }
+  ]
+}

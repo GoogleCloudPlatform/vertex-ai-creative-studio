@@ -1,3 +1,5 @@
+// Package main implements an MCP server for Google's Imagen models.
+
 package main
 
 import (

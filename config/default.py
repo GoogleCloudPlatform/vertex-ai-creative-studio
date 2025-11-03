@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,55 +11,155 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Default Configuration for Creative Studio """
 
+import json
 import os
 from dataclasses import dataclass, field
-from vertexai.generative_models import HarmBlockThreshold
+from typing import List, Optional, TypedDict
 
-from models.image_models import ImageModel
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+
+load_dotenv(override=True)
+
+
+# Define ImageModel here
+class ImageModel(TypedDict):
+    """Defines Models For Image Generation."""
+
+    display: str
+    model_name: str
+
+
+class NavItem(BaseModel):
+    id: int
+    display: str
+    icon: str
+    route: Optional[str] = None
+    group: Optional[str] = None
+    align: Optional[str] = None
+    feature_flag: Optional[str] = None
+    feature_flag_not: Optional[str] = None
+    description: Optional[str] = None
+    video_url: Optional[str] = None
+    video_object_position: Optional[str] = None
+
+
+class NavConfig(BaseModel):
+    pages: List[NavItem]
 
 
 @dataclass
-class GeminiModelConfig:
-    """Configuration specific to Gemini models."""
+class Default:
+    """Defaults class"""
 
-    generation: dict = field(default_factory=dict)
-    safety_settings: dict = field(default_factory=dict)
-    tools: dict = field(default_factory=dict)
-    grounding_source: object = None
+    VERSION: str = "1.0.9" # New media chooser
+    APP_ENV: str = os.environ.get("APP_ENV", "")
 
-    def __repr__(self):
-        params = []
-        for k, v in self.generation.items():
-            params.append(f"generation_{k}={v}")
-        for k, v in self.safety_settings.items():
-            params.append(f"safety_{k}={v}")
-        for k, v in self.tools.items():
-            params.append(f"tools_{k}={v}")
-        if self.grounding_source:
-            params.append("grounding=ON")
-        return f"ModelConfig({', '.join(params)})"
+    SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
+    # Gemini
+    PROJECT_ID: str = os.environ.get("PROJECT_ID")
+    LOCATION: str = os.environ.get("LOCATION", "us-central1")
+    GA_MEASUREMENT_ID: str = os.environ.get("GA_MEASUREMENT_ID")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
+    INIT_VERTEX: bool = True
+    GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
+        "GEMINI_IMAGE_GEN_MODEL", "gemini-2.5-flash-image",
+    )
+    GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
+        "GEMINI_IMAGE_GEN_LOCATION", "global",
+    )
 
+    GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
+        "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash"
+    )
 
-@dataclass
-class Config:
-    """All configuration variables for this solution should be managed here."""
+    # Collections
+    GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
+    GENMEDIA_COLLECTION_NAME: str = os.environ.get(
+        "GENMEDIA_COLLECTION_NAME",
+        "genmedia",
+    )
+    SESSIONS_COLLECTION_NAME: str = os.environ.get(
+        "SESSIONS_COLLECTION_NAME",
+        "sessions",
+    )
 
-    TITLE = "IMAGEN CREATIVE STUDIO"
-    IMAGE_CREATION_BUCKET = os.environ.get("IMAGE_CREATION_BUCKET", "")
-    PROJECT_ID = os.environ.get("PROJECT_ID", "")
-    LOCATION = os.getenv("LOCATION", "us-central1")
-    MODEL_GEMINI_MULTIMODAL = "gemini-2.5-flash"
+    # storage
+    GENMEDIA_BUCKET: str = os.environ.get("GENMEDIA_BUCKET", f"{PROJECT_ID}-assets")
+    VIDEO_BUCKET: str = os.environ.get("VIDEO_BUCKET", f"{PROJECT_ID}-assets/videos")
+    IMAGE_BUCKET: str = os.environ.get("IMAGE_BUCKET", f"{PROJECT_ID}-assets/images")
+    GCS_ASSETS_BUCKET: str = os.environ.get("GCS_ASSETS_BUCKET")
+
+    # Veo
+    VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-2.0-generate-001")
+    VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
+
+    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-001")
+    VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
+        "VEO_EXP_FAST_MODEL_ID",
+        "veo-3.0-fast-generate-001",
+    )
+    VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
+
+    # VTO
+    VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
+    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-preview-08-04")
+    GENMEDIA_VTO_MODEL_COLLECTION_NAME: str = os.environ.get(
+        "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model"
+    )
+    GENMEDIA_VTO_CATALOG_COLLECTION_NAME: str = os.environ.get(
+        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME", "genmedia-vto-catalog"
+    )
+
+    # Temperatures for Character Consistency Workflow
+    # Low temp for factual, structured output. Increasing may break JSON parsing.
+    TEMP_FORENSIC_ANALYSIS: float = 0.1
+    # Low temp for direct, non-creative translation of data to text.
+    TEMP_DESCRIPTION_TRANSLATION: float = 0.1
+    # Mid-range temp for creative but controlled prompt engineering.
+    TEMP_SCENE_GENERATION: float = 0.3
+    # Low temp for analytical comparison and structured JSON output.
+    TEMP_BEST_IMAGE_SELECTION: float = 0.2
+
+    # Character Consistency
+    CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
+    CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get(
+        "CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001"
+    )
+    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get(
+        "CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID
+    )
+
+    # Lyria
+    LYRIA_LOCATION: str = os.environ.get("LYRIA_LOCATION", "us-central1")
+    LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
+    LYRIA_PROJECT_ID: str = os.environ.get("LYRIA_PROJECT_ID", PROJECT_ID)
+    MEDIA_BUCKET: str = os.environ.get("MEDIA_BUCKET", f"{PROJECT_ID}-assets")
+
+    # Imagen
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
-    MODEL_IMAGEN3_FAST = "imagen-3.0-fast-generate-00"
-    MODEL_IMAGEN3 = "imagen-3.0-generate-002"
-    TEMPERATURE = 0.8
-    TOP_P = 0.97
-    TOP_K = 40
-    MAX_OUTPUT_TOKENS = 2048
+    MODEL_IMAGEN = "imagen-3.0-generate-002"
+    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
+    MODEL_IMAGEN4 = "imagen-4.0-generate-001"
+    MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-001"
+    MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-001"
+    MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
+    MODEL_IMAGEN_PRODUCT_RECONTEXT: str = os.environ.get(
+        "MODEL_IMAGEN_PRODUCT_RECONTEXT",
+        "imagen-product-recontext-preview-06-30",
+    )
+
+    IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get(
+        "IMAGEN_GENERATED_SUBFOLDER", "generated_images"
+    )
+    IMAGEN_EDITED_SUBFOLDER: str = os.environ.get(
+        "IMAGEN_EDITED_SUBFOLDER", "edited_images"
+    )
+
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
+
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",
@@ -67,35 +167,67 @@ class Config:
             "color_tone",
             "lighting",
             "composition",
-        ]
-    )
-    gemini_settings: GeminiModelConfig = field(
-        default_factory=GeminiModelConfig, init=False
-    )
-    display_image_models: list[ImageModel] = field(
-        default_factory=lambda: [
-            {"display": "Imagen 3 Fast", "model_name": Config.MODEL_IMAGEN3_FAST},
-            {"display": "Imagen 3", "model_name": Config.MODEL_IMAGEN3},
-        ]
+        ],
     )
 
-    def __post_init__(self):
-        """Initialize fields that depend on other fields or require complex logic."""
-        self.gemini_settings.generation["temperature"] = self.TEMPERATURE
-        self.gemini_settings.generation["top_p"] = self.TOP_P
-        self.gemini_settings.generation["top_k"] = self.TOP_K
-        self.gemini_settings.generation["max_output_tokens"] = self.MAX_OUTPUT_TOKENS
-        self.gemini_settings.generation["candidate_count"] = 1
-        self.gemini_settings.generation["stop_sequences"] = []
-        self.gemini_settings.safety_settings["HARASSMENT"] = (
-            HarmBlockThreshold.BLOCK_ONLY_HIGH
-        )
-        self.gemini_settings.safety_settings["HATE_SPEECH"] = (
-            HarmBlockThreshold.BLOCK_ONLY_HIGH
-        )
-        self.gemini_settings.safety_settings["SEXUALLY_EXPLICIT"] = (
-            HarmBlockThreshold.BLOCK_ONLY_HIGH
-        )
-        self.gemini_settings.safety_settings["DANGEROUS_CONTENT"] = (
-            HarmBlockThreshold.BLOCK_ONLY_HIGH
-        )
+
+def get_welcome_page_config():
+    with open("config/navigation.json", "r") as f:
+        data = json.load(f)
+
+    # This will raise a validation error if the JSON is malformed
+    config = NavConfig(**data)
+
+    def is_feature_enabled(page: NavItem):
+        if page.feature_flag:
+            return bool(getattr(Default, page.feature_flag, False))
+        if page.feature_flag_not:
+            return not bool(getattr(Default, page.feature_flag_not, False))
+        return True
+
+    filtered_pages = [
+        page.model_dump(exclude_none=True)
+        for page in config.pages
+        if is_feature_enabled(page)
+    ]
+
+    return sorted(filtered_pages, key=lambda x: x["id"])
+
+
+def load_about_page_config():
+    env = os.environ.get("APP_ENV") # e.g., 'local', 'dev', 'prod'
+    env_config_path = f"config/about_content.{env}.json"
+    default_config_path = "config/about_content.json"
+
+    config_path = None
+    if env and os.path.exists(env_config_path):
+        config_path = env_config_path
+    elif os.path.exists(default_config_path):
+        config_path = default_config_path
+    else:
+        # Neither the environment-specific nor the default file was found
+        return None
+
+    try:
+        with open(config_path, "r") as f:
+            content = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+    # The rest of the function that processes GCS URLs remains the same
+    bucket_name = Default.GCS_ASSETS_BUCKET
+    if not bucket_name:
+        return content
+
+    base_url = f"https://storage.googleapis.com/{bucket_name}"
+
+    for section in content.get("sections", []):
+        if section.get("image"):
+            section["image"] = f"{base_url}/{section['image']}"
+        if section.get("video"):
+            section["video"] = f"{base_url}/{section['video']}"
+
+    return content
+
+
+ABOUT_PAGE_CONTENT = load_about_page_config()

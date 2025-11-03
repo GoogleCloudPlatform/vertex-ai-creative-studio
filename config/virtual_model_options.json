@@ -1,0 +1,65 @@
+{
+  "_citation": "Monk Skin Tone Scale License: Creative Commons Attribution 4.0 International license. Scale Usage Citation: Monk, Ellis. ‘Monk Skin Tone Scale,’ 2019. https://skintone.google",
+  "genders": [
+    {
+      "name": "Feminine-presenting",
+      "prompt_fragment": "a feminine-presenting"
+    },
+    {
+      "name": "Masculine-presenting",
+      "prompt_fragment": "a masculine-presenting"
+    },
+    {
+      "name": "Androgynous",
+      "prompt_fragment": "an androgynous"
+    }
+  ],
+  "MST": [
+    { "name": "MST-1", "hex": "#f6ede4", "prompt_fragment": "a very light skin tone with balanced undertones (#f6ede4)" },
+    { "name": "MST-2", "hex": "#f3e7db", "prompt_fragment": "a light skin tone with warm, yellow undertones (#f3e7db)" },
+    { "name": "MST-3", "hex": "#f7ead0", "prompt_fragment": "a light-medium skin tone with golden undertones (#f7ead0)" },
+    { "name": "MST-4", "hex": "#eadaba", "prompt_fragment": "a medium skin tone with olive undertones (#eadaba)" },
+    { "name": "MST-5", "hex": "#d7bd96", "prompt_fragment": "a medium-tan skin tone with warm, caramel undertones (#d7bd96)" },
+    { "name": "MST-6", "hex": "#a07e56", "prompt_fragment": "a tan-brown skin tone with neutral undertones (#a07e56)" },
+    { "name": "MST-7", "hex": "#825c43", "prompt_fragment": "a medium-dark brown skin tone with reddish undertones (#825c43)" },
+    { "name": "MST-8", "hex": "#604134", "prompt_fragment": "a dark brown skin tone with cool, espresso undertones (#604134)" },
+    { "name": "MST-9", "hex": "#3a312a", "prompt_fragment": "a very dark brown skin tone with neutral undertones (#3a312a)" },
+    { "name": "MST-10", "hex": "#292420", "prompt_fragment": "the deepest brown-black skin tone with cool undertones (#292420)" }
+  ],
+  "silhouette_presets": [
+    {
+      "name": "Linear & Balanced",
+      "description": "A streamlined form with a subtle waist, creating a clean, straight line through the torso.",
+      "prompt_fragment": "a linear and balanced silhouette where the shoulders, waist, and hips are elegantly aligned"
+    },
+    {
+      "name": "Tapered & Grounded",
+      "description": "A form defined by a tapered torso that gently widens from the waist to the hips.",
+      "prompt_fragment": "a tapered and grounded silhouette, with a torso that gently widens from the waist to the hips"
+    },
+    {
+      "name": "Inverted Triangle",
+      "description": "A silhouette defined by a broad upper body that tapers toward the hips.",
+      "prompt_fragment": "an inverted triangle silhouette, with broad shoulders and a torso that tapers toward the hips"
+    },
+    {
+      "name": "Classic Hourglass",
+      "description": "A silhouette with a distinctly narrow waist that balances a proportional bust and hips.",
+      "prompt_fragment": "a classic hourglass silhouette, with a distinctly narrow waist that balances a proportional bust and hips"
+    }
+  ],
+  "variants": [
+    {
+      "name": "Standard Pose",
+      "prompt_fragment": "facing forward with a natural, relaxed posture and a neutral expression"
+    },
+    {
+      "name": "Walking Pose",
+      "prompt_fragment": "in a walking pose, showing natural movement"
+    },
+    {
+      "name": "Smiling at Camera",
+      "prompt_fragment": "smiling and looking directly at the camera"
+    }
+  ]
+}

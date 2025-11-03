@@ -1,5 +1,12 @@
 # Changelog
 
+## 2025-10-01
+
+*   **Feat:** Disabled OpenTelemetry tracing by default across all MCP servers. It can be re-enabled by setting the `OTEL_ENABLED=true` environment variable.
+*   **Fix:** Removed the unused `-otel` command-line flag from the `mcp-veo-go` server.
+*   **Test:** Added `verify.sh` scripts to `mcp-chirp3-go`, `mcp-avtool-go`, and `mcp-lyria-go` to provide a consistent, post-build liveness check.
+*   **Chore:** Incremented the version number for all MCP servers.
+
 ## 2025-08-31
 
 *   **Feat:** Added `gemini_audio_tts` and `list_gemini_voices` tools to the `mcp-gemini-go` server to provide speech synthesis capabilities using Gemini TTS models.

@@ -170,6 +170,21 @@ This repository provides AI application samples for:
 
 All servers in this project are configured using environment variables. While some servers have unique variables, the following are common to most of them:
 
+### Using a `.env` File
+
+For easier local development, you can place a `.env` file in the directory where you run the MCP server. The server will automatically load environment variables from this file.
+
+**Precedence Order:**
+
+1.  **Environment variables set in the shell:** These take the highest precedence.
+2.  **Variables in the `.env` file:** These are loaded but will **not** override any variables already set in your shell.
+
+This allows you to have default values in your `.env` file and override them for specific cases by setting the variable in your terminal.
+
+**Available Variables:**
+
+The following variables can be defined in your `.env` file or as shell environment variables:
+
 *   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.

@@ -4,9 +4,9 @@ This document provides common guidance for developing and testing the generative
 
 ## General Guidance
 
-### Versioning and Changelog
+### **CRITICAL: Versioning and Changelog**
 
-After making changes, you must update both the version number in the code and the `CHANGELOG.md` file.
+After making **any** functional or logical code changes, you **must** update both the version number in the code and the `CHANGELOG.md` file. This is not an optional step.
 
 1.  **Increment Version**: In the core MCP code file (e.g., `imagen.go`, `veo.go`), find the `version` constant. Increment it according to the significance of your changes and update the comment to reflect the changes made.
 
@@ -83,6 +83,10 @@ You should also run the standard Go tests:
 ```bash
 go test ./...
 ```
+
+### **New Rule: Standardized Verification**
+
+After making any code change to an MCP server, you **must** ensure a `verify.sh` script exists and is up-to-date. If a script does not exist, you must create one by adapting the script from a neighboring MCP server (e.g., `mcp-gemini-go`). All `verify.sh` scripts should perform a basic build and liveness check by calling `mcptools tools`.
 
 ### Manual Testing with `mcptools`
 

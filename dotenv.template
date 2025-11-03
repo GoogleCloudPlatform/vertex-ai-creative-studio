@@ -1,0 +1,23 @@
+#### App
+# PROJECT_ID is required, Google Cloud Project
+PROJECT_ID=
+# LOCATION defaults to us-central1
+#LOCATION=us-central1 
+# MODEL_ID defaults to gemini-2.0-flash
+#MODEL_ID= 
+# GENMEDIA_BUCKET defaults to: {PROJECT_ID}-assets
+#GENMEDIA_BUCKET=
+
+#### Veo
+# VEO_PROJECT_ID defaults to PROJECT_ID if not present
+#VEO_PROJECT_ID=
+# VEO_MODEL defaults to veo-2.0-generate-001 if not present
+#VEO_MODEL_ID=
+# VEO_EXP_MODEL_ID defaults to veo-2.0-generate-exp if not present
+#VEO_EXP_MODEL_ID=
+
+#### Lyria
+# LYRIA_MODEL_VERSION defaults to lyria-base-001
+#LYRIA_MODEL_VERSION=
+# LYRIA_PROJECT_ID defaults to PROJECT_ID f not present
+#LYRIA_PROJECT_ID=

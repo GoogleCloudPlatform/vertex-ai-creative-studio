@@ -1,3 +1,5 @@
+// Package main implements an MCP server for audio and video processing.
+
 package main
 
 import (
@@ -14,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "2.1.0" // Add prompt support
+	version     = "2.1.1" // Disable OTel by default
 )
 
 var transport = flag.String("transport", "stdio", "Transport type (stdio, sse, or http)")
@@ -40,11 +42,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	s := server.NewMCPServer(
 		"AV Compositing Tool", // More general name

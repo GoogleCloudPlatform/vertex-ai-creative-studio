@@ -1,0 +1,53 @@
+[project]
+name = "veo-app"
+version = "0.1.0"
+description = "GenMedia Creative Studio - Veo app"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.12",
+    "firebase-admin>=6.6.0",
+    "google-cloud-aiplatform>=1.79.0",
+    "google-genai>=0.8.0",
+    "gunicorn>=23.0.0",
+    "mediapy>=1.2.2",
+    "mesop>=0.14.1",
+    "numpy>=2.2.2",
+    "pandas>=2.2.3",
+    "shortuuid>=1.0.13",
+    "tenacity>=9.0.0",
+    "uvicorn>=0.34.2",
+    "ruff>=0.1.0", # Using a general version, can be pinned
+    "black>=25.1.0",
+    "pytest>=8.4.1",
+    "google-cloud-texttospeech>=2.27.0",
+    "google-cloud-logging>=3.12.1",
+    "moviepy>=2.0.0",
+    "scipy",
+    "scikit-image",
+    "opencv-python",
+]
+
+[tool.ruff]
+# Python version (optional, defaults to auto-detect)
+# target-version = "py310"
+
+[tool.ruff.lint]
+# Enable Pyflakes ("F") and Pycodestyle ("E", "W") categories by default.
+# select = ["E", "F", "W", "I"]  # I for isort
+# Can be more specific or add more rules later
+# For example, to emulate Flake8:
+select = ["E", "F", "W", "C90", "I", "N", "D", "UP", "ANN", "S", "BLE", "A", "COM", "LOG", "PT", "Q", "RET", "SIM", "TID", "ARG", "PTH", "ERA", "PD", "PGH", "PIE", "PL", "TRY", "FLY", "NPY", "PERF", "RUF"]
+ignore = ["E501"] # Ignore line too long for now, can be addressed later
+
+[tool.ruff.format]
+# Use black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+#skip-string-normalization = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (slow, requires network)",
+]

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Gemini models.
+
 package main
 
 import (
@@ -35,7 +37,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.2.0"
+	version     = "0.3.2" // nano-banana alias
 )
 
 func init() {
@@ -58,11 +60,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -89,7 +93,7 @@ func main() {
 	tool := mcp.NewTool("gemini_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini 2.5 Flash Image generation. This model is also called nano-banana."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image-preview"), mcp.Description("The specific Gemini model to use.")),
+		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image"), mcp.Description("The specific Gemini model to use.")),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
@@ -123,7 +127,11 @@ func main() {
 		mcp.WithString("model_name",
 			mcp.DefaultString(defaultGeminiTTSModel),
 			mcp.Description("The model to use."),
-			mcp.Enum("gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"),
+			mcp.Enum("gemini-2.5-flash-tts", "gemini-2.5-pro-tts"),
+		),
+		mcp.WithString("language_code",
+			mcp.DefaultString("en-US"),
+			mcp.Description("Optional. The language code to use for the synthesis. Defaults to en-US."),
 		),
 		mcp.WithString("output_filename_prefix",
 			mcp.DefaultString("gemini_tts_audio"),
@@ -131,6 +139,11 @@ func main() {
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to save the generated audio file to. If not provided, audio data is returned in the response."),
+		),
+		mcp.WithString("audio_encoding",
+			mcp.DefaultString("LINEAR16"),
+			mcp.Description("The format of the audio byte stream. Supported values: LINEAR16, MP3, OGG_OPUS, MULAW, ALAW, PCM, M4A."),
+			mcp.Enum("LINEAR16", "MP3", "OGG_OPUS", "MULAW", "ALAW", "PCM", "M4A"),
 		),
 	)
 	s.AddTool(ttsTool, geminiAudioTTSHandler)
