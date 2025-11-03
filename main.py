@@ -151,35 +151,58 @@ def get_signed_url(gcs_uri: str):
             )
         return {"error": error_message}, 500
 
-@app.post("/api/login")
-async def login(login_request: LoginRequest, request: Request):
-    """Handle simple password authentication."""
-    from common.simple_auth import verify_password, set_auth_cookie_headers
+def _create_login_response(request: Request, *, redirect_to: str | None = None):
+    from common.simple_auth import set_auth_cookie_headers
     from fastapi.responses import JSONResponse
-    
-    cfg = config.Default()
-    
-    # If simple auth is not enabled, return error
-    if not cfg.SIMPLE_AUTH_ENABLED:
-        raise HTTPException(status_code=400, detail="Simple authentication is not enabled")
-    
-    # Verify password
-    if not verify_password(login_request.password):
-        raise HTTPException(status_code=401, detail="Invalid password")
-    
+
     # Get or create session ID
     session_id = request.cookies.get("session_id")
     if not session_id:
         session_id = str(uuid.uuid4())
-    
-    # Create response with authentication cookie
+
+    # If redirect requested, set cookie on RedirectResponse
+    if redirect_to:
+        response = RedirectResponse(url=redirect_to, status_code=302)
+        response = set_auth_cookie_headers(response, session_id)
+        return response
+
+    # Default JSON response
     response_data = {"success": True, "message": "Login successful"}
     response = JSONResponse(content=response_data)
-    
-    # Set authentication cookie
     response = set_auth_cookie_headers(response, session_id)
-    
     return response
+
+
+@app.post("/api/login")
+async def login(login_request: LoginRequest, request: Request):
+    """Handle simple password authentication (JSON POST)."""
+    from common.simple_auth import verify_password
+
+    cfg = config.Default()
+
+    if not cfg.SIMPLE_AUTH_ENABLED:
+        raise HTTPException(status_code=400, detail="Simple authentication is not enabled")
+
+    if not verify_password(login_request.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    return _create_login_response(request)
+
+
+@app.get("/api/login")
+async def login_get(request: Request, password: str, redirect: str = "/home"):
+    """Handle simple password authentication via GET for browser redirects."""
+    from common.simple_auth import verify_password
+
+    cfg = config.Default()
+
+    if not cfg.SIMPLE_AUTH_ENABLED:
+        raise HTTPException(status_code=400, detail="Simple authentication is not enabled")
+
+    if not verify_password(password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    return _create_login_response(request, redirect_to=redirect)
 
 @app.post("/api/logout")
 async def logout():

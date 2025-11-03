@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import json
+import urllib.parse
 import mesop as me
 from state.state import AppState, set_authenticated, set_login_error
 from config.default import Default
+from components.login_button.login_button import login_button
 
 def login_form():
     """Login form component."""
@@ -80,20 +82,9 @@ def login_form():
                     style=me.Style(width="100%"),
                 )
             
-            # Login button
+            # Login button (client-side component triggers browser navigation)
             with me.box(style=me.Style(text_align="center")):
-                me.button(
-                    "Login",
-                    on_click=on_login_click,
-                    type="flat",
-                    style=me.Style(
-                        background=me.theme_var("primary"),
-                        color=me.theme_var("on-primary"),
-                        padding=me.Padding(top=12, bottom=12, left=24, right=24),
-                        border_radius=6,
-                        width="100%",
-                    ),
-                )
+                login_button(label="Login", password=getattr(state, 'temp_password', ''))
 
 def on_password_input(e: me.InputEvent):
     """Handle password input."""
@@ -105,37 +96,8 @@ def on_password_input(e: me.InputEvent):
     yield
 
 def on_login_click(e: me.ClickEvent):
-    """Handle login button click."""
-    from common.simple_auth import verify_password
-    
-    state = me.state(AppState)
-    
-    # Get password from state
-    password = getattr(state, 'temp_password', '')
-    
-    if not password:
-        set_login_error("Please enter a password")
-        yield
-        return
-    
-    # Verify password directly (since we're in the same process)
-    try:
-        if verify_password(password):
-            # Login successful
-            set_authenticated(True)
-            # Clear temp password
-            state.temp_password = ""
-            # Navigate to home page
-            me.navigate("/home")
-            yield
-        else:
-            # Login failed
-            set_login_error("Invalid password. Please try again.")
-            yield
-    
-    except Exception as ex:
-        set_login_error(f"Login failed: {str(ex)}")
-        yield
+    """Deprecated: handled by client-side web component now."""
+    yield
 
 @me.page(
     path="/login",

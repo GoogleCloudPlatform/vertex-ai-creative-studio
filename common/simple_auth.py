@@ -58,8 +58,31 @@ def is_route_protected(path: str) -> bool:
     if path in ["/login", "/api/login"]:
         return False
     
-    # Don't protect static assets
-    if path.startswith(("/static/", "/assets/", "/favicon.ico")):
+    # Don't protect static assets by known prefixes
+    if path.startswith((
+        "/static/",
+        "/assets/",
+        "/favicon.ico",
+        "/__web-components-module__/",
+        "/__ui__",
+        # Mesop internal realtime/SSE endpoints (names are conservative guesses)
+        "/channel",
+        "/channels",
+        "/sse",
+        "/events",
+        "/__mesop",
+        "/_mesop",
+    )):
+        return False
+
+    # Don't protect requests for common static asset file types
+    static_extensions = (
+        ".js", ".mjs", ".css", ".map", ".wasm",
+        ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
+        ".ico", ".ttf", ".otf", ".woff", ".woff2",
+        ".mp4", ".webm", ".mp3", ".wav", ".json"
+    )
+    if any(path.endswith(ext) for ext in static_extensions):
         return False
     
     # Don't protect API endpoints used by login
