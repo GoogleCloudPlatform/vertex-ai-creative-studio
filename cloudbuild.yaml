@@ -16,6 +16,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 substitutions:
   _IMAGE_NAME: creative-studio/creative-studio:latest
+  _USE_MEDIA_PROXY: 'false'
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build image'
@@ -26,4 +27,4 @@ steps:
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: gcloud
     id: Update Cloud Run Image
-    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION', '--timeout', '3600' ]    
+    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION', '--timeout', '3600', '--set-env-vars=USE_MEDIA_PROXY=$_USE_MEDIA_PROXY' ]
