@@ -2,7 +2,7 @@
 #    uv pip compile pyproject.toml -o requirements.txt
 absl-py==2.3.1
     # via mesop
-annotated-doc==0.0.3
+annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
@@ -19,15 +19,15 @@ audioop-lts==0.2.2
     #   standard-sunau
 audioread==3.1.0
     # via librosa
-black==25.9.0
+black==25.11.0
     # via veo-app (pyproject.toml)
 blinker==1.9.0
     # via flask
 cachecontrol==0.14.3
     # via firebase-admin
-cachetools==6.2.1
+cachetools==6.2.2
     # via google-auth
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   httpcore
     #   httpx
@@ -60,7 +60,7 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.121.1
+fastapi==0.121.2
     # via veo-app (pyproject.toml)
 firebase-admin==7.1.0
     # via veo-app (pyproject.toml)
@@ -93,7 +93,7 @@ google-auth==2.43.0
     #   google-cloud-storage
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.126.1
+google-cloud-aiplatform==1.127.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.7.0
     # via google-cloud-logging
@@ -123,7 +123,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.49.0
+google-genai==1.50.0
     # via
     #   veo-app (pyproject.toml)
     #   google-cloud-aiplatform
@@ -310,7 +310,7 @@ proto-plus==1.26.1
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-texttospeech
-protobuf==6.33.0
+protobuf==6.33.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -354,7 +354,7 @@ pyjwt==2.10.1
     # via firebase-admin
 pyparsing==3.2.5
     # via matplotlib
-pytest==9.0.0
+pytest==9.0.1
     # via veo-app (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via

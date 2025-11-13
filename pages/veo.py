@@ -399,7 +399,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         enhance_prompt=state.auto_enhance_prompt,
         person_generation=state.person_generation.lower().split(" ")[0],
         reference_image_gcs=state.reference_image_gcs
-        if state.veo_mode in ["i2v", "r2v"] and state.reference_image_gcs
+        if state.veo_mode in ["i2v", "r2v", "interpolation"] and state.reference_image_gcs
         else None,
         reference_image_mime_type=state.reference_image_mime_type,
         last_reference_image_gcs=state.last_reference_image_gcs

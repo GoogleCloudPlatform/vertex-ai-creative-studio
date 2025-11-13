@@ -84,10 +84,13 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     # Prepare Image and Video Inputs
     image_input = None
+    reference_images_list = []
+
+    # R2V can have both style and asset references.
     if request.r2v_style_image:
         logger.info("Mode: Reference-to-Video (r2v) - Style")
-        logger.info(f" reference: {request.r2v_style_image.gcs_uri}")
-        gen_config_args["reference_images"] = [
+        logger.info(f" style_reference: {request.r2v_style_image.gcs_uri}")
+        reference_images_list.append(
             types.VideoGenerationReferenceImage(
                 image=types.Image(
                     gcs_uri=request.r2v_style_image.gcs_uri,
@@ -95,19 +98,27 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
                 ),
                 reference_type="style",
             )
-        ]
-    elif request.r2v_references:
+        )
+
+    if request.r2v_references:
         logger.info("Mode: Reference-to-Video (r2v) - Asset")
-        gen_config_args["reference_images"] = [
-            types.VideoGenerationReferenceImage(
-                image=types.Image(gcs_uri=ref.gcs_uri, mime_type=ref.mime_type),
-                reference_type="asset",
+        asset_uris = [ref.gcs_uri for ref in request.r2v_references]
+        logger.info(f" asset_references: {asset_uris}")
+        for ref in request.r2v_references:
+            reference_images_list.append(
+                types.VideoGenerationReferenceImage(
+                    image=types.Image(gcs_uri=ref.gcs_uri, mime_type=ref.mime_type),
+                    reference_type="asset",
+                )
             )
-            for ref in request.r2v_references
-        ]
+
+    if reference_images_list:
+        gen_config_args["reference_images"] = reference_images_list
     # Check for interpolation (first and last frame)
     elif request.reference_image_gcs and request.last_reference_image_gcs:
         logger.info("Mode: Interpolation")
+        logger.info(f" first_frame: {request.reference_image_gcs}")
+        logger.info(f" last_frame: {request.last_reference_image_gcs}")
         image_input = types.Image(
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,
@@ -116,10 +127,10 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             gcs_uri=request.last_reference_image_gcs,
             mime_type=request.last_reference_image_mime_type,
         )
-
     # Check for standard image-to-video
     elif request.reference_image_gcs:
         logger.info("Mode: Image-to-Video")
+        logger.info(f" image: {request.reference_image_gcs}")
         image_input = types.Image(
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,

@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.2.8" # minor changes to TTS eval, Lyria, Upscale
+    VERSION: str = "1.2.9" # veo first / last fix
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
