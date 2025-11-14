@@ -50,3 +50,7 @@ class VideoGenerationRequest(BaseModel):
     # For R2V
     r2v_references: Optional[List[APIReferenceImage]] = None
     r2v_style_image: Optional[APIReferenceImage] = None
+
+    # For Video Extension
+    video_input_gcs: Optional[str] = None
+    video_input_mime_type: Optional[str] = None

@@ -22,7 +22,7 @@ from models.video_processing import convert_mp4_to_gif
 from common.utils import https_url_to_gcs_uri, create_display_url
 
 @me.component
-def video_display(on_thumbnail_click: Callable):
+def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
     """Display the generated video(s) in a gallery format."""
     state = me.state(PageState)
 
@@ -91,7 +91,9 @@ def video_display(on_thumbnail_click: Callable):
             )
         ):
             me.text(state.timing)
-            if not state.veo_model == "3.0":
+            
+            # Extend functionality only for Veo 3.1
+            if state.veo_model.startswith("3.1"):
                 me.select(
                     label="extend",
                     options=[
@@ -105,11 +107,20 @@ def video_display(on_thumbnail_click: Callable):
                     value=f"{state.video_extend_length}",
                     on_selection_change=on_selection_change_extend_length,
                 )
+                
+                # Disable extend if length is 0 or resolution is not 720p
+                extend_disabled = (
+                    state.video_extend_length == 0 
+                    or state.resolution != "720p"
+                )
+                
                 me.button(
                     label="Extend",
                     on_click=on_click_extend,
-                    disabled=True if state.video_extend_length == 0 else False,
+                    disabled=extend_disabled,
                 )
+                if state.resolution != "720p":
+                     me.tooltip(message="Extension requires 720p resolution")
 
             me.button("Convert to GIF", key=gcs_uri_for_gif, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
 

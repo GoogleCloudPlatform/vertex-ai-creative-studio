@@ -279,7 +279,10 @@ def veo_content(app_state: me.state):
 
         me.box(style=me.Style(height=50))
 
-        video_display(on_thumbnail_click=on_thumbnail_click)
+        video_display(
+            on_thumbnail_click=on_thumbnail_click,
+            on_click_extend=on_click_extend_video,
+        )
 
     with dialog(is_open=state.show_error_dialog):  # pylint: disable=E1129:not-context-manager
         me.text(
@@ -290,6 +293,146 @@ def veo_content(app_state: me.state):
         me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
         with dialog_actions():  # pylint: disable=E1129:not-context-manager
             me.button("Close", on_click=on_close_error_dialog, type="flat")
+
+
+def on_click_extend_video(e: me.ClickEvent):
+    """Handles the click event for the Veo video extension."""
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+
+    # --- Input Validation ---
+    if not state.veo_prompt_input:
+        state.error_message = "Please enter a prompt for the extension."
+        state.show_error_dialog = True
+        yield
+        return
+
+    # --- Model Validation ---
+    if not state.veo_model.startswith("3.1"):
+        state.error_message = "Video extension is only supported by Veo 3.1 models."
+        state.show_error_dialog = True
+        yield
+        return
+
+    # --- Resolution Validation ---
+    # Note: We assume the user knows the resolution or we rely on the previous generation's setting.
+    # Ideally, we should check the metadata of the selected video, but for now, we check the current UI setting
+    # or rely on the backend to fail if the input is invalid.
+    # Strict check:
+    if state.resolution != "720p":
+        state.error_message = "Video extension requires 720p resolution."
+        state.show_error_dialog = True
+        yield
+        return
+
+    video_to_extend_url = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
+    if not video_to_extend_url:
+        state.error_message = "No video selected to extend."
+        state.show_error_dialog = True
+        yield
+        return
+    
+    # Convert display URL back to GCS URI
+    from common.utils import https_url_to_gcs_uri
+    video_input_gcs = https_url_to_gcs_uri(video_to_extend_url)
+
+    # --- Reset State for New Generation ---
+    state.is_loading = True
+    state.error_message = ""
+    state.result_video = ""
+    state.result_gcs_uris = []
+    state.result_display_urls = []
+    state.selected_video_url = ""
+    state.timing = ""
+    start_time = time.time()
+    yield
+
+    # --- Prepare Request Data ---
+    request = VideoGenerationRequest(
+        prompt=state.veo_prompt_input,
+        model_version_id=state.veo_model,
+        aspect_ratio=state.aspect_ratio,
+        resolution=state.resolution,
+        duration_seconds=state.video_extend_length, # Use extension length
+        video_count=state.video_count,
+        enhance_prompt=state.auto_enhance_prompt,
+        person_generation=state.person_generation.lower().split(" ")[0],
+        video_input_gcs=video_input_gcs,
+        video_input_mime_type="video/mp4", # Assumed MP4
+    )
+
+    # --- 1. Initiate Async Job ---
+    try:
+        api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
+        headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
+        
+        # Log the initial click/attempt
+        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
+        track_model_call(
+            model_name=model_name_for_analytics,
+            prompt_length=len(request.prompt) if request.prompt else 0,
+            duration_seconds=request.duration_seconds,
+            aspect_ratio=request.aspect_ratio,
+            video_count=request.video_count,
+            mode="extension", # Custom mode for analytics
+        )
+
+        response = requests.post(api_url, json=request.model_dump(), headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        state.current_job_id = data["job_id"]
+        state.job_status = data["status"]
+        yield
+    except Exception as e:
+        state.error_message = f"Failed to start extension job: {e}"
+        state.show_error_dialog = True
+        state.is_loading = False
+        yield
+        return
+
+    # --- 2. Poll for Completion ---
+    while state.job_status in ["pending", "processing", "created"]:
+        time.sleep(2) 
+        try:
+            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.current_job_id}"
+            resp = requests.get(status_url)
+            resp.raise_for_status()
+            status_data = resp.json()
+            state.job_status = status_data["status"]
+
+            if state.job_status == "complete":
+                # Success! Update state with results.
+                state.result_gcs_uris = status_data.get("video_uris", [])
+                if not state.result_gcs_uris and status_data.get("video_uri"):
+                     state.result_gcs_uris = [status_data["video_uri"]]
+                
+                state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
+                if state.result_display_urls:
+                    state.selected_video_url = state.result_display_urls[0]
+                
+                end_time = time.time()
+                execution_time = end_time - start_time
+                state.timing = f"Extension time: {round(execution_time)} seconds"
+                state.is_loading = False
+                yield
+                break
+
+            elif state.job_status == "failed":
+                state.error_message = status_data.get("error_message", "Unknown error during extension.")
+                state.show_error_dialog = True
+                state.is_loading = False
+                yield
+                break
+            
+            yield
+
+        except Exception as e:
+            error = AsyncVeoPollingFailedError(f"Polling failed: {e}")
+            state.error_message = str(error)
+            state.show_error_dialog = True
+            state.is_loading = False
+            yield
+            break
 
 
 def on_input_prompt(e: me.InputEvent):

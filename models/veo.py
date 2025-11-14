@@ -84,7 +84,21 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     # Prepare Image and Video Inputs
     image_input = None
+    video_input = None
     reference_images_list = []
+
+    # Check for Video Extension
+    if request.video_input_gcs:
+        if not request.model_version_id.startswith("3.1"):
+             raise GenerationError(
+                f"Video extension is only supported by Veo 3.1 models. Current model: {request.model_version_id}"
+            )
+        logger.info("Mode: Video Extension")
+        logger.info(f" video_input: {request.video_input_gcs}")
+        video_input = types.Video(
+            uri=request.video_input_gcs,
+            mime_type=request.video_input_mime_type or "video/mp4",
+        )
 
     # R2V can have both style and asset references.
     if request.r2v_style_image:
@@ -135,7 +149,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,
         )
-    else:
+    elif not video_input:
         logger.info("Mode: Text-to-Video")
 
     gen_config = types.GenerateVideosConfig(**gen_config_args)
@@ -147,6 +161,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             prompt=request.prompt,
             config=gen_config,
             image=image_input,
+            video=video_input,
         )
 
         logger.info("Polling video generation operation...")
