@@ -283,40 +283,54 @@ def gemini_image_gen_page_content():
                         style=me.Style(
                             display="flex",
                             flex_direction="column",
-                            gap=8,  # Reduced gap for tighter category spacing
-                            margin=me.Margin(top=16),
+                            gap=16,
+                            margin=me.Margin(top=24),
+                            padding=me.Padding.all(16),
+                            background=me.theme_var("surface-container"),
+                            border_radius=12,
                         ),
                     ):
-                        #me.text("Image Presets", style=me.Style(font_weight="bold"))
+                        me.text("Quick Actions", type="headline-6")
 
                         for category_name, presets in IMAGE_ACTION_PRESETS.items():
                             if not presets:
                                 continue
 
-                            me.text(
-                                f"{category_name.capitalize()} Actions",
-                                style=me.Style(
-                                    font_size=14, margin=me.Margin(top=8),
-                                ),
-                            )
                             with me.box(
                                 style=me.Style(
                                     display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=8,  # Reduced gap
-                                    flex_wrap="wrap",
-                                ),
+                                    flex_direction="column",
+                                    gap=8,
+                                )
                             ):
-                                for preset in presets:
-                                    label = preset.get("label") or preset["key"]
-                                    me.button(
-                                        label,
-                                        on_click=on_image_action_click,
-                                        type="stroked",
-                                        key=preset["key"],
-                                        style=CHIP_STYLE,
-                                    )
+                                me.text(
+                                    f"{category_name.capitalize()}",
+                                    style=me.Style(
+                                        font_weight="bold",
+                                        color=me.theme_var("on-surface-variant"),
+                                        font_size=12,
+                                        text_transform="uppercase",
+                                        letter_spacing="1px",
+                                    ),
+                                )
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        align_items="center",
+                                        gap=8,
+                                        flex_wrap="wrap",
+                                    ),
+                                ):
+                                    for preset in presets:
+                                        label = preset.get("label") or preset["key"]
+                                        me.button(
+                                            label,
+                                            on_click=on_image_action_click,
+                                            type="stroked",
+                                            key=preset["key"],
+                                            style=CHIP_STYLE,
+                                        )
 
 
                 # Suggest transformations button
@@ -479,13 +493,25 @@ def gemini_image_gen_page_content():
                     # Placeholder
                     with me.box(
                         style=me.Style(
-                            opacity=0.2,
-                            width=128,
-                            height=128,
+                            display="flex",
+                            flex_direction="column",
+                            align_items="center",
+                            justify_content="center",
+                            gap=16,
+                            opacity=0.4,
                             color=me.theme_var("on-surface-variant"),
                         )
                     ):
-                        svg_icon(icon_name="banana")
+                        with me.box(style=me.Style(width=120, height=120)):
+                            svg_icon(icon_name="banana")
+                        me.text(
+                            "Your creative masterpiece awaits",
+                            style=me.Style(font_size=18, font_weight="500"),
+                        )
+                        me.text(
+                            "Enter a prompt or upload an image to get started",
+                            style=me.Style(font_size=14),
+                        )
         snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
