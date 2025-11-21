@@ -258,3 +258,69 @@ func BuildVeoModelDescription() string {
 	}
 	return sb.String()
 }
+
+// --- Gemini Model Configuration ---
+
+// GeminiModelInfo holds the details for a specific Gemini model.
+type GeminiModelInfo struct {
+	CanonicalName string
+	Aliases       []string
+	Description   string
+}
+
+// SupportedGeminiModels is the single source of truth for all supported Gemini models.
+var SupportedGeminiModels = map[string]GeminiModelInfo{
+	"gemini-2.5-flash-image": {
+		CanonicalName: "gemini-2.5-flash-image",
+		Aliases:       []string{"nano-banana", "nano banana"},
+		Description:   "Gemini 2.5 Flash Image generation model.",
+	},
+	"gemini-3-pro-preview": {
+		CanonicalName: "gemini-3-pro-preview",
+		Aliases:       []string{"Gemini 3 Pro"},
+		Description:   "Gemini 3 Pro Preview model.",
+	},
+	"gemini-3-pro-image-preview": {
+		CanonicalName: "gemini-3-pro-image-preview",
+		Aliases:       []string{"Gemini 3 Pro Image", "nano banana pro", "nano-banana-pro"},
+		Description:   "Gemini 3 Pro Image Preview model.",
+	},
+}
+
+var geminiAliasMap = make(map[string]string)
+
+func init() {
+	for canonicalName, info := range SupportedGeminiModels {
+		geminiAliasMap[strings.ToLower(canonicalName)] = canonicalName
+		for _, alias := range info.Aliases {
+			geminiAliasMap[strings.ToLower(alias)] = canonicalName
+		}
+	}
+}
+
+// ResolveGeminiModel finds the canonical model name from a user-provided name or alias.
+func ResolveGeminiModel(modelInput string) (string, bool) {
+	canonicalName, found := geminiAliasMap[strings.ToLower(modelInput)]
+	return canonicalName, found
+}
+
+// BuildGeminiModelDescription generates a formatted string for the tool description.
+func BuildGeminiModelDescription() string {
+	var sb strings.Builder
+	sb.WriteString("Model for content generation. Can be a full model ID or a common name. Supported models:\n")
+	var sortedNames []string
+	for name := range SupportedGeminiModels {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+
+	for _, name := range sortedNames {
+		info := SupportedGeminiModels[name]
+		sb.WriteString(fmt.Sprintf("- *%s*: %s", info.CanonicalName, info.Description))
+		if len(info.Aliases) > 0 {
+			sb.WriteString(fmt.Sprintf(" (Aliases: *%s*)", strings.Join(info.Aliases, "*, *")))
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}

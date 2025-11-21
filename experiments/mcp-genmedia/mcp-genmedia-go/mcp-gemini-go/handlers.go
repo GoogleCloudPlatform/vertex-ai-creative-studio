@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,12 +43,14 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required"), nil
 	}
 
-	model, _ := request.GetArguments()["model"].(string)
-	if model == "nano-banana" || model == "nano banana" {
-		model = "gemini-2.5-flash-image"
+	modelInput, _ := request.GetArguments()["model"].(string)
+	if modelInput == "" {
+		modelInput = "nano-banana-pro"
 	}
-	if model == "" { // default
-		model = "gemini-2.5-flash-image"
+
+	model, ok := common.ResolveGeminiModel(modelInput)
+	if !ok {
+		return mcp.NewToolResultError(fmt.Sprintf("Invalid model: %s. Supported models: %s", modelInput, common.BuildGeminiModelDescription())), nil
 	}
 
 	outputDir := ""

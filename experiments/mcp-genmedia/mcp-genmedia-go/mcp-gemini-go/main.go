@@ -19,12 +19,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
-	"fmt"
 
 	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.5.0" // Add http support
+	version     = "0.5.1" // Add Gemini 1.5 Pro Preview models
 )
 
 func init() {
@@ -97,9 +97,9 @@ func main() {
 	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
 
 	tool := mcp.NewTool("gemini_image_generation",
-		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini 2.5 Flash Image generation. This model is also called nano-banana."),
+		mcp.WithDescription(common.BuildGeminiModelDescription()),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image"), mcp.Description("The specific Gemini model to use.")),
+		mcp.WithString("model", mcp.DefaultString("nano-banana-pro"), mcp.Description("The specific Gemini model to use.")),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
