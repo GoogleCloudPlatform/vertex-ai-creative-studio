@@ -211,7 +211,7 @@ func veoInterpolationHandler(client *genai.Client, ctx context.Context, request 
 		return mcp.NewToolResultError(fmt.Sprintf("MIME type for last_frame_uri '%s' could not be inferred. Please specify 'last_frame_mime_type'.", lastFrameURI)), nil
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, err := parseCommonVideoParams(request.GetArguments(), appConfig)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -309,6 +309,10 @@ func veoInterpolationHandler(client *genai.Client, ctx context.Context, request 
 		DurationSeconds: &durationSecs,
 		LastFrame:       lastFrameImage,
 		ReferenceImages: referenceImages,
+	}
+
+	if generateAudio {
+		config.GenerateAudio = &generateAudio
 	}
 
 	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, prompt, firstFrameImage, config, "interpolate")
