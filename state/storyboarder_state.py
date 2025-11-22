@@ -37,6 +37,14 @@ class PageState:
     final_video_uri: str = ""
     final_video_display_url: str = ""
     
+    # Audio/Voiceover
+    voiceover_script: str = ""
+    voiceover_audio_uri: str = ""
+    is_generating_script: bool = False
+    is_generating_audio: bool = False
+    final_video_with_audio_uri: str = ""
+    final_video_with_audio_display_url: str = ""
+    
     # Settings
     aspect_ratio: str = "16:9"
     num_images: int = 4

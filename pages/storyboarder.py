@@ -16,6 +16,7 @@
 import time
 import uuid
 import datetime
+import random
 import mesop as me
 
 from common.analytics import log_ui_click, track_model_call
@@ -27,9 +28,11 @@ from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from components.dialog import dialog
 from config.default import Default as cfg
-from models.gemini import generate_image_from_prompt_and_images, describe_image
+from config.gemini_tts import GEMINI_TTS_VOICES
+from models.gemini import generate_image_from_prompt_and_images, describe_image, generate_text
+from models.gemini_tts import synthesize_speech
 from models.veo import generate_video, VideoGenerationRequest
-from models.video_processing import process_videos
+from models.video_processing import process_videos, layer_audio_on_video
 from state.storyboarder_state import PageState
 from state.state import AppState
 
@@ -111,10 +114,22 @@ def storyboarder_content():
                         me.text(state.video_generation_status)
 
         # --- Final Video Section ---
-        if state.final_video_display_url:
+        if state.final_video_with_audio_display_url:
             me.divider()
             with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=16)):
-                me.text("Final Storyboard Video", type="headline-5")
+                me.text("Final Storyboard Video (with Voiceover)", type="headline-5")
+                me.video(
+                    src=state.final_video_with_audio_display_url,
+                    style=me.Style(width="100%", max_width="800px", border_radius=12)
+                )
+                if state.voiceover_script:
+                    with me.expansion_panel(title="Voiceover Script"):
+                        me.text(state.voiceover_script)
+
+        elif state.final_video_display_url:
+            me.divider()
+            with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=16)):
+                me.text("Final Storyboard Video (Silent)", type="headline-5")
                 me.video(
                     src=state.final_video_display_url,
                     style=me.Style(width="100%", max_width="800px", border_radius=12)
@@ -177,6 +192,11 @@ def on_generate_video_click(e: me.ClickEvent):
     state.is_generating_video = True
     state.video_generation_status = "Initializing..."
     state.generated_video_clips = []
+    state.voiceover_script = ""
+    state.voiceover_audio_uri = ""
+    state.final_video_with_audio_uri = ""
+    state.final_video_with_audio_display_url = ""
+    
     yield
     
     try:
@@ -220,17 +240,60 @@ def on_generate_video_click(e: me.ClickEvent):
             state.final_video_uri = final_uri
             state.final_video_display_url = create_display_url(final_uri)
             
+            # --- New: Voiceover Generation ---
+            total_duration = len(state.generated_video_clips) * 4
+            state.video_generation_status = "Generating voiceover script..."
+            yield
+            
+            script_prompt = (
+                f"Write a short voiceover script for a video that is exactly {total_duration} seconds long. "
+                f"The video is a storyboard based on the following prompt: '{state.prompt}'. "
+                f"The scenes are described as: {state.image_captions}. "
+                f"The script must be timed to fit within {total_duration} seconds when spoken at a normal pace. "
+                f"Do not include scene directions, only the spoken text."
+            )
+            
+            script_text, _ = generate_text(script_prompt, [])
+            state.voiceover_script = script_text.strip()
+            
+            state.video_generation_status = "Synthesizing speech..."
+            yield
+            
+            selected_voice = random.choice(GEMINI_TTS_VOICES)
+            audio_bytes = synthesize_speech(
+                text=state.voiceover_script,
+                prompt="", # Optional style prompt
+                model_name="gemini-2.5-flash-tts", # Default to flash TTS
+                voice_name=selected_voice,
+                language_code="en-US"
+            )
+            
+            audio_uri = store_to_gcs(
+                folder="storyboard_audio",
+                file_name=f"voiceover_{uuid.uuid4()}.wav",
+                mime_type="audio/wav",
+                contents=audio_bytes
+            )
+            state.voiceover_audio_uri = audio_uri
+            
+            state.video_generation_status = "Layering audio..."
+            yield
+            
+            final_with_audio_uri = layer_audio_on_video(state.final_video_uri, state.voiceover_audio_uri)
+            state.final_video_with_audio_uri = final_with_audio_uri
+            state.final_video_with_audio_display_url = create_display_url(final_with_audio_uri)
+
             # 3. Save to Library
             media_item = MediaItem(
                 id=str(uuid.uuid4()),
                 user_email=app_state.user_email,
-                timestamp=datetime.datetime.now(datetime.UTC).isoformat(),
+                timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 media_type="video",
                 mode="Storyboarder",
-                gcs_uris=[final_uri],
-                thumbnail_uri=final_uri,
+                gcs_uris=[final_with_audio_uri],
+                thumbnail_uri=final_with_audio_uri, # Or extract a frame
                 prompt=state.prompt,
-                comment="Generated by Storyboarder",
+                comment=f"Generated by Storyboarder with Voiceover ({selected_voice})",
                 source_images_gcs=state.generated_image_gcs_uris,
                 captions=state.image_captions,
             )
