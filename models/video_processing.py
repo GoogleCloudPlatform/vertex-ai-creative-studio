@@ -348,7 +348,7 @@ def process_videos(
 def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
     """
     Layers an audio track over a video file. If the video already has audio,
-    it will be replaced.
+    it will be mixed with the new audio.
     """
     if not video_gcs_uri or not audio_gcs_uri:
         raise ValueError("A video URI and an audio URI are required.")
@@ -360,10 +360,17 @@ def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
 
         # Process with moviepy
         video_clip = VideoFileClip(video_path)
-        audio_clip = AudioFileClip(audio_path)
+        new_audio_clip = AudioFileClip(audio_path)
+        
+        # Import locally to avoid circular imports or global scope pollution if not already imported
+        from moviepy.audio.AudioClip import CompositeAudioClip
 
-        # Set the audio of the video clip by direct attribute assignment
-        video_clip.audio = audio_clip
+        # If the video already has audio, mix it
+        if video_clip.audio:
+            final_audio = CompositeAudioClip([video_clip.audio, new_audio_clip])
+            video_clip.audio = final_audio
+        else:
+            video_clip.audio = new_audio_clip
 
         # Write the output file
         output_filename = f"audio_layered_{uuid.uuid4()}.mp4"
@@ -375,7 +382,7 @@ def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
 
         # Clean up
         video_clip.close()
-        audio_clip.close()
+        new_audio_clip.close()
 
         return final_gcs_uri
 
