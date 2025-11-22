@@ -121,3 +121,9 @@ variable "sleep_time" {
   type        = number
   default     = 45
 }
+
+variable "use_media_proxy" {
+  description = "Enable media proxy for GCS assets"
+  type        = bool
+  default     = false
+}

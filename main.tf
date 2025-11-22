@@ -167,6 +167,7 @@ locals {
     GENMEDIA_FIREBASE_DB  = google_firestore_database.create_studio_asset_metadata.name
     SERVICE_ACCOUNT_EMAIL = google_service_account.creative_studio.email
     EDIT_IMAGES_ENABLED   = var.edit_images_enabled
+    USE_MEDIA_PROXY       = var.use_media_proxy
   }
 
   deployed_domain = var.use_lb ? ["https://${var.domain}"] : google_cloud_run_v2_service.creative_studio.urls
