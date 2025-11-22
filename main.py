@@ -33,7 +33,7 @@ from pydantic import BaseModel
 import pages.shop_the_look
 from app_factory import app
 from common.prompt_template_service import PromptTemplate
-from common.utils import create_display_url
+from common.utils import create_display_url, generate_signed_url
 from routers import veo_router
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
@@ -122,36 +122,13 @@ def convert_to_gif(gcs_uri: str, request: Request):
 def get_signed_url(gcs_uri: str):
     """Generates a signed URL for a GCS object."""
     try:
-        credentials, _ = google.auth.default()
-
-        signing_credentials = impersonated_credentials.Credentials(
-            source_credentials=credentials,
-            target_principal=config.Default.SERVICE_ACCOUNT_EMAIL,
-            target_scopes="https://www.googleapis.com/auth/devstorage.read_only",
-        )
-
-        storage_client = storage.Client()
-        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-
-        signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(minutes=15),
-            method="GET",
-            credentials=signing_credentials,
-        )
-
+        signed_url = generate_signed_url(gcs_uri)
+        if not signed_url:
+            raise Exception("Failed to generate signed URL")
         return {"signed_url": signed_url}
     except Exception as e:
         error_message = str(e)
         print(f"Error generating signed url: {error_message}")
-        if "private key" in error_message:
-            print(
-                "This error often occurs in a local development environment. "
-                "Please ensure you have authenticated with service account impersonation by running: "
-                "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>"
-            )
         return {"error": error_message}, 500
 
 

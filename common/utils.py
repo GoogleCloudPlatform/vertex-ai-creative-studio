@@ -32,6 +32,42 @@ import os
 from config.default import Default as cfg
 
 
+def generate_signed_url(gcs_uri: str) -> str:
+    """Generates a signed URL for a GCS object."""
+    try:
+        credentials, _ = google.auth.default()
+
+        signing_credentials = impersonated_credentials.Credentials(
+            source_credentials=credentials,
+            target_principal=cfg().SERVICE_ACCOUNT_EMAIL,
+            target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
+        )
+
+        storage_client = storage.Client()
+        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=15),
+            method="GET",
+            credentials=signing_credentials,
+        )
+
+        return signed_url
+    except Exception as e:
+        error_message = str(e)
+        logging.error(f"Error generating signed url: {error_message}")
+        if "private key" in error_message:
+            logging.error(
+                "This error often occurs in a local development environment. "
+                "Please ensure you have authenticated with service account impersonation by running: "
+                "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>"
+            )
+        return ""
+
+
 def create_display_url(gcs_uri: str) -> str:
     """
     Creates a cacheable display URL for a GCS asset.
@@ -45,8 +81,8 @@ def create_display_url(gcs_uri: str) -> str:
         proxy_path = gcs_uri.replace("gs://", "")
         return f"/media/{proxy_path}"
     else:
-        # Use the direct GCS URL
-        return gcs_uri.replace("gs://", "https://storage.cloud.google.com/")
+        # Use a signed URL
+        return generate_signed_url(gcs_uri)
 
 
 
