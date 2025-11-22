@@ -34,6 +34,7 @@ class PageState:
     is_generating_video: bool = False
     video_generation_status: str = ""
     generated_video_clips: list[str] = field(default_factory=list) # List of GCS URIs
+    generated_video_clip_display_urls: list[str] = field(default_factory=list) # List of Display URLs
     final_video_uri: str = ""
     final_video_display_url: str = ""
     

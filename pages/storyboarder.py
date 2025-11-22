@@ -29,7 +29,7 @@ from components.snackbar import snackbar
 from components.dialog import dialog
 from config.default import Default as cfg
 from config.gemini_tts import GEMINI_TTS_VOICES
-from models.gemini import generate_image_from_prompt_and_images, describe_image, generate_text
+from models.gemini import generate_image_from_prompt_and_images, describe_image, generate_text, rewrite_prompt_with_gemini
 from models.gemini_tts import synthesize_speech
 from models.veo import generate_video, VideoGenerationRequest
 from models.video_processing import process_videos, layer_audio_on_video
@@ -87,17 +87,34 @@ def storyboarder_content():
                 if state.is_generating_images:
                     me.progress_spinner(diameter=24)
 
-        # --- Image Results Section ---
+        # --- Image/Video Results Section ---
         if state.generated_image_urls:
             me.divider()
             me.text("Storyboard Frames", type="headline-6")
             
             with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=16, justify_content="center")):
-                for url in state.generated_image_urls:
-                    me.image(
-                        src=url,
-                        style=me.Style(height="200px", border_radius=8, border=me.Border.all(me.BorderSide(width=1, color="#ccc")))
-                    )
+                for i, image_url in enumerate(state.generated_image_urls):
+                    # Check if a video exists for this index
+                    video_url = ""
+                    if i < len(state.generated_video_clip_display_urls):
+                        video_url = state.generated_video_clip_display_urls[i]
+                    
+                    with me.box(style=me.Style(width="200px", height="200px", position="relative")):
+                        if video_url:
+                            me.video(
+                                src=video_url,
+                                style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover")
+                            )
+                            with me.box(style=me.Style(position="absolute", bottom=5, right=5, background="rgba(0,0,0,0.6)", padding=me.Padding.all(4), border_radius=4)):
+                                me.icon("videocam", style=me.Style(color="white", font_size=16))
+                        else:
+                            me.image(
+                                src=image_url,
+                                style=me.Style(width="100%", height="100%", border_radius=8, border=me.Border.all(me.BorderSide(width=1, color="#ccc")), object_fit="cover")
+                            )
+                            # Show spinner over image if specifically generating this one? 
+                            # Simplification: Just show spinner in controls for now.
+
             
             # --- Video Generation Controls ---
             with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=16, margin=me.Margin(top=32))):
@@ -142,8 +159,11 @@ def on_generate_images_click(e: me.ClickEvent):
     state.is_generating_images = True
     state.generated_image_urls = []
     state.generated_image_gcs_uris = []
+    state.generated_video_clips = []
+    state.generated_video_clip_display_urls = []
     state.image_captions = []
     state.final_video_display_url = "" # Reset video
+    state.final_video_with_audio_display_url = ""
     yield
     
     try:
@@ -182,7 +202,12 @@ def on_generate_video_click(e: me.ClickEvent):
     app_state = me.state(AppState)
     state.is_generating_video = True
     state.video_generation_status = "Initializing..."
-    state.generated_video_clips = []
+    
+    # Initialize video clips lists with empty strings to maintain index alignment
+    num_images = len(state.generated_image_gcs_uris)
+    state.generated_video_clips = [""] * num_images
+    state.generated_video_clip_display_urls = [""] * num_images
+    
     state.voiceover_script = ""
     state.voiceover_audio_uri = ""
     state.final_video_with_audio_uri = ""
@@ -193,7 +218,7 @@ def on_generate_video_click(e: me.ClickEvent):
     try:
         # 1. Generate video clips for each image
         for i, image_uri in enumerate(state.generated_image_gcs_uris):
-            state.video_generation_status = f"Generating clip {i+1}/{len(state.generated_image_gcs_uris)}..."
+            state.video_generation_status = f"Generating clip {i+1}/{num_images}..."
             yield
             
             # Construct enhanced prompt
@@ -216,23 +241,44 @@ def on_generate_video_click(e: me.ClickEvent):
                 person_generation="allow_adult",
             )
             
-            video_uris, _ = generate_video(request)
+            try:
+                video_uris, _ = generate_video(request)
+            except Exception as ex:
+                # Catch specific sensitive words error
+                error_str = str(ex)
+                if "code': 3" in error_str and "sensitive words" in error_str:
+                    print(f"Sensitive words detected in prompt: {veo_prompt}. Rewriting...")
+                    state.video_generation_status = f"Rewriting prompt for clip {i+1}..."
+                    yield
+                    
+                    new_prompt = rewrite_prompt_with_gemini(veo_prompt)
+                    print(f"Rewritten Prompt: {new_prompt}")
+                    request.prompt = new_prompt
+                    video_uris, _ = generate_video(request)
+                else:
+                    raise ex
+
             if video_uris:
-                state.generated_video_clips.append(video_uris[0])
+                state.generated_video_clips[i] = video_uris[0]
+                state.generated_video_clip_display_urls[i] = create_display_url(video_uris[0])
+                yield # Update UI to show video tile
             else:
                 print(f"Failed to generate video for image {i}")
         
         # 2. Concatenate
-        if state.generated_video_clips:
+        # Filter out empty clips
+        valid_clips = [clip for clip in state.generated_video_clips if clip]
+        
+        if valid_clips:
             state.video_generation_status = "Concatenating clips..."
             yield
             
-            final_uri = process_videos(state.generated_video_clips, "concat")
+            final_uri = process_videos(valid_clips, "concat")
             state.final_video_uri = final_uri
             state.final_video_display_url = create_display_url(final_uri)
             
             # --- New: Voiceover Generation ---
-            total_duration = len(state.generated_video_clips) * 4
+            total_duration = len(valid_clips) * 4
             state.video_generation_status = "Generating voiceover script..."
             yield
             
@@ -301,6 +347,7 @@ def on_generate_video_click(e: me.ClickEvent):
     except Exception as ex:
         state.snackbar_message = f"Error generating video: {ex}"
         state.show_snackbar = True
+        print(f"ERROR: {ex}")
     finally:
         state.is_generating_video = False
         yield
