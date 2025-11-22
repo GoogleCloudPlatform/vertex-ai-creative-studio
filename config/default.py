@@ -171,6 +171,8 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
+    USE_SIGNED_URL: bool = os.environ.get("USE_SIGNED_URL", "false").lower() == "false"
+
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",
