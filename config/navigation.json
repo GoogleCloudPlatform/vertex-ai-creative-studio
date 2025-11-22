@@ -100,8 +100,7 @@
       "route": "/vto",
       "group": "workflows",
       "mode": ["video", "image"],
-      "description": "Virtually try on clothing items.",
-      "video_url": "https://www.gstatic.com/canvas/blurred_gradient_blob.mp4"
+      "description": "Virtually try on clothing items."
     },
     {
       "id": 35,
@@ -119,8 +118,7 @@
       "route": "/recontextualize",
       "group": "workflows",
       "mode": "image",
-      "description": "Place a product in a generated scene.",
-      "video_url": "https://www.gstatic.com/canvas/blurred_gradient_blob.mp4"
+      "description": "Place a product in a generated scene."
     },
     {
       "id": 50,
