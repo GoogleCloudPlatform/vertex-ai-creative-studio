@@ -16,7 +16,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 substitutions:
   _IMAGE_NAME: creative-studio/creative-studio:latest
-  _USE_MEDIA_PROXY: 'false'
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build image'
