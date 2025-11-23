@@ -81,10 +81,12 @@ def create_display_url(gcs_uri: str) -> str:
         proxy_path = gcs_uri.replace("gs://", "")
         return f"/media/{proxy_path}"
     else:
+        # without the media proxy...
         if cfg().USE_SIGNED_URL:
             # Use a signed URL
             return generate_signed_url(gcs_uri)
         else:
+            # Use the direct GCS URL
             return gcs_uri.replace("gs://", "https://storage.cloud.google.com/")
 
 
