@@ -171,7 +171,7 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
-    USE_SIGNED_URL: bool = os.environ.get("USE_SIGNED_URL", "false").lower() == "false"
+    USE_SIGNED_URL: bool = os.environ.get("USE_SIGNED_URL", "false").lower() == "true"
 
     image_modifiers: list[str] = field(
         default_factory=lambda: [

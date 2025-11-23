@@ -329,6 +329,17 @@ Only one environment variable is required:
 
 See the template dotenv.template file for the defaults and what environment variable options are available.
 
+#### Media Access Configuration
+
+The application serves generated media (images, video, audio) from Google Cloud Storage (GCS). You can configure how these assets are delivered to the end-user's browser using two environment variables: `USE_MEDIA_PROXY` and `USE_SIGNED_URL`.
+
+| `USE_MEDIA_PROXY` | `USE_SIGNED_URL` | Resulting URL Type | Description | Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| `true` (Default) | (Ignored) | **App Proxy**<br>`/media/<bucket>/<path>` | The application backend fetches the file from GCS and streams it to the user. | **Best for most deployments.** Requires no extra client-side auth. The Cloud Run Service Account must have `roles/storage.objectViewer`. |
+| `false` | `false` (Default) | **Direct Authenticated**<br>`https://storage.cloud.google.com/...` | The browser requests the file directly from Google. The **user** must be logged into a Google account with access to the bucket. | Best for **Internal/Corporate** apps where all users are already authenticated to GCP in their browser. Reduces backend load. |
+| `false` | `true` | **Signed URL**<br>`https://storage.googleapis.com/...` | The application generates a time-limited (15m) signed URL. Anyone with the link can view it. | Best for **External** users or custom apps where the user doesn't have direct GCP access, but you want to offload traffic from the application proxy. Requires `roles/iam.serviceAccountTokenCreator`. |
+
+
 
 ## GenMedia Creative Studio - Developing
 
