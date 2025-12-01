@@ -70,7 +70,7 @@ firebase-admin==7.1.0
     # via veo-app (pyproject.toml)
 flask==3.1.2
     # via mesop
-fonttools==4.60.1
+fonttools==4.61.0
     # via matplotlib
 google-api-core==2.28.1
     # via
