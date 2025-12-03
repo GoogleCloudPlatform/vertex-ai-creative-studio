@@ -32,8 +32,8 @@ from state.state import AppState
     title="Character Sheet - GenMedia Creative Studio",
 )
 def page():
-    with page_scaffold(page_name="character_sheet"):
-        with page_frame():
+    with page_scaffold(page_name="character_sheet"): # pylint: disable=E1129:not-context-manager
+        with page_frame(): # pylint: disable=E1129:not-context-manager
             header("Character Sheet", "face")
             character_sheet_content()
 
@@ -146,7 +146,7 @@ def on_generate_sheet_click(e: me.ClickEvent):
     yield
     
     try:
-        prompt = "Character sheet of this character, white background, multiple views: front, back, side, three-quarter, close-up face. Consistent style. High quality, detailed."
+        prompt = "Character sheet of this character, white background, multiple views: front, back, side, three-quarter, close-up face. Consistent style. High quality, detailed. Retain realism of original image."
         
         gcs_uris, _, _, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
