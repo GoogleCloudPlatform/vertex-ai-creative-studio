@@ -14,6 +14,7 @@
 
 from dataclasses import field
 
+import logging
 import mesop as me
 
 from common.storage import store_to_gcs
@@ -26,6 +27,8 @@ from state.state import AppState
 from components.library.library_chooser_button import library_chooser_button
 from components.library.events import LibrarySelectionChangeEvent
 from components.dialog import dialog
+
+logger = logging.getLogger(__name__)
 
 
 @me.stateclass
@@ -290,25 +293,32 @@ def generate_alternatives(e: me.ClickEvent):
     state.is_generating = True
     yield
 
-    for step_result in generate_character_video(
-        user_email=app_state.user_email,
-        reference_image_gcs_uris=state.uploaded_image_gcs_uris,
-        scene_prompt=state.scene_prompt,
-    ):
-        state.status_message = step_result.message
-        yield
+    try:
+        for step_result in generate_character_video(
+            user_email=app_state.user_email,
+            reference_image_gcs_uris=state.uploaded_image_gcs_uris,
+            scene_prompt=state.scene_prompt,
+        ):
+            state.status_message = step_result.message
+            yield
 
-        if "character_description" in step_result.data:
-            state.character_description = step_result.data["character_description"]
-        if "candidate_image_gcs_uris" in step_result.data:
-            gcs_uris = step_result.data["candidate_image_gcs_uris"]
-            state.candidate_image_gcs_uris = gcs_uris
-            state.candidate_image_urls = [create_display_url(uri) for uri in gcs_uris]
-        if "best_image_gcs_uri" in step_result.data:
-            gcs_uri = step_result.data["best_image_gcs_uri"]
-            state.best_image_gcs_uri = gcs_uri
-            state.best_image_url = create_display_url(gcs_uri)
-            break
+            if "character_description" in step_result.data:
+                state.character_description = step_result.data["character_description"]
+            if "candidate_image_gcs_uris" in step_result.data:
+                gcs_uris = step_result.data["candidate_image_gcs_uris"]
+                state.candidate_image_gcs_uris = gcs_uris
+                state.candidate_image_urls = [create_display_url(uri) for uri in gcs_uris]
+            if "best_image_gcs_uri" in step_result.data:
+                gcs_uri = step_result.data["best_image_gcs_uri"]
+                state.best_image_gcs_uri = gcs_uri
+                state.best_image_url = create_display_url(gcs_uri)
+                break
+    except Exception as e:
+        logger.error("Error during character consistency generation", exc_info=True)
+        state.status_message = f"Error: {str(e)}"
+        state.is_generating = False
+        yield
+        return
 
     state.is_generating = False
     state.status_message = "Generated alternatives."
