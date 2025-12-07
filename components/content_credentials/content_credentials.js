@@ -124,7 +124,11 @@ export class ContentCredentialsViewer extends LitElement {
     if (!activeManifest) return html``;
 
     const title = activeManifest.title || "Untitled";
-    const generator = activeManifest.claim_generator || "Unknown";
+    let generator = activeManifest.claim_generator;
+    if ((!generator || generator === "Unknown") && activeManifest.claim_generator_info && activeManifest.claim_generator_info.length > 0) {
+        generator = activeManifest.claim_generator_info[0].name;
+    }
+    generator = generator || "Unknown";
     const issuer = activeManifest.signature_info?.issuer || 'Unknown';
     const time = activeManifest.signature_info?.time ? new Date(activeManifest.signature_info.time).toLocaleString() : 'Unknown';
     
