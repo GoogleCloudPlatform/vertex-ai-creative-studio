@@ -20,11 +20,11 @@ audioop-lts==0.2.2
 audioread==3.1.0
     # via librosa
 black==25.11.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 blinker==1.9.0
     # via flask
 c2pa-python==0.27.1
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 cachecontrol==0.14.4
     # via firebase-admin
 cachetools==6.2.2
@@ -64,10 +64,10 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.123.5
-    # via veo-app (pyproject.toml)
+fastapi==0.124.0
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 firebase-admin==7.1.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 flask==3.1.2
     # via mesop
 fonttools==4.61.0
@@ -98,7 +98,7 @@ google-auth==2.43.0
     #   google-cloud-texttospeech
     #   google-genai
 google-cloud-aiplatform==1.129.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-appengine-logging==1.7.0
     # via google-cloud-logging
 google-cloud-audit-log==0.4.0
@@ -114,7 +114,7 @@ google-cloud-core==2.5.0
 google-cloud-firestore==2.21.0
     # via firebase-admin
 google-cloud-logging==3.12.1
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-resource-manager==1.15.0
     # via google-cloud-aiplatform
 google-cloud-storage==3.6.0
@@ -122,14 +122,14 @@ google-cloud-storage==3.6.0
     #   firebase-admin
     #   google-cloud-aiplatform
 google-cloud-texttospeech==2.33.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.52.0
+google-genai==1.53.0
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
 google-resumable-media==2.8.0
     # via
@@ -157,7 +157,7 @@ grpcio==1.76.0
 grpcio-status==1.76.0
     # via google-api-core
 gunicorn==23.0.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 h11==0.16.0
     # via
     #   httpcore
@@ -210,7 +210,7 @@ lazy-loader==0.4
     #   librosa
     #   scikit-image
 librosa==0.11.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 llvmlite==0.45.1
     # via numba
 markupsafe==3.0.3
@@ -223,11 +223,11 @@ matplotlib==3.10.7
 matplotlib-inline==0.2.1
     # via ipython
 mediapy==1.2.4
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 mesop==1.1.1
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 moviepy==2.2.1
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 msgpack==1.1.2
     # via
     #   cachecontrol
@@ -241,7 +241,7 @@ numba==0.62.1
     # via librosa
 numpy==2.3.5
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   contourpy
     #   imageio
     #   librosa
@@ -260,7 +260,7 @@ numpy==2.3.5
     #   soxr
     #   tifffile
 opencv-python==4.11.0.86
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 opentelemetry-api==1.39.0
     # via google-cloud-logging
 orderly-set==5.5.0
@@ -276,8 +276,9 @@ packaging==25.0
     #   pooch
     #   pytest
     #   scikit-image
+    #   wheel
 pandas==2.3.3
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 parso==0.8.5
     # via jedi
 pathspec==0.12.1
@@ -286,13 +287,13 @@ pexpect==4.9.0
     # via ipython
 pillow==11.3.0
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   imageio
     #   matplotlib
     #   mediapy
     #   moviepy
     #   scikit-image
-platformdirs==4.5.0
+platformdirs==4.5.1
     # via
     #   black
     #   pooch
@@ -301,7 +302,7 @@ pluggy==1.6.0
 pooch==1.8.2
     # via librosa
 praat-parselmouth==0.4.7
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 proglog==0.1.12
     # via moviepy
 prompt-toolkit==3.0.52
@@ -315,7 +316,7 @@ proto-plus==1.26.1
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-texttospeech
-protobuf==6.33.1
+protobuf==6.33.2
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -359,9 +360,9 @@ pyjwt==2.10.1
     # via firebase-admin
 pyparsing==3.2.5
     # via matplotlib
-pytest==9.0.1
+pytest==9.0.2
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   c2pa-python
 python-dateutil==2.9.0.post0
     # via
@@ -381,21 +382,22 @@ requests==2.32.5
     #   c2pa-python
     #   cachecontrol
     #   google-api-core
+    #   google-auth
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   google-genai
     #   pooch
 rsa==4.9.1
     # via google-auth
-ruff==0.14.7
-    # via veo-app (pyproject.toml)
+ruff==0.14.8
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 scikit-image==0.25.2
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 scikit-learn==1.7.2
     # via librosa
 scipy==1.16.3
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   librosa
     #   scikit-image
     #   scikit-learn
@@ -404,7 +406,7 @@ setuptools==80.9.0
 shapely==2.1.2
     # via google-cloud-aiplatform
 shortuuid==1.0.13
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 six==1.17.0
     # via python-dateutil
 soundfile==0.13.1
@@ -427,7 +429,7 @@ starlette==0.50.0
     # via fastapi
 tenacity==9.1.2
     # via
-    #   veo-app (pyproject.toml)
+    #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-genai
 threadpoolctl==3.6.0
     # via scikit-learn
@@ -459,7 +461,7 @@ tzdata==2025.2
 urllib3==2.6.0
     # via requests
 uvicorn==0.38.0
-    # via veo-app (pyproject.toml)
+    # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 watchdog==6.0.0
     # via mesop
 wcwidth==0.2.14
@@ -470,7 +472,7 @@ werkzeug==3.1.4
     # via
     #   flask
     #   mesop
-wheel==0.45.1
+wheel==0.46.1
     # via c2pa-python
 zipp==3.23.0
     # via importlib-metadata

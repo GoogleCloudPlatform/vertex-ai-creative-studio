@@ -1,6 +1,6 @@
 [project]
 name = "vertex-ai-genmedia-creative-studio"
-version = "0.1.0"
+version = "1.3.11"
 description = "GenMedia Creative Studio - Veo, Lyria, Nano Banana, Imagen, Gemini, Gemini TTS"
 readme = "README.md"
 requires-python = ">=3.13, <3.14"
@@ -31,6 +31,11 @@ dependencies = [
     "c2pa-python>=0.27.1",
     "pillow>=11.3.0",
 ]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
 
 [tool.ruff]
 # Python version (optional, defaults to auto-detect)
