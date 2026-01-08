@@ -190,7 +190,7 @@ typing-inspect==0.9.0
     # via dataclasses-json
 tzdata==2025.2
     # via pandas
-urllib3==2.6.0
+urllib3==2.6.3
     # via requests
 uvicorn==0.36.1
     # via
