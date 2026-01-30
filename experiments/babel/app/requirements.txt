@@ -94,7 +94,7 @@ markupsafe==3.0.3
     # via
     #   jinja2
     #   werkzeug
-marshmallow==4.0.1
+marshmallow==4.1.2
     # via dataclasses-json
 mdurl==0.1.2
     # via markdown-it-py
@@ -134,7 +134,7 @@ protobuf==6.31.1
     #   grpcio-status
     #   mesop
     #   proto-plus
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via
     #   pyasn1-modules
     #   rsa
@@ -190,7 +190,7 @@ typing-inspect==0.9.0
     # via dataclasses-json
 tzdata==2025.2
     # via pandas
-urllib3==2.5.0
+urllib3==2.6.3
     # via requests
 uvicorn==0.36.1
     # via
@@ -204,7 +204,7 @@ watchfiles==1.1.0
     # via uvicorn
 websockets==15.0.1
     # via uvicorn
-werkzeug==3.1.3
+werkzeug==3.1.5
     # via
     #   babel-web (pyproject.toml)
     #   flask

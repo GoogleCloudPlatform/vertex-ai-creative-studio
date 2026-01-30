@@ -1,23 +1,195 @@
-#### App
-# PROJECT_ID is required, Google Cloud Project
+# GenMedia Creative Studio - Environment Variables Template
+# Copy this file to .env and fill in the required values.
+#
+# Usage:
+#   cp .env.template .env
+#   # Edit .env with your specific configuration
+
+# ==============================================================================
+# 🌍 Core Infrastructure & Environment
+# ==============================================================================
+
+# [REQUIRED] The Google Cloud Project ID where resources (Vertex AI, Firestore, Storage) are located.
 PROJECT_ID=
-# LOCATION defaults to us-central1
-#LOCATION=us-central1 
-# MODEL_ID defaults to gemini-2.0-flash
-#MODEL_ID= 
-# GENMEDIA_BUCKET defaults to: {PROJECT_ID}-assets
-#GENMEDIA_BUCKET=
 
-#### Veo
-# VEO_PROJECT_ID defaults to PROJECT_ID if not present
-#VEO_PROJECT_ID=
-# VEO_MODEL defaults to veo-2.0-generate-001 if not present
-#VEO_MODEL_ID=
-# VEO_EXP_MODEL_ID defaults to veo-2.0-generate-exp if not present
-#VEO_EXP_MODEL_ID=
+# [OPTIONAL] The default GCP region for most services (Vertex AI, etc.).
+# Default: us-central1
+# LOCATION=us-central1
 
-#### Lyria
-# LYRIA_MODEL_VERSION defaults to lyria-base-001
-#LYRIA_MODEL_VERSION=
-# LYRIA_PROJECT_ID defaults to PROJECT_ID f not present
-#LYRIA_PROJECT_ID=
+# [OPTIONAL] Defines the environment (e.g., 'dev', 'prod').
+# Used to load environment-specific content files like config/about_content.{env}.json.
+# Default: "" (empty)
+# APP_ENV=
+
+# [OPTIONAL] The base URL for the application's backend APIs.
+# Default: http://localhost:8080 (or based on PORT)
+# API_BASE_URL=http://localhost:8080
+
+# [OPTIONAL] The port the application server listens on.
+# Default: 8080
+# PORT=8080
+
+# [OPTIONAL] The email of the service account used for authentication.
+# Required if running in an environment where default credentials are insufficient.
+# SERVICE_ACCOUNT_EMAIL=
+
+# [OPTIONAL] Google Analytics Measurement ID for tracking user interactions.
+# GA_MEASUREMENT_ID=
+
+# ==============================================================================
+# 🧠 Gemini Models (Text & Multimodal)
+# ==============================================================================
+
+# [OPTIONAL] The primary Gemini model used for general text and reasoning tasks.
+# Default: gemini-2.5-flash
+# MODEL_ID=gemini-2.5-flash
+
+# [OPTIONAL] The specific model used for image generation features.
+# Default: gemini-2.5-flash-image
+# GEMINI_IMAGE_GEN_MODEL=gemini-2.5-flash-image
+
+# [OPTIONAL] The region for the Gemini Image Generation API.
+# Default: global
+# GEMINI_IMAGE_GEN_LOCATION=global
+
+# [OPTIONAL] Base URL for Gemini Image Gen API if using a proxy or non-standard endpoint.
+# GEMINI_IMAGE_GEN_API_BASE_URL=
+
+# [OPTIONAL] The model used specifically for analyzing audio content.
+# Default: gemini-2.5-flash
+# GEMINI_AUDIO_ANALYSIS_MODEL_ID=gemini-2.5-flash
+
+# [OPTIONAL] The model used for the Gemini Writers Workshop page.
+# Default: Same as MODEL_ID
+# GEMINI_WRITERS_WORKSHOP_MODEL_ID=
+
+# ==============================================================================
+# 🎥 Veo (Video Generation)
+# ==============================================================================
+
+# [OPTIONAL] The standard Veo model version.
+# Default: veo-3.1-fast-generate-001
+# VEO_MODEL_ID=veo-3.1-fast-generate-001
+
+# [OPTIONAL] Allows using a different project for Veo quota if needed.
+# Default: Same as PROJECT_ID
+# VEO_PROJECT_ID=
+
+# [OPTIONAL] The experimental/newer Veo model version.
+# Default: veo-3.1-generate-preview
+# VEO_EXP_MODEL_ID=veo-3.1-generate-preview
+
+# [OPTIONAL] The faster, lower-latency experimental Veo model.
+# Default: veo-3.1-fast-generate-preview
+# VEO_EXP_FAST_MODEL_ID=veo-3.1-fast-generate-preview
+
+# [OPTIONAL] Project ID for experimental Veo models.
+# Default: Same as PROJECT_ID
+# VEO_EXP_PROJECT_ID=
+
+# ==============================================================================
+# 🎨 Imagen (Image Generation & Editing)
+# ==============================================================================
+
+# [OPTIONAL] Model used for "Product Recontextualization" features.
+# Default: imagen-product-recontext-preview-06-30
+# MODEL_IMAGEN_PRODUCT_RECONTEXT=imagen-product-recontext-preview-06-30
+
+# [OPTIONAL] Subfolder in the GCS bucket where generated images are saved.
+# Default: generated_images
+# IMAGEN_GENERATED_SUBFOLDER=generated_images
+
+# [OPTIONAL] Subfolder for images resulting from editing operations.
+# Default: edited_images
+# IMAGEN_EDITED_SUBFOLDER=edited_images
+
+# ==============================================================================
+# 🛍️ Virtual Try-On (VTO)
+# ==============================================================================
+
+# [OPTIONAL] Region for the VTO API.
+# Default: us-central1
+# VTO_LOCATION=us-central1
+
+# [OPTIONAL] The specific VTO model version.
+# Default: virtual-try-on-001
+# VTO_MODEL_ID=virtual-try-on-preview-08-04
+
+# [OPTIONAL] Firestore collection for VTO model data.
+# Default: genmedia-vto-model
+# GENMEDIA_VTO_MODEL_COLLECTION_NAME=genmedia-vto-model
+
+# [OPTIONAL] Firestore collection for VTO product catalog data.
+# Default: genmedia-vto-catalog
+# GENMEDIA_VTO_CATALOG_COLLECTION_NAME=genmedia-vto-catalog
+
+# ==============================================================================
+# 🎵 Lyria (Music Generation)
+# ==============================================================================
+
+# [OPTIONAL] Region for Lyria API calls.
+# Default: us-central1
+# LYRIA_LOCATION=us-central1
+
+# [OPTIONAL] The version of the Lyria model to use.
+# Default: lyria-002
+# LYRIA_MODEL_VERSION=lyria-002
+
+# [OPTIONAL] Project ID for Lyria quota.
+# Default: Same as PROJECT_ID
+# LYRIA_PROJECT_ID=
+
+# ==============================================================================
+# 💾 Storage & Database (Firebase/GCS)
+# ==============================================================================
+
+# [OPTIONAL] The Firestore database ID.
+# Default: (default)
+# GENMEDIA_FIREBASE_DB=(default)
+
+# [OPTIONAL] The main Firestore collection for storing generation metadata.
+# Default: genmedia
+# GENMEDIA_COLLECTION_NAME=genmedia
+
+# [OPTIONAL] Firestore collection for user session data.
+# Default: sessions
+# SESSIONS_COLLECTION_NAME=sessions
+
+# [OPTIONAL] The primary GCS bucket for storing generated media.
+# Default: {PROJECT_ID}-assets
+# GENMEDIA_BUCKET=
+
+# [OPTIONAL] Specific bucket/path for video files.
+# Default: {PROJECT_ID}-assets/videos
+# VIDEO_BUCKET=
+
+# [OPTIONAL] Specific bucket/path for image files.
+# Default: {PROJECT_ID}-assets/images
+# IMAGE_BUCKET=
+
+# [OPTIONAL] Used by Lyria and potentially other legacy components.
+# Default: {PROJECT_ID}-assets
+# MEDIA_BUCKET=
+
+# [OPTIONAL] Bucket for static assets used in the "About" page.
+# GCS_ASSETS_BUCKET=
+
+# ==============================================================================
+# ⚙️ Application Logic
+# ==============================================================================
+
+# [OPTIONAL] Controls how many items appear per page in the media library.
+# Default: 15
+# LIBRARY_MEDIA_PER_PAGE=15
+
+# [OPTIONAL] If true, media URLs are proxied to avoid CORS/hotlinking issues.
+# Default: true
+# USE_MEDIA_PROXY=true
+
+# [OPTIONAL] Model used specifically in the Character Consistency workflow.
+# Default: veo-3.0-fast-generate-001
+# CHARACTER_CONSISTENCY_VEO_MODEL=veo-3.0-fast-generate-001
+
+# [OPTIONAL] Gemini model used in the Character Consistency workflow.
+# Default: Same as MODEL_ID
+# CHARACTER_CONSISTENCY_GEMINI_MODEL=

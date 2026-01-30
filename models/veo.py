@@ -66,9 +66,10 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if model_config.supports_prompt_enhancement:
         enhance_prompt_for_api = request.enhance_prompt
 
-    # R2V and Veo 3.0 have a mandatory requirement for prompt enhancement
-    if request.r2v_references or request.r2v_style_image or request.model_version_id.startswith("3."):
+    # Force True if model mandates it
+    if model_config.requires_prompt_enhancement:
         enhance_prompt_for_api = True
+
     gen_config_args = {
         "aspect_ratio": request.aspect_ratio,
         "number_of_videos": request.video_count,
@@ -77,15 +78,41 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
         "resolution": request.resolution,
         "person_generation": PERSON_GENERATION_MAP.get(
-            request.person_generation, "allow_all"
+            request.person_generation, "allow_adult"
         ),
     }
+    
+    # Add generate_audio only for Veo 3 models
+    if request.model_version_id.startswith("3."):
+        gen_config_args["generate_audio"] = request.generate_audio
+        
     if request.negative_prompt:
         gen_config_args["negative_prompt"] = request.negative_prompt
 
+    extra_params = {}
+    # Add support for social rewriter if specified
+    if hasattr(request, "rewriter_type") and request.rewriter_type == "social" and request.model_version_id.startswith("3.1"):
+        # Note: If the SDK doesn't support this in the config object yet,
+        # we pass it as an extra parameter to the model call.
+        extra_params["prompt_rewriter"] = "social"
+
     # Prepare Image and Video Inputs
     image_input = None
+    video_input = None
     reference_images_list = []
+
+    # Check for Video Extension
+    if request.video_input_gcs:
+        if not model_config.supports_video_extension:
+             raise GenerationError(
+                f"Video extension is not supported by model: {request.model_version_id}"
+            )
+        logger.info("Mode: Video Extension")
+        logger.info(f" video_input: {request.video_input_gcs}")
+        video_input = types.Video(
+            uri=request.video_input_gcs,
+            mime_type=request.video_input_mime_type or "video/mp4",
+        )
 
     # R2V can have both style and asset references.
     if request.r2v_style_image:
@@ -136,10 +163,18 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,
         )
-    else:
+    elif not video_input:
         logger.info("Mode: Text-to-Video")
 
     gen_config = types.GenerateVideosConfig(**gen_config_args)
+
+    # Log the full request payload for debugging
+    logger.info(f"Calling generate_videos with model: {model_config.model_name}")
+    logger.info(f"Config: {gen_config_args}")
+    if image_input:
+        logger.info(f"Image Input: gcs_uri={image_input.gcs_uri}, mime_type={image_input.mime_type}")
+    if reference_images_list:
+        logger.info(f"Reference Images Count: {len(reference_images_list)}")
 
     # Call the API
     try:
@@ -148,6 +183,8 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             prompt=request.prompt,
             config=gen_config,
             image=image_input,
+            video=video_input,
+            **extra_params,
         )
 
         logger.info("Polling video generation operation...")

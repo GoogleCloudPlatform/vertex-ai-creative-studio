@@ -21,6 +21,7 @@ import mesop as me
 
 from common.analytics import log_ui_click, track_model_call, analytics_logger
 from common.metadata import MediaItem, add_media_item_to_firestore
+from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
 from components.dialog import dialog
@@ -30,6 +31,7 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
+from components.content_credentials.content_credentials import content_credentials_viewer
 from components.search_entry_point.search_entry_point import search_entry_point
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
@@ -42,6 +44,7 @@ from models.gemini import (
 )
 from models.upscale import get_image_resolution
 from state.state import AppState
+from services.c2pa_service import c2pa_service
 
 
 CHIP_STYLE = me.Style(
@@ -50,6 +53,37 @@ CHIP_STYLE = me.Style(
     font_size=14,
     height=32,
 )
+
+
+def get_all_image_presets():
+    """Loads dynamic templates and merges them with static presets."""
+    # Start with a deep copy of the hardcoded presets
+    # to ensure backward compatibility and avoid mutating the original
+    all_presets = {k: [p.copy() for p in v] for k, v in IMAGE_ACTION_PRESETS.items()}
+
+    try:
+        # Load dynamic templates of type 'image'
+        dynamic_templates = prompt_template_service.load_templates(
+            config_path="config/image_prompt_templates.json", template_type="image"
+        )
+
+        for template in dynamic_templates:
+            t_dict = template.model_dump()
+            # Normalize category to lowercase to match keys in IMAGE_ACTION_PRESETS
+            category = t_dict.get("category", "custom").lower()
+
+            if category not in all_presets:
+                all_presets[category] = []
+
+            # Check for duplicates by key to avoid showing the same action twice
+            existing_keys = {p["key"] for p in all_presets[category]}
+            if t_dict["key"] not in existing_keys:
+                all_presets[category].append(t_dict)
+
+    except Exception as e:
+        analytics_logger.error(f"Error loading dynamic prompt templates: {e}")
+
+    return all_presets
 
 
 @me.stateclass
@@ -76,6 +110,7 @@ class PageState:
     is_suggesting_transformations: bool = False
     use_search: bool = False
     grounding_info: str = ""
+    c2pa_manifests: dict[str, str] = field(default_factory=dict) # Store as dict of strings (url -> json_str)
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
@@ -372,7 +407,9 @@ def gemini_image_gen_page_content():
                     ):
                         #me.text("Image Presets", style=me.Style(font_weight="bold"))
 
-                        for category_name, presets in IMAGE_ACTION_PRESETS.items():
+                        all_presets = get_all_image_presets()
+
+                        for category_name, presets in all_presets.items():
                             if not presets:
                                 continue
 
@@ -495,16 +532,23 @@ def gemini_image_gen_page_content():
                     ):
                         if len(state.generated_image_urls) == 1:
                             # Display single, maximized image
-                            me.image(
-                                src=state.generated_image_urls[0],
-                                alt=state.generated_image_captions[0] if state.generated_image_captions else "",
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="85vh",
-                                    object_fit="contain",
-                                    border_radius=8,
-                                ),
-                            )
+                            with me.box(style=me.Style(position="relative", width="100%", height="100%", display="flex", justify_content="center")):
+                                me.image(
+                                    src=state.generated_image_urls[0],
+                                    alt=state.generated_image_captions[0] if state.generated_image_captions else "",
+                                    style=me.Style(
+                                        width="100%",
+                                        max_height="85vh",
+                                        object_fit="contain",
+                                        border_radius=8,
+                                    ),
+                                )
+                                # Content Credentials (C2PA) Viewer
+                                with me.box(style=me.Style(position="absolute", top=16, right=16)):
+                                    manifest_json = state.c2pa_manifests.get(state.generated_image_urls[0])
+                                    if manifest_json:
+                                        content_credentials_viewer(manifest=manifest_json)
+
                             if state.generated_resolution:
                                 with me.box(style=me.Style(margin=me.Margin(top=8))):
                                     pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
@@ -523,16 +567,24 @@ def gemini_image_gen_page_content():
                                 # Main image
                                 selected_index = state.generated_image_urls.index(state.selected_image_url) if state.selected_image_url in state.generated_image_urls else 0
                                 caption = state.generated_image_captions[selected_index] if selected_index < len(state.generated_image_captions) else ""
-                                me.image(
-                                    src=state.selected_image_url,
-                                    alt=caption,
-                                    style=me.Style(
-                                        width="100%",
-                                        max_height="75vh",
-                                        object_fit="contain",
-                                        border_radius=8,
-                                    ),
-                                )
+                                
+                                with me.box(style=me.Style(position="relative", width="100%", display="flex", justify_content="center")):
+                                    me.image(
+                                        src=state.selected_image_url,
+                                        alt=caption,
+                                        style=me.Style(
+                                            width="100%",
+                                            max_height="75vh",
+                                            object_fit="contain",
+                                            border_radius=8,
+                                        ),
+                                    )
+                                    # Content Credentials (C2PA) Viewer
+                                    with me.box(style=me.Style(position="absolute", top=16, right=16)):
+                                        manifest_json = state.c2pa_manifests.get(state.selected_image_url)
+                                        if manifest_json:
+                                            content_credentials_viewer(manifest=manifest_json)
+
                                 if state.generated_resolution:
                                     with me.box(style=me.Style(margin=me.Margin(top=8))):
                                         pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
@@ -769,7 +821,8 @@ def on_image_action_click(e: me.ClickEvent):
 
     # Find the preset that was clicked
     preset = None
-    for category in IMAGE_ACTION_PRESETS.values():
+    all_presets = get_all_image_presets()
+    for category in all_presets.values():
         found = next((p for p in category if p["key"] == e.key), None)
         if found:
             preset = found
@@ -928,6 +981,17 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             state.generated_image_captions = captions
             # Measure the actual resolution of the first generated image
             state.generated_resolution = get_image_resolution(gcs_uris[0])
+            
+            # Read C2PA Manifests for all images
+            state.c2pa_manifests = {}
+            for i, uri in enumerate(gcs_uris):
+                manifest = c2pa_service.read_manifest(uri)
+                display_url = state.generated_image_urls[i]
+                if manifest:
+                    state.c2pa_manifests[display_url] = json.dumps(manifest)
+                    if i == 0:
+                        analytics_logger.info("C2PA manifest found and loaded for image 0.")
+            
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 

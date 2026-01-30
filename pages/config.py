@@ -238,8 +238,22 @@ def get_config_table(app_state: AppState):
         config_data["Config"].append("Lyria Model Version")
         config_data["Value"].append(Default.LYRIA_MODEL_VERSION)
 
-    config_data["Config"].append("Application Verison")
+    if hasattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID"):
+        writers_model = getattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID")
+        if writers_model != Default.MODEL_ID:
+            config_data["Config"].append("Writers Workshop Model ID")
+            config_data["Value"].append(writers_model)
+
+    config_data["Config"].append("Application Version")
     config_data["Value"].append(f"{Default.VERSION} {Default.APP_ENV}")
+
+    if Default.BUILD_COMMIT:
+        config_data["Config"].append("Git Commit")
+        config_data["Value"].append(Default.BUILD_COMMIT)
+    
+    if Default.BUILD_DATE:
+        config_data["Config"].append("Build Date")
+        config_data["Value"].append(Default.BUILD_DATE)
 
     df = pd.DataFrame(data=config_data)
     return df

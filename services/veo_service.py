@@ -19,6 +19,7 @@ from common.metadata import MediaItem, add_media_item_to_firestore, get_media_it
 from models.requests import VideoGenerationRequest
 from models.veo import generate_video
 from config.veo_models import get_veo_model_config
+from models.video_processing import get_video_duration
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,18 @@ def process_veo_generation_task(
         video_uris, resolution = generate_video(request_data)
 
         # 3. Success! Update Firestore with results.
-        _complete_job(job_id, video_uris, resolution)
+        # Check if this was an extension request to correct the duration
+        actual_duration = None
+        if request_data.video_input_gcs and video_uris:
+            try:
+                # For extensions, the resulting video is longer than the requested 'duration_seconds' (which is just the extension amount)
+                # So we inspect the actual generated file to get the true total duration.
+                actual_duration = get_video_duration(video_uris[0])
+                logger.info(f"Corrected duration for extended video: {actual_duration}s")
+            except Exception as e:
+                logger.warning(f"Could not verify duration of extended video: {e}")
+
+        _complete_job(job_id, video_uris, resolution, duration=actual_duration)
         logger.info(f"Background task for job {job_id} completed successfully.")
 
     except Exception as e:
@@ -55,7 +67,7 @@ def _update_job_status(job_id: str, status: str):
         add_media_item_to_firestore(item)
 
 
-def _complete_job(job_id: str, video_uris: list[str], resolution: str):
+def _complete_job(job_id: str, video_uris: list[str], resolution: str, duration: float = None):
     """Helper to mark a job as complete with results."""
     item = get_media_item_by_id(job_id)
     if item:
@@ -63,6 +75,10 @@ def _complete_job(job_id: str, video_uris: list[str], resolution: str):
         item.gcs_uris = video_uris
         item.gcsuri = video_uris[0] if video_uris else None
         item.resolution = resolution
+        
+        if duration is not None:
+            item.duration = duration
+            
         # Calculate generation time if possible, or just use now - timestamp
         if item.timestamp:
              # Ensure both are offset-aware or both are offset-naive.
@@ -97,7 +113,12 @@ def create_initial_job(request: VideoGenerationRequest, user_email: str) -> str:
 
     # Infer mode
     mode = "t2v"
-    if request.r2v_references or request.r2v_style_image:
+    source_uris = []
+    
+    if request.video_input_gcs:
+        mode = "video_extension"
+        source_uris.append(request.video_input_gcs)
+    elif request.r2v_references or request.r2v_style_image:
         mode = "r2v"
     elif request.reference_image_gcs and request.last_reference_image_gcs:
         mode = "interpolation"
@@ -116,6 +137,7 @@ def create_initial_job(request: VideoGenerationRequest, user_email: str) -> str:
         duration=float(request.duration_seconds),
         reference_image=request.reference_image_gcs,
         last_reference_image=request.last_reference_image_gcs,
+        source_uris=source_uris,
         r2v_reference_images=[ref.gcs_uri for ref in request.r2v_references]
         if request.r2v_references
         else [],

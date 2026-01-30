@@ -1090,11 +1090,14 @@ def generate_critique_questions(
     retry=retry_if_exception_type(Exception),
     reraise=True,
 )
-def generate_text(prompt: str, images: list[str]) -> tuple[str, float]:
+def generate_text(
+    prompt: str, images: list[str], model_name: Optional[str] = None
+) -> tuple[str, float]:
     """Generates text from a prompt and a list of media files."""
     # print(f"Entering generate_text with prompt: {prompt} and {len(images)} images.")
     # start_time = time.time()
-    model_name = cfg.MODEL_ID
+    if not model_name:
+        model_name = cfg.MODEL_ID
 
     parts = [types.Part.from_text(text=prompt)]
     for image_uri in images:

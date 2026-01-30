@@ -1,0 +1,66 @@
+digraph RetroGamesWorkflow {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Arial", color=black, fillcolor=white];
+    edge [fontname="Arial"];
+
+    Start [shape=circle, label="Start", fillcolor=lightgreen];
+    
+    subgraph cluster_inputs {
+        label = "User Inputs";
+        style = filled;
+        color = lightgrey;
+        InputImage [label="Input Image(s)\n(P1 & P2)", shape=note, fillcolor=lightyellow];
+        ThemeSelection [label="Theme Selection\n(Your Theme Here)", shape=parallelogram, fillcolor=lightcyan];
+        Configuration [label="Configuration\n(Context, Scenes, Duration, Bumper)", shape=parallelogram, fillcolor=lightcyan];
+    }
+    
+    Generate8Bit [label="Step 1: Generate 8-bit Image(s)\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
+    GenerateCharSheet [label="Step 2: Generate Character Sheet(s)\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
+    
+    subgraph cluster_video {
+        label = "Video Generation (Step 3)";
+        style = dashed;
+        color = purple;
+        
+        GenerateStoryboard [label="Step 3a: Generate Storyboard\n(Gemini 2.5 Flash)", fillcolor=lightyellow];
+        GenerateVideo [label="Step 3b: Generate Video Clip\n(Veo 3.1 R2V)", fillcolor=lightpink];
+        
+        GenerateStoryboard -> GenerateVideo [label="Scene Prompts (List)"];
+        GenerateVideo -> GenerateVideo [label="Loop N times"];
+    }
+
+    Assembly [label="Step 4: Assembly & Bumper\n(FFmpeg/MoviePy)", fillcolor=lightgrey];
+    
+    Regenerate [label="Regenerate Video\n(Skip Steps 1 & 2)", shape=diamond, fillcolor=orange];
+
+    FinalVideo [label="Final Retro Game Video", shape=component, fillcolor=gold];
+    End [shape=doublecircle, label="End", fillcolor=lightgreen];
+
+    Start -> InputImage;
+    Start -> ThemeSelection;
+    Start -> Configuration;
+
+    InputImage -> Generate8Bit [label="Input(s)"];
+    ThemeSelection -> Generate8Bit [label="Theme Prompt"];
+    
+    Generate8Bit -> GenerateCharSheet [label="8-bit Image(s)"];
+    Generate8Bit -> GenerateStoryboard [label="8-bit Image(s)"];
+    Generate8Bit -> GenerateVideo [label="R2V Refs"];
+    
+    GenerateCharSheet -> GenerateVideo [label="R2V Refs"];
+    
+    Configuration -> GenerateStoryboard [label="Context/Scene Count"];
+    Configuration -> GenerateVideo [label="Model/Duration"];
+    ThemeSelection -> GenerateVideo [label="Theme Logo"];
+    
+    GenerateVideo -> Assembly [label="Raw Video Clip(s)"];
+    Configuration -> Assembly [label="Toggle Bumper"];
+    
+    Assembly -> FinalVideo;
+    
+    FinalVideo -> End;
+
+    # Regeneration Path
+    FinalVideo -> Regenerate [label="User Action"];
+    Regenerate -> GenerateStoryboard [label="Reuse Assets"];
+}

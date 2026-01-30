@@ -7,6 +7,13 @@ on:
         type: 'string'
         description: 'Any additional context from the request'
         required: false
+    secrets:
+      GEMINI_API_KEY:
+        required: false
+      GOOGLE_API_KEY:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
 
 concurrency:
   group: '${{ github.workflow }}-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'

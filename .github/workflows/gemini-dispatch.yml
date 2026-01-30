@@ -1,6 +1,24 @@
 name: '🔀 Gemini Dispatch'
 
 on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command to run'
+        required: true
+        type: choice
+        options:
+          - review
+          - triage
+          - invoke
+      issue_number:
+        description: 'Issue or PR number to act on'
+        required: true
+        type: string
+      additional_context:
+        description: 'Additional context/prompt'
+        required: false
+        type: string
   pull_request_review_comment:
     types:
       - 'created'
@@ -57,6 +75,8 @@ jobs:
       ) || (
         github.event_name == 'issues' &&
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
+      ) || (
+        github.event_name == 'workflow_dispatch'
       )
     runs-on: 'ubuntu-latest'
     permissions:
@@ -67,7 +87,7 @@ jobs:
       command: '${{ steps.extract_command.outputs.command }}'
       request: '${{ steps.extract_command.outputs.request }}'
       additional_context: '${{ steps.extract_command.outputs.additional_context }}'
-      issue_number: '${{ github.event.pull_request.number || github.event.issue.number }}'
+      issue_number: '${{ github.event.pull_request.number || github.event.issue.number || inputs.issue_number }}'
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
@@ -87,10 +107,22 @@ jobs:
         env:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
+          INPUT_COMMAND: '${{ inputs.command }}'
+          INPUT_CONTEXT: '${{ inputs.additional_context }}'
         with:
           script: |
             const request = process.env.REQUEST;
-            const eventType = process.env.EVENT_TYPE
+            const eventType = process.env.EVENT_TYPE;
+            const inputCommand = process.env.INPUT_COMMAND;
+            const inputContext = process.env.INPUT_CONTEXT;
+
+            if (inputCommand) {
+               core.setOutput('command', inputCommand);
+               core.setOutput('additional_context', inputContext || '');
+               core.setOutput('request', `Manual dispatch: ${inputCommand}`);
+               return;
+            }
+
             core.setOutput('request', request);
 
             if (request.startsWith("@gemini-cli /review")) {
@@ -114,7 +146,7 @@ jobs:
       - name: 'Acknowledge request'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
-          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number || inputs.issue_number }}'
           MESSAGE: |-
             🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'
@@ -135,7 +167,7 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets: inherit
 
   triage:
     needs: 'dispatch'
@@ -149,7 +181,7 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets: inherit
 
   invoke:
     needs: 'dispatch'
@@ -163,7 +195,7 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets: inherit
 
   fallthrough:
     needs:
@@ -194,7 +226,7 @@ jobs:
       - name: 'Send failure comment'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
-          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number || inputs.issue_number }}'
           MESSAGE: |-
             🤖 I'm sorry @${{ github.actor }}, but I was unable to process your request. Please [see the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'

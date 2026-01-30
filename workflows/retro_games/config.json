@@ -1,0 +1,11 @@
+{
+  "themes": {
+
+    "Google": {
+      "prompt": "Create a minimalist 16-bit pixel art of the image centered on a pure white background. Use a limited retro color palette with pixelated detailing, sharp edges, and clean blocky forms. The logo should be simple, iconic, and clearly recognizable in pixel art style — inspired by SNES game aesthetics. Use Google branding colors (blue, red, yellow, green, white).",
+      "logo_uri": "gs://cloud-samples-data/generative-ai/image/flowers.png",
+      "logo_8bit_uri": "gs://cloud-samples-data/generative-ai/image/flowers.png"
+    }
+  },
+  "bumper_videos": [  ]
+}

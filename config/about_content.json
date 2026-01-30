@@ -21,7 +21,7 @@
     {
       "id": "gemini_image_generation",
       "title": "Gemini  Image Generation",
-      "description": "Gemini Image Generation - Nano-banana\n\nGenerate, transform and edit images with simple text prompts, or combine multiple images to create something new. All in Gemini.\n\n[Learn more about Gemini Image generation on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)",
+      "description": "Gemini Image Generation - Nano-banana\n\nGenerate, transform and edit images with simple text prompts, or combine multiple images to create something new. All in Gemini.\n\n[Learn more about [Gemini 2.5 Flash Image]((https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image) and [Gemini 3 Pro Image](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image) on Vertex AI.\n\nLearn more about [Search Grounding](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/grounding/grounding-with-google-search#grounding_support) with Gemini 3 Pro Image, see the [Service Specific Terms](https://cloud.google.com/terms/service-terms).",
       "image": null,
       "video": null
     },
@@ -49,7 +49,6 @@
     {
       "id": "vto",
       "title": "Virtual Try-On",
-      "stage": "preview",
       "description": "[Virtual Try-On](https://cloud.google.com/vertex-ai/generative-ai/docs/image/generate-virtual-try-on-images) is a fully managed Vertex AI service to generate images of persons modeling fashion products.\n\n**Virtual Try-On** brings Google's advanced image generation technology to developers and retail customers in the fashion industry. This experimental service provides an easy-to-use API and cutting edge quality for generating shots of models trying-on products.\n\nWith Virtual Try-On, you can create high quality listing photos with just an image of a person and a product to try on. Supported products are:\n * Tops: shirts, hoodies sweaters, tank tops, blouses\n* Bottoms: Pants, leggings, shorts, skirts\n* Footwear: Sneakers, boots, sandals, flats, heels, formal shoes\n\nThis workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
       "image": "assets/about/vto_demo.png",
       "video": null
@@ -79,6 +78,11 @@
       "id": "interior_design",
       "title": "Interior Design",
       "description": "Starting with a flat floor plan, create a 3d view, then explore each room and change the interior design, resulting in a fresh new perspective.\n\nPavithra Sainath, Cloud AI, Applied AI Engineering"
+    },
+    {
+      "id": "retro_games",
+      "title": "Retro Games",
+      "description": "The **Retro Games** workflow transforms images into 8-bit pixel art assets and animated video clips. You can:\n*   Upload images for Player 1 and optionally Player 2.\n*   Generate 8-bit avatars and character sprite sheets.\n*   Create sequential video narratives using Gemini for storyboarding and Veo for video generation.\n*   Automatically stitch scenes together with a branded bumper."
     }
   ]
 }

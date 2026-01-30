@@ -152,7 +152,7 @@ def generate_character_video(
         )
 
         imagen_candidate_gcs_uris, imagen_candidate_image_bytes_list = imagen_future.result()
-        gemini_candidate_gcs_uris, _, _ = gemini_future.result()
+        gemini_candidate_gcs_uris, _, _, _ = gemini_future.result()
 
     candidate_image_gcs_uris = imagen_candidate_gcs_uris + gemini_candidate_gcs_uris
     candidate_image_bytes_list = imagen_candidate_image_bytes_list  # We don't have bytes from Gemini yet
@@ -292,7 +292,7 @@ def _generate_imagen_candidates(reference_image_bytes_list, all_descriptions, fi
             number_of_images=4,
             aspect_ratio="1:1",
             person_generation="allow_all",
-            safety_filter_level="block_few",
+            safety_filter_level="block_only_high",
             negative_prompt=negative_prompt,
         ),
     )

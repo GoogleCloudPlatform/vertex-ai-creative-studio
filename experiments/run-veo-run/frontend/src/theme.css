@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Fonts */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap');
+
+:root {
+    /* --- TYPEFACE OVERRIDES --- */
+    /* Force Material to use your "Hacker" fonts */
+    --md-ref-typeface-brand: 'Oswald', sans-serif; 
+    --md-ref-typeface-plain: 'JetBrains Mono', monospace;
+
+    /* --- COLOR TOKEN MAPPING (The Magic) --- */
+    
+    /* Primary Action (The "Run" Button) */
+    --md-sys-color-primary: #FF2400; 
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #4a0a00; /* Dark red for containers */
+    
+    /* Backgrounds (Dark Concrete Mode) */
+    --md-sys-color-background: #1A1A1A;
+    --md-sys-color-on-background: #E0E0E0;
+    
+    /* Surfaces (Cards, Panels) */
+    --md-sys-color-surface: #2D2D2D;
+    --md-sys-color-surface-container: #333333;
+    --md-sys-color-on-surface: #E0E0E0;
+
+    /* Errors / Alerts (Caution Yellow) */
+    --md-sys-color-error: #FFD700;
+    --md-sys-color-on-error: #000000;
+
+    /* --- SHAPE OVERRIDES --- */
+    /* Lola is not round. Lola is sharp. */
+    --md-sys-shape-corner-small: 0px;
+    --md-sys-shape-corner-medium: 2px;
+    --md-sys-shape-corner-large: 4px;
+    --md-sys-shape-corner-full: 0px; /* Even the "pill" buttons become rectangles */
+}
+
+/* Global Body Style */
+body {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    font-family: var(--md-ref-typeface-plain);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}

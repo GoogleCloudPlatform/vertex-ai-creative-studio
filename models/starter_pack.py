@@ -25,7 +25,8 @@ from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
 def generate_starter_pack_from_look(look_image_uri: str) -> str:
     """Generates a starter pack from a look image."""
     prompt = "Analyze the image to extract the featured products for a mood board. Lay out only the articles / items, and not the person."
-    generated_images, _, _ = gemini.generate_image_from_prompt_and_images(
+    alt_prompt = "Ultra-realistic 8K flat-lay photo in strict knolling style. Top-down 90º shot of the object from the attached image, fully disassembled into 8–12 key parts and arranged in a clean grid or radial pattern on a minimalist wooden or matte gray table. Even spacing, perfect alignment, no overlaps, no extra objects. Soft, diffused multi-source lighting with subtle shadows, neutral color balance and crisp focus across the whole frame. Highly detailed real-world materials (metal, plastic, rubber grips, circuit boards, screws). For every part, add a thin white rectangular frame and a short, sharp English label in clean sans-serif text, placed beside the component without covering it; annotations must be legible but unobtrusive."
+    generated_images, _, _, _ = gemini.generate_image_from_prompt_and_images(
         prompt=prompt,
         images=[look_image_uri],
         aspect_ratio="1:1",
@@ -41,7 +42,7 @@ def generate_look_from_starter_pack(
 ) -> str:
     """Generates a look from a starter pack and model image."""
     prompt = "Try this ensemble on the given model."
-    generated_images, _, _ = gemini.generate_image_from_prompt_and_images(
+    generated_images, _, _, _ = gemini.generate_image_from_prompt_and_images(
         prompt=prompt,
         images=[starter_pack_uri, model_image_uri],
         aspect_ratio="1:1",

@@ -44,3 +44,9 @@
 
 ## Countdown workflow
 /experiments/countdown-workflow/ @GoogleCloudPlatform/google-cloud-aaie @cnemri
+
+## Brand consistency
+/experiments/brand_consistency @GoogleCloudPlatform/google-cloud-aaie @Yansun3
+
+## Run, Veo, Run
+/experiments/run-veo-run/ @ghchinoy

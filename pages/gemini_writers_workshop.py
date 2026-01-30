@@ -59,6 +59,7 @@ class PageState:
     snackbar_message: str = ""
     previous_media_item_id: str | None = None
     prompt_templates: list[dict] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
+    selected_model: str = ""
 
     info_dialog_open: bool = False
     show_error_dialog: bool = False
@@ -90,6 +91,8 @@ def close_info_dialog(e: me.ClickEvent):
 
 def on_load(e: me.LoadEvent):
     state = me.state(PageState)
+    if not state.selected_model:
+        state.selected_model = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
     if not state.prompt_templates:
         templates = prompt_template_service.load_templates(
             config_path="config/text_prompt_templates.json", template_type="text"
@@ -98,33 +101,19 @@ def on_load(e: me.LoadEvent):
     yield
 
 
+def on_model_selection_change(e: me.SelectSelectionChangeEvent):
+    state = me.state(PageState)
+    state.selected_model = e.value
+    yield
+
+
 def on_template_click(e: me.ClickEvent):
-    """
-
-
-    Handles clicks on prompt template buttons.
-
-
-
-
-
+    """Handles clicks on prompt template buttons.
     If the user has already entered a prompt, it combines the user's prompt
-
-
     with the template's prompt and triggers generation.
-
-
-
-
-
     If the user's prompt is empty, it populates the prompt text area
-
-
     with the template's content.
-
-
     """
-
     state = me.state(PageState)
 
     template_prompt = e.key
@@ -347,8 +336,32 @@ def gemini_writers_workshop_page_content():
                     on_blur=on_prompt_blur,
                     value=me.state(PageState).prompt,
                     style=me.Style(width="100%", margin=me.Margin(bottom=2)),
+                    appearance="outline",
                 )
+                # Media upload
                 _media_upload_slots()
+
+                # Model choice
+                if cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID != cfg().MODEL_ID:
+                    me.select(
+                        label="Model",
+                        options=[
+                            me.SelectOption(
+                                label=f"Default ({cfg().MODEL_ID})", value=cfg().MODEL_ID,
+                            ),
+                            me.SelectOption(
+                                label=f"Workshop ({cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID})",
+                                value=cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID,
+                            ),
+                        ],
+                        on_selection_change=on_model_selection_change,
+                        value=state.selected_model,
+                        style=me.Style(width="100%"),
+                        appearance="outline",
+                    )
+                else:
+                    me.text(f"Model: {cfg().MODEL_ID}")
+                
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -362,7 +375,7 @@ def gemini_writers_workshop_page_content():
                     with me.content_button(on_click=on_clear_click, type="icon"):
                         me.icon("delete_sweep")
                     with me.tooltip(
-                        message="Enter a prompt and click outside the text box to enable saving."
+                        message="Enter a prompt and click outside the text box to enable saving.",
                     ):
                         with me.content_button(
                             on_click=on_open_save_dialog_click,
@@ -689,12 +702,16 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     state.generation_complete = False
     yield
 
+    model_id = state.selected_model or cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+
     try:
         with track_model_call(
-            model_name=cfg().MODEL_ID, prompt_length=len(base_prompt)
+            model_name=model_id, prompt_length=len(base_prompt)
         ):
             text_result, execution_time = generate_text(
-                prompt=base_prompt, images=input_gcs_uris
+                prompt=base_prompt,
+                images=input_gcs_uris,
+                model_name=model_id,
             )
         state.generation_time = execution_time
         state.generated_text = text_result

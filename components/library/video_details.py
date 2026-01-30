@@ -22,6 +22,7 @@ import mesop as me
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url
 from components.download_button.download_button import download_button
+from components.pill import pill
 from ..video_thumbnail.video_thumbnail import video_thumbnail
 
 
@@ -121,7 +122,12 @@ def video_details(
             me.text(f"Aspect Ratio: {item.aspect}")
         if item.duration is not None:
             me.text(f"Duration: {item.duration} seconds")
-        me.text(f"Resolution: {item.resolution or '720p'}")
+        
+        # Display resolution with a pill
+        res_label = item.resolution or "720p"
+        with me.box(style=me.Style(display="flex", align_items="center", gap=8)):
+            me.text("Resolution: ")
+            pill(label=res_label, pill_type="resolution_4k" if res_label == "4k" else "resolution")
 
         if item.reference_image:
             ref_url = gcs_uri_to_https_url(item.reference_image)

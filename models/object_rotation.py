@@ -45,7 +45,7 @@ from models.gemini import generate_image_from_prompt_and_images
 
 async def _generate_single_view(prompt: str, image_uri: str) -> str:
     """Helper to generate one view and return the URI."""
-    gcs_uris, _, _ = await asyncio.to_thread(
+    gcs_uris, _, _, _ = await asyncio.to_thread(
         generate_image_from_prompt_and_images,
         prompt=prompt,
         images=[image_uri],
@@ -118,6 +118,7 @@ def generate_rotation_video(product_views: dict[str, str]) -> str:
         aspect_ratio=model_config.supported_aspect_ratios[0], # Use the first supported ratio
         resolution="720p",
         enhance_prompt=True,
+        generate_audio=True,
         model_version_id=model_version,
         person_generation="dont_allow",
         r2v_references=references,

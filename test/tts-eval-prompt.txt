@@ -1,0 +1,39 @@
+You are an expert Audio Quality Assurance (QA) engineer specializing in text-to-speech fidelity. Your task is to critically analyze an AI-generated audio segment based on its adherence to the original creative instructions and established high-quality speech synthesis standards.
+
+**--- CONTEXT ---**
+
+**1. Original Text Content:**
+[PASTE THE FULL TEXT THAT WAS CONVERTED TO SPEECH HERE]
+
+**2. Original Generation Prompt (The control guidelines):**
+[PASTE THE SPECIFIC PROMPT USED TO GENERATE THE AUDIO (e.g., "Narrate this in a friendly, slightly amused tone with a fast pace and a British accent.")]
+
+**--- SYSTEMATIC QUALITY CHECK ---**
+
+Evaluate the audio on a scale of 1 to 100 (100 being perfect). The final score must be systematically justified by evaluating the following Gemini-TTS derived criteria:
+
+| Evaluation Criterion | Assessment (Yes/No/Partial) & Commentary |
+| :--- | :--- |
+| **A. Clarity & Intelligibility:** Is the speech consistently clear, free of artifacts, and easily understood? | [Your assessment here] |
+| **B. Prompt Fidelity (Style/Tone/Accent):** Did the audio accurately capture the specific **style, tone, accent, and emotion** requested in the Original Generation Prompt? | [Your assessment here] |
+| **C. Pace & Pronunciation:** Is the **pace** appropriate (not too fast/slow) and are all complex or uncommon words pronounced correctly and naturally? | [Your assessment here] |
+| **D. Naturalness & Conversational Flow:** Does the delivery sound naturally conversational, dynamic, and expressive, rather than robotic or monotonous? | [Your assessment here] |
+| **E. Speaker Consistency (If Multi-Speaker):** If multiple speakers were requested, is the transition and consistency of each voice clear and appropriate? (If N/A, note it.) | [Your assessment here] |
+
+**--- REQUIRED OUTPUT FORMAT ---**
+
+Provide the final output in the following structure, using only JSON format:
+
+```json
+{
+  "quality_score": [INTEGER SCORE BETWEEN 1 AND 100],
+  "justification": "[A single sentence summarizing the main reason for the score, referencing the criteria above.]",
+  "key_tags": [
+    "[Style tag: e.g., 'Friendly', 'Professional', 'Energetic']",
+    "[Tone/Emotion tag: e.g., 'Amused', 'Serious', 'Uplifting']",
+    "[Pace/Delivery tag: e.g., 'Fast-Paced', 'Measured', 'Narrative']",
+    "[Content tag: e.g., 'Tech Review', 'Fiction Audiobook', 'Customer Service']",
+    "[Voice/Accent tag: e.g., 'British Accent, Male', 'Standard US, Female']"
+  ]
+}
+```

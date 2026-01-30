@@ -7,6 +7,13 @@ on:
         type: 'string'
         description: 'Any additional context from the request'
         required: false
+    secrets:
+      GEMINI_API_KEY:
+        required: false
+      GOOGLE_API_KEY:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
 
 concurrency:
   group: '${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
@@ -19,10 +26,10 @@ defaults:
 jobs:
   triage:
     runs-on: 'ubuntu-latest'
-    timeout-minutes: 7
+    timeout-minutes: 20
     outputs:
       available_labels: '${{ steps.get_labels.outputs.available_labels }}'
-      selected_labels: '${{ env.SELECTED_LABELS }}'
+      selected_labels: '${{ steps.gemini_analysis.outputs.gemini_response }}'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -74,13 +81,14 @@ jobs:
           gemini_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
           settings: |-
             {
-              "maxSessionTurns": 25,
+              "maxSessionTurns": 50,
               "telemetry": {
                 "enabled": ${{ vars.GOOGLE_CLOUD_PROJECT != '' }},
                 "target": "gcp"
               },
               "coreTools": [
-                "run_shell_command(echo)"
+                "run_shell_command(echo)",
+                "run_shell_command(printenv)"
               ]
             }
           # For reasons beyond my understanding, Gemini CLI cannot set the
@@ -92,38 +100,24 @@ jobs:
 
             ## Guidelines
 
-            - Retrieve the value for environment variables using the "echo" shell command.
-            - Environment variables are specified in the format "${VARIABLE}" (with quotes and braces).
+            - Retrieve the value for environment variables using the "printenv" shell command.
             - Only use labels that are from the list of available labels.
             - You can choose multiple labels to apply.
 
             ## Steps
 
-            1. Retrieve the available labels from the environment variable: "${AVAILABLE_LABELS}".
+            1. Retrieve the available labels from the environment variable: "AVAILABLE_LABELS".
 
-            2. Retrieve the issue title from the environment variable: "${ISSUE_TITLE}".
+            2. Retrieve the issue title from the environment variable: "ISSUE_TITLE".
 
-            3. Retrieve the issue body from the environment variable: "${ISSUE_BODY}".
+            3. Retrieve the issue body from the environment variable: "ISSUE_BODY".
 
             4. Review the issue title, issue body, and available labels.
 
             5. Based on the issue title and issue body, classify the issue and choose all appropriate labels from the list of available labels.
 
-            5. Classify the issue by identifying the appropriate labels from the list of available labels.
+            6. Output the comma-separated list of labels. Do not include any other text.
 
-            6. Convert the list of appropriate labels into a comma-separated list (CSV). If there are no appropriate labels, use the empty string.
-
-            7. Use the "echo" shell command to append the CSV labels into the filepath referenced by the environment variable "${GITHUB_ENV}":
-
-                ```
-                echo "SELECTED_LABELS=[APPROPRIATE_LABELS_AS_CSV]" >> "[filepath_for_env]"
-                ```
-
-                for example:
-
-                ```
-                echo "SELECTED_LABELS=bug,enhancement" >> "/tmp/runner/env"
-                ```
 
   label:
     runs-on: 'ubuntu-latest'

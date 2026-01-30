@@ -202,7 +202,8 @@ def on_generate_video_click(e: me.ClickEvent):
                 video_count=1,
                 resolution="720p",
                 enhance_prompt=True,
-                person_generation="allow_adult",
+                generate_audio=True,
+                person_generation="Allow (Adults only)",
             )
             
             video_uris, _ = generate_video(request)
@@ -226,6 +227,7 @@ def on_generate_video_click(e: me.ClickEvent):
                 user_email=app_state.user_email,
                 timestamp=datetime.datetime.now(datetime.UTC).isoformat(),
                 media_type="video",
+                mime_type="video/mp4",
                 mode="Storyboarder",
                 gcs_uris=[final_uri],
                 thumbnail_uri=final_uri,

@@ -1,0 +1,32 @@
+{
+  "themes": {
+    "Google G": {
+      "prompt": "Create a minimalist 8-bit pixel art of the image centered on a pure white background. Use a limited retro color palette with pixelated detailing, sharp edges, and clean blocky forms. The logo should be simple, iconic, and clearly recognizable in pixel art style — inspired by classic arcade game aesthetics. Use Google branding colors (blue, red, yellow, green, white).",
+      "logo_uri": "gs://genai-blackbelt-fishfooding-assets/google/Google_G_Gradient.png",
+      "logo_8bit_uri": "gs://genai-blackbelt-fishfooding-assets/google/Google_G_Gradient_8bit.png"
+    },
+    "Google": {
+      "prompt": "Create a minimalist 16-bit pixel art of the image centered on a pure white background. Use a limited retro color palette with pixelated detailing, sharp edges, and clean blocky forms. The logo should be simple, iconic, and clearly recognizable in pixel art style — inspired by SNES game aesthetics. Use Google branding colors (blue, red, yellow, green, white).",
+      "logo_uri": "gs://genai-blackbelt-fishfooding-assets/google/Google_full.png",
+      "logo_8bit_uri": "gs://genai-blackbelt-fishfooding-assets/google/Google_full_8bit.png"
+    },
+    "Google Cloud (Super Cloud)": {
+      "prompt": "Create a minimalist 8-bit pixel art of the image centered on a pure white background. Use a limited retro color palette with pixelated detailing, sharp edges, and clean blocky forms. The logo should be simple, iconic, and clearly recognizable in pixel art style — inspired by Gameboy Color aesthetics. Use Google branding colors (blue, red, yellow, green, white).",
+      "logo_uri": "gs://genai-blackbelt-fishfooding-assets/google/GoogleCloud_SuperCloud.png ",
+      "logo_8bit_uri": "gs://genai-blackbelt-fishfooding-assets/google/GoogleCloud_SuperCloud_8bit.png"
+    },
+    "Google Cloud": {
+      "prompt": "Create a minimalist 8-bit pixel art of the image centered on a pure white background. Use a limited retro color palette with pixelated detailing, sharp edges, and clean blocky forms. The logo should be simple, iconic, and clearly recognizable in pixel art style — inspired by NES game aesthetics. Use Google branding colors (blue, red, yellow, green, white).",
+      "logo_uri": "gs://genai-blackbelt-fishfooding-assets/google/GoogleCloud_Lockup_full.png",
+      "logo_8bit_uri": "gs://genai-blackbelt-fishfooding-assets/google/GoogleCloud_Lockup_full_8bit.png"
+    }
+  },
+  "bumper_videos": [
+    "gs://genai-blackbelt-fishfooding-assets/google/google_cloud_01.mp4",
+    "gs://genai-blackbelt-fishfooding-assets/google/google_cloud_02.mp4",
+    "gs://genai-blackbelt-fishfooding-assets/google/google_cloud_03.mp4",
+    "gs://genai-blackbelt-fishfooding-assets/google/google_cloud_04.mp4",
+    "gs://genai-blackbelt-fishfooding-assets/google/new_way_to_cloud_01.mp4",
+    "gs://genai-blackbelt-fishfooding-assets/google/new_way_to_cloud_02.mp4"
+  ]
+}

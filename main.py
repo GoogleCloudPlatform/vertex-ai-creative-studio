@@ -75,7 +75,7 @@ import pages.imagen_upscale
 import pages.storyboarder
 import pages.character_sheet
 import pages.brand_adherence
-from workflows.pages import retro_games
+from workflows.retro_games import page as retro_games
 from state.state import AppState
 
 

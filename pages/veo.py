@@ -172,6 +172,14 @@ def _update_state_for_new_model(model_version_id: str):
             ):
                 state.aspect_ratio = override.supported_aspect_ratios[0]
 
+        # Ensure selected resolution is supported by the new model
+        if state.resolution not in new_model_config.resolutions:
+            state.resolution = new_model_config.resolutions[0]
+
+        # Force auto-enhance prompt if required
+        if new_model_config.requires_prompt_enhancement:
+            state.auto_enhance_prompt = True
+
 
 def on_selection_change_veo_model(e: me.SelectSelectionChangeEvent):
     """Handle changes to the Veo model selection."""
@@ -190,6 +198,20 @@ def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     )
     state = me.state(PageState)
     state.auto_enhance_prompt = e.checked
+    yield
+
+
+def on_change_generate_audio(e: me.CheckboxChangeEvent):
+    """Toggle audio generation."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_generate_audio",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"checked": e.checked},
+    )
+    state = me.state(PageState)
+    state.generate_audio = e.checked
     yield
 
 
@@ -275,11 +297,15 @@ def veo_content(app_state: me.state):
                 on_selection_change_video_count=on_selection_change_video_count,
                 on_selection_change_person_generation=on_selection_change_person_generation,
                 on_change_auto_enhance_prompt=on_change_auto_enhance_prompt,
+                on_change_generate_audio=on_change_generate_audio,
             )
 
         me.box(style=me.Style(height=50))
 
-        video_display(on_thumbnail_click=on_thumbnail_click)
+        video_display(
+            on_thumbnail_click=on_thumbnail_click,
+            on_click_extend=on_click_extend_video,
+        )
 
     with dialog(is_open=state.show_error_dialog):  # pylint: disable=E1129:not-context-manager
         me.text(
@@ -290,6 +316,137 @@ def veo_content(app_state: me.state):
         me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
         with dialog_actions():  # pylint: disable=E1129:not-context-manager
             me.button("Close", on_click=on_close_error_dialog, type="flat")
+
+
+def on_click_extend_video(e: me.ClickEvent):
+    """Handles the click event for the Veo video extension."""
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+
+    # --- Input Validation ---
+    if not state.veo_prompt_input:
+        state.error_message = "Please enter a prompt for the extension."
+        state.show_error_dialog = True
+        yield
+        return
+
+    # --- Model Validation ---
+    model_config = get_veo_model_config(state.veo_model)
+    if not model_config or not model_config.supports_video_extension:
+        state.error_message = "Video extension is not supported by the current model."
+        state.show_error_dialog = True
+        yield
+        return
+
+    # --- Video Selection Validation ---
+    video_to_extend_url = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
+    if not video_to_extend_url:
+        state.error_message = "No video selected to extend."
+        state.show_error_dialog = True
+        yield
+        return
+    
+    # Convert display URL back to GCS URI
+    from common.utils import https_url_to_gcs_uri
+    video_input_gcs = https_url_to_gcs_uri(video_to_extend_url)
+
+    # --- Reset State for New Generation ---
+    state.is_loading = True
+    state.error_message = ""
+    state.result_video = ""
+    state.result_gcs_uris = []
+    state.result_display_urls = []
+    state.selected_video_url = ""
+    state.timing = "Extending video..."
+    start_time = time.time()
+    yield
+
+    # --- Prepare Request Data ---
+    request = VideoGenerationRequest(
+        prompt=state.veo_prompt_input,
+        model_version_id=state.veo_model,
+        aspect_ratio=state.aspect_ratio,
+        resolution=state.resolution,
+        duration_seconds=state.video_extend_length, # Use extension length
+        video_count=state.video_count,
+        enhance_prompt=state.auto_enhance_prompt,
+        generate_audio=state.generate_audio,
+        person_generation=state.person_generation,
+        video_input_gcs=video_input_gcs,
+        video_input_mime_type="video/mp4", # Assumed MP4
+    )
+
+    # --- 1. Initiate Async Job ---
+    try:
+        api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
+        headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
+        
+        # Log analytics
+        with track_model_call(
+            model_name=model_config.model_name,
+            prompt_length=len(request.prompt) if request.prompt else 0,
+            duration_seconds=request.duration_seconds,
+            aspect_ratio=request.aspect_ratio,
+            video_count=request.video_count,
+            mode="extension", 
+        ):
+            response = requests.post(api_url, json=request.model_dump(), headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
+        state.current_job_id = data["job_id"]
+        state.job_status = data["status"]
+        yield
+    except Exception as e:
+        state.error_message = f"Failed to start extension job: {e}"
+        state.show_error_dialog = True
+        state.is_loading = False
+        yield
+        return
+
+    # --- 2. Poll for Completion ---
+    while state.job_status in ["pending", "processing", "created"]:
+        time.sleep(2) 
+        try:
+            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.current_job_id}"
+            resp = requests.get(status_url)
+            resp.raise_for_status()
+            status_data = resp.json()
+            state.job_status = status_data["status"]
+
+            if state.job_status == "complete":
+                # Success! Update state with results.
+                state.result_gcs_uris = status_data.get("video_uris", [])
+                if not state.result_gcs_uris and status_data.get("video_uri"):
+                     state.result_gcs_uris = [status_data["video_uri"]]
+                
+                state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
+                if state.result_display_urls:
+                    state.selected_video_url = state.result_display_urls[0]
+                
+                end_time = time.time()
+                execution_time = end_time - start_time
+                state.timing = f"Extension time: {round(execution_time)} seconds"
+                state.is_loading = False
+                yield
+                break
+
+            elif state.job_status == "failed":
+                state.error_message = status_data.get("error_message", "Unknown error during extension.")
+                state.show_error_dialog = True
+                state.is_loading = False
+                yield
+                break
+            
+            yield
+
+        except Exception as e:
+            error = AsyncVeoPollingFailedError(f"Polling failed: {e}")
+            state.error_message = str(error)
+            state.show_error_dialog = True
+            state.is_loading = False
+            yield
+            break
 
 
 def on_input_prompt(e: me.InputEvent):
@@ -316,11 +473,11 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
-    state.video_length = 5
-    state.aspect_ratio = "16:9"
-    state.is_loading = False
-    state.auto_enhance_prompt = False
     state.veo_model = "3.1-fast"
+    # Get default duration for the reset model
+    model_config = get_veo_model_config(state.veo_model)
+    state.video_length = model_config.default_duration if model_config else 8
+    state.aspect_ratio = "16:9"
     # Clear all image types
     state.reference_image_gcs = None
     state.reference_image_uri = None
@@ -397,7 +554,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         duration_seconds=state.video_length,
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
-        person_generation=state.person_generation.lower().split(" ")[0],
+        generate_audio=state.generate_audio,
+        person_generation=state.person_generation,
         reference_image_gcs=state.reference_image_gcs
         if state.veo_mode in ["i2v", "r2v", "interpolation"] and state.reference_image_gcs
         else None,
@@ -428,18 +586,19 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         
         # Log the initial click/attempt
         model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
-        track_model_call(
+        
+        with track_model_call(
             model_name=model_name_for_analytics,
             prompt_length=len(request.prompt) if request.prompt else 0,
             duration_seconds=request.duration_seconds,
             aspect_ratio=request.aspect_ratio,
             video_count=request.video_count,
             mode=state.veo_mode,
-        )
-
-        response = requests.post(api_url, json=request.model_dump(), headers=headers)
-        response.raise_for_status()
-        data = response.json()
+        ):
+            response = requests.post(api_url, json=request.model_dump(), headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
         yield
@@ -630,12 +789,22 @@ def on_r2v_style_remove(e: me.ClickEvent):
 def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     """VEO image from library handler."""
     state = me.state(PageState)
+    
+    # Helper to infer mime type from extension
+    def infer_mime(uri: str) -> str:
+        if uri.lower().endswith(".png"): return "image/png"
+        if uri.lower().endswith(".jpg") or uri.lower().endswith(".jpeg"): return "image/jpeg"
+        if uri.lower().endswith(".webp"): return "image/webp"
+        return "image/png" # Default fallback
+
     if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri
         state.reference_image_uri = create_display_url(e.gcs_uri)
+        state.reference_image_mime_type = infer_mime(e.gcs_uri)
     elif e.chooser_id.startswith("interpolation_last"):
         state.last_reference_image_gcs = e.gcs_uri
         state.last_reference_image_uri = create_display_url(e.gcs_uri)
+        state.last_reference_image_mime_type = infer_mime(e.gcs_uri)
     elif e.chooser_id.startswith("r2v_asset_library_chooser"):
         if len(state.r2v_reference_images) >= 3:
             state.error_message = "You can upload a maximum of 3 asset images."
@@ -643,9 +812,9 @@ def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
             yield
             return
         state.r2v_reference_images.append(e.gcs_uri)
-        state.r2v_reference_mime_types.append("image/png")
+        state.r2v_reference_mime_types.append(infer_mime(e.gcs_uri))
     elif e.chooser_id.startswith("r2v_style_library_chooser"):
         state.r2v_style_image = e.gcs_uri
-        state.r2v_style_image_mime_type = "image/png"
+        state.r2v_style_image_mime_type = infer_mime(e.gcs_uri)
 
     yield

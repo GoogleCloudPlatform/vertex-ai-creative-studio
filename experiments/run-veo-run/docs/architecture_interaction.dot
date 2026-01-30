@@ -1,0 +1,58 @@
+digraph ArchitectureInteraction {
+    rankdir=LR;
+    node [fontname="Helvetica", shape=box, style=filled, fillcolor="#f0f0f0"];
+    edge [fontname="Helvetica", fontsize=10];
+
+    subgraph cluster_client {
+        label = "Client Side";
+        style = dashed;
+        color = "#888888";
+        
+        User [shape=ellipse, fillcolor="#d0e0ff", label="User"];
+        Browser [label="Lit App\n(Frontend)", fillcolor="#e0ffe0"];
+        ImageUpload [label="Image Upload\nComponent", shape=note, fillcolor="#e0ffe0"];
+    }
+
+    subgraph cluster_server {
+        label = "Server Side (Cloud Run)";
+        style = dashed;
+        color = "#888888";
+        
+        Server [label="Go Server\n(Proxy & Logic)", fillcolor="#ffe0e0"];
+    }
+
+    subgraph cluster_gcp {
+        label = "Google Cloud Platform";
+        style = dashed;
+        color = "#888888";
+        
+        VertexVeo [label="Vertex AI\n(Veo 3.1)", shape=hexagon, fillcolor="#fff0d0"];
+        VertexGemini [label="Vertex AI\n(Gemini 3)", shape=hexagon, fillcolor="#fff0d0"];
+        GCS [label="Cloud Storage\n(Buckets)", shape=cylinder, fillcolor="#fff0d0"];
+    }
+
+    // Interactions
+    User -> Browser [label="1. Select Mode\n(Text/Img/Ingred)"];
+    User -> ImageUpload [label="2. Upload Assets", style=dotted];
+    ImageUpload -> Server [label="3. POST /api/upload"];
+    Server -> GCS [label="4. Stream Upload"];
+    Server -> ImageUpload [label="5. Return gs://"];
+    
+    // Generation Flow
+    Browser -> Server [label="6. POST /api/veo/generate\n(prompt + uris)"];
+    Server -> VertexVeo [label="7. GenerateVideo\n(LRO)"];
+    VertexVeo -> GCS [label="8. Read Assets\n& Save Video"];
+    Server -> Server [label="9. Poll Operation"];
+    Server -> GCS [label="10. Sign URL"];
+    Server -> Browser [label="11. Return Signed URL"];
+    
+    // Playback
+    Browser -> GCS [label="12. Stream Video", style=dotted];
+
+    // Continuity Flow
+    Browser -> Server [label="13. POST /api/gemini/analyze"];
+    Server -> VertexGemini [label="14. Analyze Video"];
+    VertexGemini -> Server [label="15. Context JSON"];
+    Server -> Browser [label="16. Return Context"];
+
+}

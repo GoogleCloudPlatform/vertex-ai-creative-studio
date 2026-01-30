@@ -29,6 +29,13 @@ GEMINI_TTS_MODELS = {
         "tags": ["TTS", "Gemini 2.5 Pro"],
         "version": "2.5-pro",
     },
+    "gemini-2.5-flash-lite-preview-tts": {
+        "id": "gemini-2.5-flash-lite-preview-tts",
+        "label": "Gemini 2.5 Flash Lite TTS",
+        "description": "Lightweight, low-latency text-to-speech model.",
+        "tags": ["TTS", "Gemini 2.5 Flash Lite"],
+        "version": "2.5-flash-lite",
+    },
 }
 
 GEMINI_TTS_MODEL_NAMES = list(GEMINI_TTS_MODELS.keys())

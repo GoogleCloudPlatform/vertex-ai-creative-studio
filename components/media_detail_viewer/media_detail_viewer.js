@@ -136,6 +136,7 @@ class MediaDetailViewer extends LitElement {
       id: { type: String },
       editClickEvent: { type: String },
       veoClickEvent: { type: String },
+      extendClickEvent: { type: String },
       _currentIndex: { state: true },
       _activeTab: { state: true },
     };
@@ -151,6 +152,7 @@ class MediaDetailViewer extends LitElement {
     this.id = "";
     this.editClickEvent = "";
     this.veoClickEvent = "";
+    this.extendClickEvent = "";
     this._currentIndex = 0;
     this._activeTab = "details";
   }
@@ -304,6 +306,7 @@ class MediaDetailViewer extends LitElement {
     const gcsUri = `gs://${gcsPath}`;
 
     const isImage = this.mediaType === 'image';
+    const isVideo = this.mediaType === 'video';
 
     const handleCopyLink = () => {
       if (!navigator.clipboard) {
@@ -330,6 +333,7 @@ class MediaDetailViewer extends LitElement {
         <download-button .url=${gcsUri} .filename=${gcsPath.split("/").pop()}></download-button>
         ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
         ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
+        ${isVideo ? html`<mwc-button outlined @click=${() => this._dispatch(this.extendClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Extend</mwc-button>` : ""}
         <mwc-button id="copy-link-btn" outlined @click=${handleCopyLink}><svg-icon slot="icon" .iconName=${'link'}></svg-icon>Copy Link</mwc-button>
         ${this.mediaType === 'video' ? html`<convert-to-gif-button .url=${gcsUri} @conversion-complete=${this._handleGifConversion}></convert-to-gif-button>` : ""}
       </div>

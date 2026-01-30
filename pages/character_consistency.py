@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from dataclasses import field
 import json
 
@@ -29,6 +30,8 @@ from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
+
+logger = logging.getLogger(__name__)
 
 
 @me.page(
@@ -241,6 +244,7 @@ def on_generate_click(e: me.ClickEvent):
         state.status_message = f"Workflow complete! Total time: {state.total_generation_time:.2f} seconds"
 
     except Exception as e:
+        logger.error("Error generating character video", exc_info=True)
         state.status_message = f"Error: {e}"
 
     state.is_generating = False

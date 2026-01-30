@@ -29,6 +29,7 @@ def generation_controls(
     on_selection_change_video_count,
     on_selection_change_person_generation,
     on_change_auto_enhance_prompt,
+    on_change_generate_audio,
 ):
     """Generation controls for VEO."""
     state = me.state(PageState)
@@ -36,6 +37,9 @@ def generation_controls(
 
     if not selected_config:
         return
+
+    # Only show audio toggle for Veo 3 models
+    show_audio_toggle = "3." in state.veo_model
 
     # Check for mode-specific overrides
     min_duration = selected_config.min_duration
@@ -91,6 +95,7 @@ def generation_controls(
             ],
             value=state.aspect_ratio,
             on_selection_change=on_selection_change_aspect_ratio,
+            style=me.Style(width="150px"),
         )
 
         # Resolution
@@ -103,7 +108,7 @@ def generation_controls(
             ],
             value=state.resolution,
             on_selection_change=on_selection_change_resolution,
-            style=me.Style(),
+            style=me.Style(width="150px"),
         )
 
         # Video length
@@ -125,10 +130,21 @@ def generation_controls(
 
         # Auto-enhance prompt
         if selected_config.supports_prompt_enhancement:
+            # If the model mandates it, force it to checked and disable the checkbox
+            is_required = selected_config.requires_prompt_enhancement
             me.checkbox(
                 label="Auto-enhance prompt",
                 on_change=on_change_auto_enhance_prompt,
-                checked=state.auto_enhance_prompt,
+                checked=True if is_required else state.auto_enhance_prompt,
+                disabled=is_required,
+            )
+
+        # Generate audio
+        if show_audio_toggle:
+            me.checkbox(
+                label="Generate audio",
+                on_change=on_change_generate_audio,
+                checked=state.generate_audio,
             )
 
         # Person generation

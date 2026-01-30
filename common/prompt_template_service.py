@@ -21,6 +21,7 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from common.metadata import db
+from config.default import get_config_path
 
 
 class PromptTemplate(BaseModel):
@@ -111,12 +112,12 @@ class PromptTemplateService:
         # Load defaults from both files
         default_templates.extend(
             self._load_from_json(
-                "config/text_prompt_templates.json", template_type="text"
+                get_config_path("config/text_prompt_templates.json"), template_type="text"
             )
         )
         default_templates.extend(
             self._load_from_json(
-                "config/image_prompt_templates.json", template_type="image"
+                get_config_path("config/image_prompt_templates.json"), template_type="image"
             )
         )
 

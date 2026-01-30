@@ -120,7 +120,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
                 if gcs_uri:
                     file_name = gcs_uri.split("/")[-1]
                     print("Video generated - use the following to copy locally")
-                    print(f"gsutil cp {gcs_uri} {file_name}")
+                    print(f"gcloud storage cp {gcs_uri} {file_name}")
                     state.result_video_gcs_uri = gcs_uri
                     state.result_video_display_url = create_display_url(gcs_uri)
                 else:
