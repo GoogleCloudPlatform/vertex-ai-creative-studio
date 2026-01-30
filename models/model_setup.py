@@ -131,6 +131,6 @@ class GeminiModelSetup:
             vertexai=config.INIT_VERTEX,  # This assumes vertexai backend is desired.
             project=effective_project_id,
             location=effective_location,
-            http_options={'api_version': config.VERTEX_API_VERSION} | http_options,
+            http_options={'api_version': config.VERTEX_API_VERSION} | (http_options or {}),
         )
         return client
