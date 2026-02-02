@@ -7,7 +7,7 @@ annotated-types==0.7.0
 anyio==4.11.0
 blinker==1.9.0
 cachecontrol==0.14.3
-cachetools==6.1.0
+cachetools==6.2.6
 certifi==2025.8.3
 cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.3

@@ -27,7 +27,7 @@ c2pa-python==0.27.1
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==6.2.4
+cachetools==6.2.6
     # via google-auth
 certifi==2025.11.12
     # via

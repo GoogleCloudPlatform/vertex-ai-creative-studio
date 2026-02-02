@@ -11,7 +11,7 @@ anyio==4.11.0
     #   starlette
 authlib==1.6.6
     # via google-adk
-cachetools==6.1.0
+cachetools==6.2.6
     # via google-auth
 certifi==2025.8.3
     # via
