@@ -242,7 +242,7 @@ python-dotenv==1.1.1
     #   dotenv
     #   google-adk
     #   pydantic-settings
-python-multipart==0.0.20
+python-multipart==0.0.22
     # via mcp
 pyyaml==6.0.3
     # via google-adk
