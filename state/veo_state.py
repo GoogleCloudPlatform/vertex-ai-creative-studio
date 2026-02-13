@@ -41,6 +41,7 @@ class PageState:
     aspect_ratio: str = "16:9"
     resolution: str = "720p"
     video_length: int = 8  # Default for 3.1-fast
+    generate_audio: bool = True
 
     # I2V reference Image
     reference_image_file: me.UploadedFile = None
@@ -84,7 +85,7 @@ class PageState:
     selected_video_url: str = ""
     timing: str
     
-    person_generation: str = "Allow (All ages)"
+    person_generation: str = "Allow (Adults only)"
 
     # Async Job Tracking
     current_job_id: str = ""

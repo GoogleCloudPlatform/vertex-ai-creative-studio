@@ -24,6 +24,7 @@ concurrency:
 defaults:
   run:
     shell: 'bash'
+
 jobs:
   triage:
     runs-on: 'ubuntu-latest'
@@ -35,7 +36,7 @@ jobs:
       pull-requests: 'read'
     outputs:
       available_labels: '${{ steps.get_labels.outputs.available_labels }}'
-      triaged_issues: '${{ env.TRIAGED_ISSUES }}'
+      triaged_issues: '${{ steps.capture_output.outputs.gemini_json }}'
     steps:
       - name: 'Get repository labels'
         id: 'get_labels'
@@ -44,7 +45,7 @@ jobs:
           # NOTE: we intentionally do not use the minted token. The default
           # GITHUB_TOKEN provided by the action has enough permissions to read
           # the labels.
-          script: |-
+          script: |
             const { data: labels } = await github.rest.issues.listLabelsForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -79,16 +80,16 @@ jobs:
             --search 'no:label' \
             --json number,title,body \
             --limit '20' \
-            --repo "${GITHUB_REPOSITORY}"
+            --repo "${GITHUB_REPOSITORY}" || echo "[]"
           )"
           NEEDS_TRIAGE_ISSUES="$(gh issue list \
             --state 'open' \
             --search 'label:"status/needs-triage"' \
             --json number,title,body \
             --limit '20' \
-            --repo "${GITHUB_REPOSITORY}"
+            --repo "${GITHUB_REPOSITORY}" || echo "[]"
           )"
-          ISSUES="$(echo "${UNLABELED_ISSUES}" "${NEEDS_TRIAGE_ISSUES}" | jq -s 'add | unique_by(.number)')"
+          ISSUES="$(echo "${UNLABELED_ISSUES}" "${NEEDS_TRIAGE_ISSUES}" | jq -s 'add | unique_by(.number) | . // []')"
 
           echo "${ISSUES}" | jq . || { echo "ERROR: Output is not valid JSON"; exit 1; }
 
@@ -124,7 +125,7 @@ jobs:
           gemini_model: '${{ vars.GEMINI_MODEL }}'
           settings: |-
             {
-              "maxSessionTurns": 25,
+              "maxSessionTurns": 50,
               "telemetry": {
                 "enabled": ${{ vars.GOOGLE_CLOUD_PROJECT != '' }},
                 "target": "gcp"
@@ -140,16 +141,45 @@ jobs:
 
             **Instructions:**
 
-            1.  You will be provided with a list of available labels and a list of issues to triage from the environment.
-            2.  For each issue, analyze its title and body to determine the most appropriate labels from the available list.
-            3.  Produce a single, minified JSON array as your output.
-            4.  The JSON array should contain objects, each with three keys: `issue_number` (integer), `labels_to_set` (array of strings), and `explanation` (a brief string justification).
-            5.  Only use labels from the provided list. Do not invent new labels.
-            6.  If no labels are a good match for an issue, exclude it from the output.
-            7.  Your final output to STDOUT must only be the JSON array. Do not include any other text, markdown, or explanations.
+            1.  **Retrieve Data**: Immediately run `printenv ISSUES_TO_TRIAGE` and `printenv AVAILABLE_LABELS` to get the input data.
+            2.  **Batch Analysis**: Analyze all issues in the list internally. Do not output analysis for individual issues.
+            3.  **Generate Output**: Produce a single, minified JSON array containing the triage results.
+            4.  **Format**: The output must be a valid JSON array of objects with keys: `issue_number`, `labels_to_set`, `explanation`.
+            5.  **Constraints**:
+                - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
+                - Only use labels from `AVAILABLE_LABELS`.
+                - If an issue does not clearly match a specific label, apply "status/needs-triage".
+                - Do not use `jq` or other tools to parse the input; read the variables directly.
+                - Your final output to STDOUT must only be the JSON array.
+                - IMPORTANT: Do not format the output as markdown. Do not use backticks (```). Just output the raw JSON string.
+                - Do not include any other text or explanations.
 
             **Example Output:**
-            [{"issue_number":123,"labels_to_set":["kind/bug","priority/p2"],"explanation":"The issue describes a critical error in the login functionality."},{"issue_number":456,"labels_to_set":["kind/enhancement"],"explanation":"The user is requesting a new export feature."}]
+            [
+              {
+                "issue_number": 123,
+                "labels_to_set": ["kind/bug", "priority/p2"],
+                "explanation": "The issue describes a critical error in the login functionality."
+              }
+            ]
+
+      - name: 'Capture Gemini Output'
+        id: 'capture_output'
+        if: |-
+          ${{ steps.find_issues.outputs.issues_to_triage != '[]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        run: |-
+          if [ -f gemini-artifacts/stdout.log ]; then
+            echo "::group::Gemini Output Content"
+            cat gemini-artifacts/stdout.log
+            echo "::endgroup::"
+            echo "gemini_json<<EOF" >> "$GITHUB_OUTPUT"
+            cat gemini-artifacts/stdout.log >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Gemini stdout artifact not found."
+            echo "gemini_json=[]" >> "$GITHUB_OUTPUT"
+          fi
 
   label:
     runs-on: 'ubuntu-latest'
@@ -192,11 +222,74 @@ jobs:
               .map((label) => label.trim())
               .sort()
 
-            // Parse out the triaged issues
-            const triagedIssues = (JSON.parse(process.env.TRIAGED_ISSUES || '{}'))
-              .sort((a, b) => a.issue_number - b.issue_number)
+            // Robustly parse the Gemini Output
+            let rawInput = process.env.TRIAGED_ISSUES || '';
+            core.debug(`Raw Gemini Output: ${rawInput}`);
 
-            core.debug(`Triaged issues: ${JSON.stringify(triagedIssues)}`);
+            // 1. Clean up potential log pollution (e.g. "Creating GCP exporters...")
+            // We assume the actual output is a JSON object starting with '{' (Session Object)
+            // or a JSON array starting with '[' (Direct Output).
+            const objectStart = rawInput.indexOf('{');
+            const arrayStart = rawInput.indexOf('[');
+            
+            let jsonStartIndex = -1;
+            
+            if (objectStart !== -1 && (arrayStart === -1 || objectStart < arrayStart)) {
+                jsonStartIndex = objectStart;
+            } else if (arrayStart !== -1) {
+                jsonStartIndex = arrayStart;
+            }
+
+            if (jsonStartIndex === -1) {
+                 core.setFailed('No JSON start character ({ or [) found in Gemini output.');
+                 return; 
+            }
+            
+            // Clean input starting from the first JSON character
+            rawInput = rawInput.substring(jsonStartIndex);
+            
+            let triagedIssues = [];
+
+            try {
+                // 2. Parse the outer layer
+                const parsedOutput = JSON.parse(rawInput);
+                
+                // 3. Handle Session Object vs Direct Array
+                if (Array.isArray(parsedOutput)) {
+                    // It was a direct array (ideal case)
+                    triagedIssues = parsedOutput;
+                } else if (parsedOutput.response) {
+                    // It was a Session Object (run-gemini-cli default)
+                    core.info('Detected Session Object, extracting response field...');
+                    let responseText = parsedOutput.response;
+                    
+                    // 4. Clean up inner Markdown/Text
+                    const innerArrayStart = responseText.indexOf('[');
+                    const innerArrayEnd = responseText.lastIndexOf(']');
+                    
+                    if (innerArrayStart !== -1 && innerArrayEnd !== -1) {
+                         responseText = responseText.substring(innerArrayStart, innerArrayEnd + 1);
+                         triagedIssues = JSON.parse(responseText);
+                    } else {
+                        // If we can't find an array, maybe the model failed to output one.
+                        // We'll log the response for debugging and treat it as empty.
+                        core.warning(`Could not find JSON array in model response: ${parsedOutput.response}`);
+                        triagedIssues = [];
+                    }
+                } else {
+                    core.warning('Parsed object is neither an array nor a Session Object with a response field.');
+                    core.debug(JSON.stringify(parsedOutput));
+                }
+
+            } catch (e) {
+                core.setFailed(`Failed to parse Gemini output: ${e.message}`);
+                return;
+            }
+
+            // Sort results
+            triagedIssues.sort((a, b) => a.issue_number - b.issue_number);
+
+            core.debug(`Final Triaged issues: ${JSON.stringify(triagedIssues)}`);
 
             // Iterate over each label
             for (const issue of triagedIssues) {
@@ -221,7 +314,7 @@ jobs:
               core.debug(`Identified labels to set: ${JSON.stringify(labelsToSet)}`);
 
               if (labelsToSet.length === 0) {
-                core.info(`Skipping issue #${issueNumber} - no labels to set.`)
+                core.info(`Skipping issue #${issueNumber} - no labels to set.`) 
                 continue;
               }
 

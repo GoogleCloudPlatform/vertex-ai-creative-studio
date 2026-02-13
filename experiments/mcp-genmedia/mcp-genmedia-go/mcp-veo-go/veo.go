@@ -65,19 +65,18 @@ func main() {
 	appConfig = common.LoadConfig()
 
 	// Initialize OpenTelemetry
-	if otel_enabled {
-		tp, err := common.InitTracerProvider(serviceName, version)
-		if err != nil {
-			log.Fatalf("failed to initialize tracer provider: %v", err)
-		}
-		if tp != nil {
-			defer func() {
-				if err := tp.Shutdown(context.Background()); err != nil {
-					log.Printf("Error shutting down tracer provider: %v", err)
-				}
-			}()
-		}
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
+	
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)

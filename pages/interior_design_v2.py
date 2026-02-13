@@ -614,8 +614,9 @@ def on_generate_video_click(e: me.ClickEvent):
                     aspect_ratio="16:9",
                     video_count=1,
                     enhance_prompt=False,
+                    generate_audio=False,
                     resolution="720p",
-                    person_generation="allow_all",
+                    person_generation="Allow (Adults only)",
                 )
                 video_uris, _ = generate_video(request=request)
                 if video_uris:

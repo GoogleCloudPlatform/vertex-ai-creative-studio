@@ -37,9 +37,11 @@ class VideoGenerationRequest(BaseModel):
     aspect_ratio: str
     resolution: str
     enhance_prompt: bool
+    generate_audio: bool
     model_version_id: str
     person_generation: str
     negative_prompt: Optional[str] = None
+    rewriter_type: Optional[str] = None
 
     # For I2V and Interpolation
     reference_image_gcs: Optional[str] = None
@@ -50,3 +52,7 @@ class VideoGenerationRequest(BaseModel):
     # For R2V
     r2v_references: Optional[List[APIReferenceImage]] = None
     r2v_style_image: Optional[APIReferenceImage] = None
+
+    # For Video Extension
+    video_input_gcs: Optional[str] = None
+    video_input_mime_type: Optional[str] = None

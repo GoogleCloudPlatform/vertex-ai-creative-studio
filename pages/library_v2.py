@@ -34,6 +34,7 @@ from components.media_detail_viewer.media_detail_viewer import media_detail_view
 from components.media_tile.media_tile import get_pills_for_item, media_tile
 from components.page_scaffold import page_frame, page_scaffold
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
+from components.veo.extend_dialog import extend_dialog, VeoExtendDialogState
 from config.default import Default as cfg
 from state.state import AppState
 
@@ -56,6 +57,7 @@ class PageState:
     )  # "all", "images", "videos", "audio"
     error_filter: str = "all"  # "all", "no_errors", "only_errors"
     tour_dialog_active_tab: str = "details"
+    extend_dialog_state: VeoExtendDialogState = field(default_factory=VeoExtendDialogState)
 
 
 def on_load(e: me.LoadEvent):
@@ -257,6 +259,7 @@ def library_content():
         )
 
         library_dialog(pagestate)
+        extend_dialog(pagestate.extend_dialog_state, on_close=on_close_extend_dialog)
 
 
 def on_media_item_click(e: me.ClickEvent):
@@ -264,6 +267,36 @@ def on_media_item_click(e: me.ClickEvent):
     pagestate = me.state(PageState)
     pagestate.selected_media_item_id = e.key
     pagestate.show_details_dialog = True
+    yield
+
+
+def on_extend_click(e: me.WebEvent):
+    """Handles 'Extend' click from media viewer."""
+    state = me.state(PageState)
+    proxy_url = e.value["url"]
+    print(f"DEBUG: on_extend_click triggered. Proxy URL: {proxy_url}")
+    if proxy_url:
+        # Use common utility to handle various URL formats
+        gcs_path = https_url_to_gcs_uri(proxy_url)
+        print(f"DEBUG: Extracted GCS Path: {gcs_path}")
+        
+        # Open the extend dialog
+        state.extend_dialog_state.is_open = True
+        state.extend_dialog_state.input_video_uri = gcs_path
+        print(f"DEBUG: Set extend_dialog_state.is_open = {state.extend_dialog_state.is_open}")
+        print(f"DEBUG: Set extend_dialog_state.input_video_uri = {state.extend_dialog_state.input_video_uri}")
+    yield
+
+
+def on_close_extend_dialog(e: me.ClickEvent):
+    """Closes the extend dialog and resets state."""
+    state = me.state(PageState)
+    # Check if we should refresh the library (if generation succeeded)
+    if state.extend_dialog_state.generated_video_uri:
+        yield from _load_media(state, is_filter_change=True)
+    
+    # Reset dialog state
+    state.extend_dialog_state = VeoExtendDialogState() 
     yield
 
 
@@ -548,6 +581,7 @@ def render_default_detail_dialog(item: MediaItem):
         ),
         on_edit_click=handle_edit_click,
         on_veo_click=on_veo_click,
+        on_extend_click=on_extend_click,
     )
 
     # Add a button to link back to the object rotation page if applicable

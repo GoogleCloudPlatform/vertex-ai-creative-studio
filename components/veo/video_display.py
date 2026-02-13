@@ -18,11 +18,13 @@ import mesop as me
 from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
+from ..pill import pill
 from models.video_processing import convert_mp4_to_gif
 from common.utils import https_url_to_gcs_uri, create_display_url
+from config.veo_models import get_veo_model_config
 
 @me.component
-def video_display(on_thumbnail_click: Callable):
+def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
     """Display the generated video(s) in a gallery format."""
     state = me.state(PageState)
 
@@ -59,6 +61,7 @@ def video_display(on_thumbnail_click: Callable):
                 max_height="85vh",
                 margin=me.Margin(left="auto", right="auto"),
                 aspect_ratio=aspect_ratio_css,
+                position="relative", # Allow for absolute positioning of badge
             )
         ):
             me.video(
@@ -71,6 +74,19 @@ def video_display(on_thumbnail_click: Callable):
                     display="block",
                 ),
             )
+            
+            # 4K badge overlay (Hidden by default to avoid confusion with video content)
+            # To enable, uncomment the block below.
+            # if state.resolution == "4k":
+            #     with me.box(
+            #         style=me.Style(
+            #             position="absolute",
+            #             top=16,
+            #             right=16,
+            #             z_index=1,
+            #         )
+            #     ):
+            #         pill(label="4K Ultra HD", pill_type="resolution_4k")
 
         # Find the corresponding GCS URI for the selected video URL to pass to the GIF converter.
         try:
@@ -91,16 +107,27 @@ def video_display(on_thumbnail_click: Callable):
             )
         ):
             me.text(state.timing)
-            if not state.veo_model == "3.0":
-                me.select(
-                    label="extend",
-                    options=[
-                        me.SelectOption(label="None", value="0"),
+            
+            model_config = get_veo_model_config(state.veo_model)
+            if model_config and model_config.supports_video_extension:
+                options = [me.SelectOption(label="None", value="0")]
+                
+                # Use configured durations if available, otherwise fallback to generic range
+                if model_config.supported_extension_durations:
+                    for duration in model_config.supported_extension_durations:
+                        options.append(me.SelectOption(label=f"{duration} seconds", value=str(duration)))
+                else:
+                    # Fallback for models that might support extension but don't have explicit duration config yet
+                    options.extend([
                         me.SelectOption(label="4 seconds", value="4"),
                         me.SelectOption(label="5 seconds", value="5"),
                         me.SelectOption(label="6 seconds", value="6"),
                         me.SelectOption(label="7 seconds", value="7"),
-                    ],
+                    ])
+
+                me.select(
+                    label="extend",
+                    options=options,
                     appearance="outline",
                     value=f"{state.video_extend_length}",
                     on_selection_change=on_selection_change_extend_length,
@@ -159,17 +186,6 @@ def on_selection_change_extend_length(e: me.SelectSelectionChangeEvent):
     """Adjust the video extend length in seconds based on user event"""
     state = me.state(PageState)
     state.video_extend_length = int(e.value)
-    yield
-
-
-def on_click_extend(e: me.ClickEvent):
-    """Extend video"""
-    state = me.state(PageState)
-    video_to_extend = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
-    print(
-        f"You would like to extend {video_to_extend} by {state.video_extend_length} seconds."
-    )
-    print(f"Continue the scene {state.veo_prompt_input} ...")
     yield
 
 def on_convert_to_gif_click(e: me.ClickEvent):

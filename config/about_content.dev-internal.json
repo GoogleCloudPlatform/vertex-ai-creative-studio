@@ -1,0 +1,89 @@
+{
+  "header": {
+    "title": "About GenMedia Creative Studio",
+    "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our full complement of generative AI APIs for image, video, speech, and music generation.\n\nGenMedia Creative Studio is available on our [Vertex AI Creative Studio github repo](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-app) for you and customers to install, customize and make their own generative AI magic.\n\nThis is the internal dev version.\n\nPlease join the [GenMedia Creative Studio Champions](https://chat.google.com/room/AAQAjAn9m-w?cls=7) chat space!\n\nThe best of Google’s generative media foundational models + custom workflows. Open source, for you to extend."
+  },
+  "sections": [
+    {
+      "id": "imagen",
+      "title": "Imagen",
+      "description": "The **Imagen** page allows you to generate images from text prompts. You can control various parameters like aspect ratio, style, and content type.\n\n**Available Models:**\n*   Imagen 3 Fast\n*   Imagen 3\n*   Imagen 4\n*   Imagen 4 Ultra\n\n[Learn more about Imagen on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview)",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "veo",
+      "title": "Veo",
+      "description": "The **Veo** page is for video generation. You can create videos from a text prompt (text-to-video) or animate an existing image (image-to-video).\n\n**Available Models:**\n*   Veo 2\n*   Veo 3\n*   Veo 3 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "gemini_image_generation",
+      "title": "Gemini  Image Generation",
+      "description": "Gemini Image Generation - Nano-banana\n\nGenerate, transform and edit images with simple text prompts, or combine multiple images to create something new. All in Gemini.\n\n[Learn more about [Gemini 2.5 Flash Image]((https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image) and [Gemini 3 Pro Image](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image) on Vertex AI.\n\nLearn more about [Search Grounding](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/grounding/grounding-with-google-search#grounding_support) with Gemini 3 Pro Image, see the [Service Specific Terms](https://cloud.google.com/terms/service-terms).",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "lyria",
+      "title": "Lyria",
+      "description": "The **Lyria** page lets you generate musical scores. Provide a prompt describing the mood, genre, or instruments you want to hear.\n\n**Available Models:**\n*   Lyria\n\n[Learn more about Lyria on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/audio/overview)",
+      "image": "assets/about/lyria_demo.png",
+      "video": null
+    },
+    {
+      "id": "gemini-tts",
+      "title": "Gemini TTS",
+      "description": "The **Gemini Text-to-Speech** page uses Google's latest generative TTS models to create high-quality, natural-sounding audio from text.\n\n- **Text to Synthesize**: The raw text to be spoken.\n- **Voice Prompt**: A prompt to guide the style, tone, and emotion of the voice.\n- **Model**: Choose between faster or higher-quality models.\n- **Voice**: Select from a variety of distinct voices.\n\nText-to-Speech Gemini-TTS is the latest evolution of our Text-to-Speech technology that's moving beyond just naturalness to giving granular control over generated audio using text-based prompts. Using Gemini-TTS, you can synthesize speech from short snippets to long-form narratives, precisely dictating style, accent, pace, tone, and even emotional expression, all steerable through natural-language prompts.\n\n[Learn more about Gemini-TTS on Vertex AI](https://cloud.google.com/text-to-speech/docs/gemini-tts)",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "chirp-3hd",
+      "title": "Chirp3 HD",
+      "description": "**Chirp 3** represents the latest generation of Google's Text-to-Speech technology, powered by large language models (LLMs). These high-definition voices are designed to deliver an unparalleled level of realism and emotional resonance, making them sound incredibly natural.\n\nYou can use Chirp 3 to:\n*   Create realistic, conversational audio for applications.\n*   Generate speech in dozens of languages and regions.\n*   Control the pace, add pauses, and specify custom pronunciations.\n\n[Learn more about Chirp 3 HD on Vertex AI](https://cloud.google.com/text-to-speech/docs/chirp3-hd)",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "vto",
+      "title": "Virtual Try-On",
+      "stage": "preview",
+      "description": "[Virtual Try-On](https://cloud.google.com/vertex-ai/generative-ai/docs/image/generate-virtual-try-on-images) is a fully managed Vertex AI service to generate images of persons modeling fashion products.\n\n**Virtual Try-On** brings Google's advanced image generation technology to developers and retail customers in the fashion industry. This experimental service provides an easy-to-use API and cutting edge quality for generating shots of models trying-on products.\n\nWith Virtual Try-On, you can create high quality listing photos with just an image of a person and a product to try on. Supported products are:\n * Tops: shirts, hoodies sweaters, tank tops, blouses\n* Bottoms: Pants, leggings, shorts, skirts\n* Footwear: Sneakers, boots, sandals, flats, heels, formal shoes\n\nThis workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
+      "image": "assets/about/vto_demo.png",
+      "video": null
+    },
+    {
+      "id": "recontextualize",
+      "title": "Product in Scene",
+      "description": "**Imagen Product Recontext** brings Google's advanced image generation technology to developers and retailers for generating product images. This service provides an easy-to-use API and cutting edge quality for generating shots of products in new scenes and contexts.\n\nWith Product Recontext, you can create high quality listing photos with just an image of a product and an optional text prompt. Supported product categories are:\n* Appliances\n* Business and industrial\n* Clothing\n* Electronics\n* Furniture\n* Garden and yard\n* Hardware\n* Health and beauty\n* Jewelry\n* Pets\n* Shoes\n* Sporting goods\n* Toys and games\n* Vehicle\n\nThis workflow, also known as Product Recontextualization, allows you to take a product image and place it in a new scene. You provide an image of the product and a text prompt describing the new scene, and the model generates a new image of the product in that scene.",
+      "image": "assets/about/recontextualize_demo.png",
+      "video": null
+    },
+    {
+      "id": "motion_portraits",
+      "title": "Motion Portraits",
+      "description": "This workflow allows you to animate a still image of a person. You provide an image of a person and a text prompt describing the desired motion, and the model generates a short video of the person moving.",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "character_consistency",
+      "title": "Character Consistency",
+      "description": "This workflow allows you to generate a consistent character across multiple images. You provide one or more reference images of the character along with a the scene description for the character, and the model generates a series of images of that character in different poses and settings, chooses the best one that aligns with the reference images, and then creates a video of that character in the new scene.\n\nChouaieb Nemri, Cloud AI, Applied AI Engineering",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "interior_design",
+      "title": "Interior Design",
+      "description": "Starting with a flat floor plan, create a 3d view, then explore each room and change the interior design, resulting in a fresh new perspective.\n\nPavithra Sainath, Cloud AI, Applied AI Engineering"
+    },
+    {
+      "id": "feedback",
+      "title": "Feedback",
+      "description": "We're always looking for feedback, comments, and feature requests, please [fill out this form](https://docs.google.com/forms/d/e/1FAIpQLSeGyKL468Eam3PUfyV8R5I0g3iGc7_zuL87eimw4HITUYlUrw/viewform?usp=sharing)."
+    }
+  ]
+}

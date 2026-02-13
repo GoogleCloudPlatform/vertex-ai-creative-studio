@@ -18,6 +18,7 @@ We'd love to hear your feedback on these!
 * [Countdown Workflow](#countdown-workflow) - An automated two-stage pipeline to create branded countdown videos.
 * [Storycraft](#storycraft) - An AI-powered video storyboard generation platform.
 * [Creative GenMedia Workflow](#creative-genmedia-workflow) - a Creative GenMedia workflow which takes various inputs to create prompts for Veo 3, plus allows a showcase of output videos.
+* [Run, Veo, Run](#run-veo-run) - A near-real time, multimodal video extension and generation experiment.
 
 **Prompting Techniques**
 * [Promptlandia](#promptlandia) - a powerful web application that helps you analyze, refine, and improve your prompts using AI-powered feedback.
@@ -57,6 +58,12 @@ An end-to-end workflow demo that demonstrates how a series of interconnected AI 
 - Includes a showcase to display pre-made examples, which is crucial for demonstrating the final output without the delay of live video generation.
 
 See [Creative GenMedia Workflow demo](./creative-genmedia-workflow/)
+
+## Run, Veo, Run
+
+**Run, Veo, Run** is a real-time, multimodal video generation experiment. It creates a branching narrative loop using **Vertex AI Veo 3.1** for video extension and **Gemini 3** for context awareness. Inspired by the kinetic energy of "Run, Lola, Run", the application features a techno-brutalist aesthetic designed for urgency and focus. It allows for timeline extension, advanced generation modes like storyboarding and using reference images, and features a unique "Analyze & Augment" loop for maintaining narrative consistency.
+
+See [Run, Veo, Run](./run-veo-run/)
 
 ## Promptlandia
 

@@ -401,6 +401,20 @@ def _calculate_motion_score(clip: VideoFileClip, sample_interval_seconds: float 
     return np.mean(frame_diffs)
 
 
+def get_video_duration(gcs_uri: str) -> float:
+    """
+    Downloads the video from GCS and returns its duration in seconds.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            local_path = _download_videos_to_temp([gcs_uri], tmpdir)[0]
+            with VideoFileClip(local_path) as clip:
+                duration = clip.duration
+            return duration
+        except Exception as e:
+            logging.error(f"Failed to get video duration for {gcs_uri}: {e}")
+            return 0.0
+
 
 # --- GIF Conversion --- #
 

@@ -118,6 +118,7 @@ def generate_rotation_video(product_views: dict[str, str]) -> str:
         aspect_ratio=model_config.supported_aspect_ratios[0], # Use the first supported ratio
         resolution="720p",
         enhance_prompt=True,
+        generate_audio=True,
         model_version_id=model_version,
         person_generation="dont_allow",
         r2v_references=references,

@@ -112,12 +112,12 @@ def page():
                     style=me.Style(
                         width=800,
                         background=me.theme_var("surface-container-lowest"),
-                        padding=me.Padding.all(16),
+                        #padding=me.Padding.all(16),
                         border_radius=12,
                         display="flex",
                         flex_direction="column",
                         gap=16,
-                    )
+                    ),
                 ):
                     me.textarea(
                         label="Text to Synthesize",
@@ -125,10 +125,11 @@ def page():
                         value=state.text,
                         rows=5,
                         style=me.Style(width="100%"),
+                        appearance="outline",
                     )
                     with me.box(
                         style=me.Style(
-                            display="flex", flex_direction="row", gap=16
+                            display="flex", flex_direction="row", gap=16,
                         )
                     ):
                         me.select(
@@ -140,6 +141,7 @@ def page():
                             on_selection_change=on_select_voice,
                             value=state.selected_voice,
                             style=me.Style(flex_grow=1),
+                            appearance="outline",
                         )
                         me.select(
                             label="Language",
@@ -149,7 +151,8 @@ def page():
                             ],
                             on_selection_change=on_select_language,
                             value=state.selected_language,
-                            style=me.Style(flex_grow=1),
+                            style=me.Style(flex_grow=1, width=300),
+                            appearance="outline",
                         )
                     with me.expansion_panel(
                         key="advanced_controls",
@@ -169,8 +172,8 @@ def page():
                         # Custom Pronunciations Section
                         me.text("Custom Pronunciations", style=me.Style(font_weight=500, margin=me.Margin(top=8)))
                         with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, align_items="baseline")):
-                            me.input(label="Phrase", on_blur=on_blur_phrase, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_phrase_input,)
-                            me.input(label="Pronunciation", on_blur=on_blur_pronunciation, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_pronunciation_input)
+                            me.input(label="Phrase", on_blur=on_blur_phrase, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_phrase_input,appearance="outline",)
+                            me.input(label="Pronunciation", on_blur=on_blur_pronunciation, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_pronunciation_input, appearance="outline",)
                             me.select(
                                 label="Encoding",
                                 options=[
@@ -180,6 +183,7 @@ def page():
                                 on_selection_change=on_select_encoding,
                                 value=state.selected_encoding,
                                 style=me.Style(flex_grow=1,font_size="smaller"),
+                                appearance="outline",
                             )
                             with me.content_button(type="icon", on_click=on_add_pronunciation,):
                                 me.icon("add")

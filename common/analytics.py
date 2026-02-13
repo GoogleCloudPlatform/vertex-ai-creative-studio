@@ -89,14 +89,22 @@ def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras
 
 def log_model_call(model_name: str, status: str, duration_ms: float = 0, details: dict = None):
     """Logs a generative model call event."""
-    state = me.state(AppState)
+    try:
+        state = me.state(AppState)
+        page_name = state.current_page
+        session_id = state.session_id
+    except Exception:
+        # Handle cases where me.state is called outside of context (e.g. threads)
+        page_name = "unknown"
+        session_id = "unknown"
+
     extra_data = {
         "event_type": "model_call",
         "model_name": model_name,
         "status": status, # e.g., "success", "failure"
         "duration_ms": round(duration_ms, 2),
-        "page_name": state.current_page,
-        "session_id": state.session_id,
+        "page_name": page_name,
+        "session_id": session_id,
         "details": details or {},
     }
     analytics_logger.info(f"Model Call: {model_name} ({status})", extra={'extra_data': extra_data})

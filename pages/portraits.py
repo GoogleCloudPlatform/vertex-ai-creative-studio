@@ -77,7 +77,7 @@ class PageState:
     timing: str = ""
 
     aspect_ratio: str = "16:9"
-    video_length: int = 5
+    video_length: int = 8
     auto_enhance_prompt: bool = False
 
     generated_scene_direction: str = ""
@@ -124,6 +124,17 @@ def motion_portraits_content(app_state: me.state):
     state = me.state(PageState)
     # Get current model config
     selected_model_config = get_veo_model_config(state.veo_model)
+
+    # Ensure video length is valid for the selected model (e.g. initial load)
+    if selected_model_config.supported_durations:
+        if state.video_length not in selected_model_config.supported_durations:
+            state.video_length = selected_model_config.default_duration
+    elif not (
+        selected_model_config.min_duration
+        <= state.video_length
+        <= selected_model_config.max_duration
+    ):
+        state.video_length = selected_model_config.default_duration
 
     # Generate dynamic options
     aspect_ratio_options = [
@@ -819,6 +830,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
             aspect_ratio=state.aspect_ratio,
             resolution="720p",  # Motion portraits default to 720p
             enhance_prompt=state.auto_enhance_prompt,
+            generate_audio=True,
             model_version_id=state.veo_model,
             reference_image_gcs=state.reference_image_gcs,
             reference_image_mime_type=state.reference_image_mime_type,

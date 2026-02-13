@@ -49,7 +49,6 @@
     {
       "id": "vto",
       "title": "Virtual Try-On",
-      "stage": "preview",
       "description": "[Virtual Try-On](https://cloud.google.com/vertex-ai/generative-ai/docs/image/generate-virtual-try-on-images) is a fully managed Vertex AI service to generate images of persons modeling fashion products.\n\n**Virtual Try-On** brings Google's advanced image generation technology to developers and retail customers in the fashion industry. This experimental service provides an easy-to-use API and cutting edge quality for generating shots of models trying-on products.\n\nWith Virtual Try-On, you can create high quality listing photos with just an image of a person and a product to try on. Supported products are:\n * Tops: shirts, hoodies sweaters, tank tops, blouses\n* Bottoms: Pants, leggings, shorts, skirts\n* Footwear: Sneakers, boots, sandals, flats, heels, formal shoes\n\nThis workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
       "image": "assets/about/vto_demo.png",
       "video": null

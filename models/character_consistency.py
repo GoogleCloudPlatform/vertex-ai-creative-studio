@@ -292,7 +292,7 @@ def _generate_imagen_candidates(reference_image_bytes_list, all_descriptions, fi
             number_of_images=4,
             aspect_ratio="1:1",
             person_generation="allow_all",
-            safety_filter_level="block_few",
+            safety_filter_level="block_only_high",
             negative_prompt=negative_prompt,
         ),
     )

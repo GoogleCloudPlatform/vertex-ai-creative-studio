@@ -37,7 +37,7 @@ def render_video_pills(item: MediaItem):
     if item.duration is not None:
         pill(item_duration_str, "duration")
     if item.resolution:
-        pill(item.resolution, "resolution")
+        pill(item.resolution, "resolution_4k" if item.resolution == "4k" else "resolution")
     pill("24 fps", "fps")
     if item.enhanced_prompt_used:
         with me.tooltip(message="Prompt was auto-enhanced"):

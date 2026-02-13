@@ -99,7 +99,8 @@ def on_click_generate(e: me.ClickEvent):
             resolution="720p",
             video_count=1,
             enhance_prompt=False,
-            person_generation="allow_all",
+            generate_audio=False,
+            person_generation="Allow (Adults only)",
         )
         
         # We need to pass the user email header for auth middleware to work

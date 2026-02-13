@@ -340,6 +340,7 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
                 video_count=1,
                 resolution="720p",
                 enhance_prompt=True,
+                generate_audio=True,
                 person_generation="allow_all"
             )
             
