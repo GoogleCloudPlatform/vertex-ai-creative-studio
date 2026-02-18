@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.15.0",
+    "@google-cloud/storage": "^7.19.0",
     "@google-cloud/text-to-speech": "^5.8.0",
     "@google/genai": "^1.10.0",
     "@radix-ui/react-checkbox": "^1.1.3",
