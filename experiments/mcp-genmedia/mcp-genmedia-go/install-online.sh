@@ -36,7 +36,7 @@ else
     RELEASE_DATA=$(wget -qO- "$LATEST_URL")
 fi
 
-TAG=$(echo "$RELEASE_DATA" | grep '"tag_name": "mcp-v' | head -n 1 | cut -d '"'"' -f 4)
+TAG=$(echo "$RELEASE_DATA" | grep '"tag_name": "mcp-v' | head -n 1 | cut -d '"' -f 4)
 
 if [ -z "$TAG" ]; then
     echo_err "Could not find a valid mcp-v* release tag on GitHub."
