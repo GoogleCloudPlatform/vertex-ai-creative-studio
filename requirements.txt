@@ -70,7 +70,7 @@ fastapi==0.124.4
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 firebase-admin==7.1.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
-flask==3.1.2
+flask==3.1.3
     # via mesop
 fonttools==4.61.1
     # via matplotlib
