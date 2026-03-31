@@ -4,7 +4,7 @@ package main
 
 import (
 	"context"
-	"encoding/base64" // For encoding audio data
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -26,6 +26,7 @@ import (
 	"github.com/rs/cors"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"google.golang.org/api/option"
 )
 
 var (
@@ -33,7 +34,7 @@ var (
 	availableVoices []*texttospeechpb.Voice
 	transport       string
 	port            int
-	version     = "3.3.0" // Synchronize release version
+	version         = "3.3.0" // Synchronize release version
 )
 
 const (
@@ -41,6 +42,16 @@ const (
 	timeFormatForFilename = "20060102-150405"
 	defaultChirpVoiceName = "en-US-Chirp3-HD-Zephyr"
 )
+
+// validChirpRegions maps the supported Chirp3-HD regions to a boolean for quick validation.
+var validChirpRegions = map[string]bool{
+	"global":          true,
+	"us":              true,
+	"eu":              true,
+	"asia-southeast1": true,
+	"europe-west2":    true,
+	"asia-northeast1": true,
+}
 
 // LanguageNameToCodeMap maps descriptive language names (lowercase) to BCP-47 codes (canonical casing).
 var LanguageNameToCodeMap = map[string]string{
@@ -93,13 +104,43 @@ func init() {
 	}
 }
 
+// getChirpClientOptions determines the appropriate endpoint option based on the configured Location.
+func getChirpClientOptions(location string) []option.ClientOption {
+	var opts []option.ClientOption
+
+	loc := strings.ToLower(strings.TrimSpace(location))
+
+	// Handle the default us-central1 fallback gracefully
+	if loc == "us-central1" {
+		log.Printf("Warning: 'us-central1' is not a supported region for Chirp3-HD. Automatically mapping to 'us'.")
+		loc = "us"
+	}
+
+	if !validChirpRegions[loc] {
+		log.Printf("Warning: Unsupported Chirp3-HD region '%s'. Falling back to 'global'. Supported regions: global, us, eu, asia-southeast1, europe-west2, asia-northeast1", loc)
+		loc = "global"
+	}
+
+	if loc != "global" {
+		endpoint := fmt.Sprintf("%s-texttospeech.googleapis.com:443", loc)
+		log.Printf("Routing Chirp API calls to regional endpoint: %s", endpoint)
+		opts = append(opts, option.WithEndpoint(endpoint))
+	} else {
+		log.Printf("Routing Chirp API calls to global endpoint.")
+	}
+
+	return opts
+}
+
 // listAndCacheChirpHDVoices fetches the list of available voices from the
 // Google Cloud Text-to-Speech API and caches those that are identified as
 // Chirp3-HD voices. This cached list is used by other functions to validate
 // voice selections and provide voice options.
-func listAndCacheChirpHDVoices(ctx context.Context) error {
+func listAndCacheChirpHDVoices(ctx context.Context, location string) error {
 	log.Println("Fetching available Chirp3-HD voices...")
-	tempClient, err := texttospeech.NewClient(ctx)
+
+	opts := getChirpClientOptions(location)
+	tempClient, err := texttospeech.NewClient(ctx, opts...)
 	if err != nil {
 		return fmt.Errorf("texttospeech.NewClient for voice listing: %w", err)
 	}
@@ -208,7 +249,6 @@ func main() {
 	// In order to allow mcptools to verify the schema without Google Cloud credentials,
 	// we defer the actual client initialization to the first tool invocation.
 
-
 	s := server.NewMCPServer(
 		serviceName, // Standardized name
 		version,
@@ -241,6 +281,23 @@ func main() {
 		),
 	)
 	s.AddTool(chirpTool, func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if ttsClient == nil {
+			log.Printf("Initializing global Text-to-Speech client...")
+			cfg := common.LoadConfig(serviceName)
+			opts := getChirpClientOptions(cfg.Location)
+			client, err := texttospeech.NewClient(context.Background(), opts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize Text-to-Speech client: %w", err)
+			}
+			ttsClient = client
+
+			if len(availableVoices) == 0 {
+				if err := listAndCacheChirpHDVoices(context.Background(), cfg.Location); err != nil {
+					log.Printf("Warning: Failed to fetch voices during initialization: %v", err)
+				}
+			}
+		}
+
 		return chirpTTSHandler(ttsClient, toolCtx, request)
 	})
 
@@ -251,7 +308,26 @@ func main() {
 			mcp.Description("The language to filter voices by. Can be a descriptive name (e.g., 'English (United States)') or a BCP-47 code (e.g., 'en-US')."),
 		),
 	)
-	s.AddTool(listVoicesTool, listChirpVoicesHandler)
+	s.AddTool(listVoicesTool, func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if ttsClient == nil {
+			log.Printf("Initializing global Text-to-Speech client for list voices...")
+			cfg := common.LoadConfig(serviceName)
+			opts := getChirpClientOptions(cfg.Location)
+			client, err := texttospeech.NewClient(context.Background(), opts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize Text-to-Speech client: %w", err)
+			}
+			ttsClient = client
+
+			if len(availableVoices) == 0 {
+				if err := listAndCacheChirpHDVoices(context.Background(), cfg.Location); err != nil {
+					log.Printf("Warning: Failed to fetch voices during initialization: %v", err)
+				}
+			}
+		}
+
+		return listChirpVoicesHandler(toolCtx, request)
+	})
 
 	// Add the new list-voices prompt
 	s.AddPrompt(mcp.NewPrompt("list-voices",
@@ -260,6 +336,23 @@ func main() {
 			mcp.ArgumentDescription("Optional. The language to filter voices by (e.g., 'English (United States)', 'en-US')."),
 		),
 	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		if ttsClient == nil {
+			log.Printf("Initializing global Text-to-Speech client for prompt...")
+			cfg := common.LoadConfig(serviceName)
+			opts := getChirpClientOptions(cfg.Location)
+			client, err := texttospeech.NewClient(context.Background(), opts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize Text-to-Speech client: %w", err)
+			}
+			ttsClient = client
+
+			if len(availableVoices) == 0 {
+				if err := listAndCacheChirpHDVoices(context.Background(), cfg.Location); err != nil {
+					log.Printf("Warning: Failed to fetch voices during initialization: %v", err)
+				}
+			}
+		}
+
 		languageParam, langProvided := request.Params.Arguments["language"]
 		if !langProvided || strings.TrimSpace(languageParam) == "" {
 			// If no language is provided, ask the user to specify one.
