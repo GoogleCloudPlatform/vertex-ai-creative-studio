@@ -19,6 +19,13 @@ Generates content (text and/or images) based on a multimodal prompt.
 
 
 
+## Environment Variable Configuration
+
+The tool utilizes the following environment variables:
+
+*   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID.
+    *   **Override**: You can override this globally for this specific server by setting `NANOBANANA_PROJECT_ID`.
+
 ## Example Usage
 
 ### Generating an Image

@@ -18,14 +18,32 @@ type Config struct {
 	ApiEndpoint    string // New field
 }
 
-func LoadConfig() *Config {
+func LoadConfig(serviceName string) *Config {
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file, using environment variables only")
 	}
 
-	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	var projectID string
+
+	// Attempt to load server-specific override first
+	if serviceName != "" {
+		// e.g. "mcp-veo-go" -> "VEO"
+		prefix := strings.ToUpper(strings.TrimSuffix(strings.TrimPrefix(serviceName, "mcp-"), "-go"))
+		overrideKey := prefix + "_PROJECT_ID"
+		projectID = os.Getenv(overrideKey)
+		if projectID != "" {
+			log.Printf("Using server-specific project override %s: %s", overrideKey, projectID)
+		}
+	}
+
+	// Fallback to primary GOOGLE_CLOUD_PROJECT
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+
+	// Fallback to legacy PROJECT_ID
 	if projectID == "" {
 		projectID = os.Getenv("PROJECT_ID")
 		if projectID != "" {

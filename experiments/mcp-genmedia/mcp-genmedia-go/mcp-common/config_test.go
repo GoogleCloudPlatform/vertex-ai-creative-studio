@@ -13,7 +13,7 @@ func TestLoadConfig(t *testing.T) {
 		_ = os.Setenv("LOCATION", "test-location")
 		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
 
-		cfg := LoadConfig()
+		cfg := LoadConfig("test-server")
 
 		if cfg.ProjectID != "test-project" {
 			t.Errorf("expected ProjectID to be 'test-project', but got '%s'", cfg.ProjectID)
@@ -33,18 +33,30 @@ func TestLoadConfig(t *testing.T) {
 		_ = os.Setenv("LOCATION", "test-location")
 		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
 
-		cfg := LoadConfig()
+		cfg := LoadConfig("test-server")
 
 		if cfg.ProjectID != "test-project-fallback" {
 			t.Errorf("expected ProjectID to be 'test-project-fallback', but got '%s'", cfg.ProjectID)
 		}
 	})
 
+	t.Run("with server specific override", func(t *testing.T) {
+		_ = os.Setenv("VEO_PROJECT_ID", "test-veo-project")
+		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-global-project")
+
+		cfg := LoadConfig("mcp-veo-go")
+
+		if cfg.ProjectID != "test-veo-project" {
+			t.Errorf("expected ProjectID to be 'test-veo-project', but got '%s'", cfg.ProjectID)
+		}
+		_ = os.Unsetenv("VEO_PROJECT_ID")
+	})
+
 	t.Run("with some env vars missing", func(t *testing.T) {
 		_ = os.Unsetenv("LOCATION")
 		_ = os.Unsetenv("GENMEDIA_BUCKET")
 
-		cfg := LoadConfig()
+		cfg := LoadConfig("test-server")
 
 		if cfg.Location != "us-central1" {
 			t.Errorf("expected Location to be 'us-central1', but got '%s'", cfg.Location)

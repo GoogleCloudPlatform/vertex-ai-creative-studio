@@ -68,6 +68,7 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
 The tool is configured using environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT`: (Required for GCS operations) Your Google Cloud Project ID. Note: `PROJECT_ID` is also supported as a fallback.
+    *   **Override**: You can override this globally for this specific server by setting `AVTOOL_PROJECT_ID`.
 *   `GENMEDIA_BUCKET`: (Optional) Default Google Cloud Storage bucket to use for outputs if not specified in the tool request.
 *   `LOCATION`: (Optional) Google Cloud location (e.g., `us-central1`). Defaults to `us-central1`. Primarily for GCS client initialization context.
 *   `PORT`: (Optional, for HTTP transport) The port for the HTTP server to listen on. Defaults to `8080`.

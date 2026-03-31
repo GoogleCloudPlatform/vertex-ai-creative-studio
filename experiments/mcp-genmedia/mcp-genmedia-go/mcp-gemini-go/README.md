@@ -39,6 +39,13 @@ Lists the available single-speaker voices for use with the Gemini-TTS models.
 
 Provides a list of supported languages and their BCP-47 codes. Currently, only `en-US` is supported.
 
+## Environment Variable Configuration
+
+The tool utilizes the following environment variables:
+
+*   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID.
+    *   **Override**: You can override this globally for this specific server by setting `GEMINI_PROJECT_ID`.
+
 ## Example Usage
 
 ### Generating an Image

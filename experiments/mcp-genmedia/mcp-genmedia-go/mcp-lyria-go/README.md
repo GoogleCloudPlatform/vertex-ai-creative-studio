@@ -29,6 +29,7 @@ The following tool is exposed by this server:
 The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
+    *   **Override**: You can override this globally for this specific server by setting `LYRIA_PROJECT_ID`.
 *   `LOCATION` (string): The primary Google Cloud location for services.
     *   Default: `"us-central1"`
     *   Also used as the default for `LYRIA_LOCATION (Deprecated for V3)` if `LYRIA_LOCATION (Deprecated for V3)` is not set.

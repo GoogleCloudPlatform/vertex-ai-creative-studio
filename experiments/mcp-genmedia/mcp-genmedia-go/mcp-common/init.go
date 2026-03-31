@@ -8,7 +8,7 @@ import (
 // Init loads the configuration and initializes OpenTelemetry.
 // It returns the loaded config and a cleanup function that should be deferred in main().
 func Init(serviceName, version string) (*Config, func()) {
-	cfg := LoadConfig()
+	cfg := LoadConfig(serviceName)
 
 	tp, err := InitTracerProvider(serviceName, version)
 	if err != nil {
