@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.2.0" // Add first-last and reference image to video generation modalities
+	version     = "3.3.0" // Synchronize release version
 )
 
 // init handles command-line flags and initial logging setup.

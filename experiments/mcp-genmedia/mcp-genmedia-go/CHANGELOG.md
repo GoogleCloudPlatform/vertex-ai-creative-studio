@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-30 (v3.3.0)
+
+*   **Feat:** Support `GOOGLE_CLOUD_PROJECT` as primary project env var across all tools, with fallback to `PROJECT_ID`.
+*   **Feat:** Allow per-server Google Cloud Project overrides (e.g., `VEO_PROJECT_ID`, `LYRIA_PROJECT_ID`) to isolate server environments.
+*   **Feat:** Allow per-server custom PATH override (`MCP_CUSTOM_PATH`) for dependencies like `ffmpeg` and `ffprobe` in `mcp-avtool-go`.
+
 ## 2026-03-28 (v3.2.0)
 
 *   **Feat:** Added `veo_first_last_to_video` tool to support First-Last Frame video generation modality in `mcp-veo-go`.
