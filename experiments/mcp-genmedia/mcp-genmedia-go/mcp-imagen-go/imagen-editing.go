@@ -230,6 +230,14 @@ func imagenEditHandler(ctx context.Context, request mcp.CallToolRequest, client 
 
 	// Process the response
 	var resultText string
+
+	// Check for optional Sherlog header
+	if response != nil && response.SDKHTTPResponse != nil && response.SDKHTTPResponse.Headers != nil {
+		if link := response.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {
+			resultText += fmt.Sprintf("Optional header capture: %s\n\n", link)
+		}
+	}
+
 	if len(response.GeneratedImages) > 0 {
 		genImg := response.GeneratedImages[0]
 		if genImg.Image != nil && len(genImg.Image.ImageBytes) > 0 {

@@ -215,6 +215,7 @@ The following variables can be defined in your `.env` file or as shell environme
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry. Defaults to `false`.
+*   `ENABLE_OPTIONAL_HEADER_CAPTURE` (boolean): Optional (`true`/`false`). Intended for internal debugging. When set to `true`, the server intercepts API requests and injects the raw ADC Bearer token to capture and surface the `x-goog-sherlog-link` header in the tool output. This feature is supported for Imagen, Gemini, NanoBanana, and Lyria, but currently not supported for Veo due to Go SDK limitations with long-running operations. Defaults to `false`.
 *   `PORT` (string): Specifies the port for the `http` transport. If not set, it defaults to `8080`. Note that for the `sse` transport, most servers use a hardcoded port (typically `8081`) to avoid conflicts.
 *   `GCS_DOWNLOAD_TIMEOUT` (string): The timeout for GCS download/streaming operations. Accepts Go duration strings (e.g. `"30s"`, `"5m"`, `"2m30s"`). Defaults to `5m` if not set. Increase this value when working with large media files like videos or high-resolution images.
 

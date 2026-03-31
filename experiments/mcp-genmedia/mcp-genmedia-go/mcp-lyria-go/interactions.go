@@ -16,12 +16,12 @@ import (
 
 // generateAudioWithInteractions uses the experimental Interactions API to generate audio
 // for newer Lyria models like lyria-3-pro-preview and lyria-3-clip-preview.
-func generateAudioWithInteractions(ctx context.Context, modelID string, prompt string) ([]byte, error) {
+func generateAudioWithInteractions(ctx context.Context, modelID string, prompt string) ([]byte, string, error) {
 	log.Printf("Using Interactions API for model: %s", modelID)
 
 	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get default credentials: %w", err)
+		return nil, "", fmt.Errorf("failed to get default credentials: %w", err)
 	}
 	oauthClient := oauth2.NewClient(ctx, creds.TokenSource)
 
@@ -48,39 +48,52 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal payload: %w", err)
+		return nil, "", fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create http request: %w", err)
+		return nil, "", fmt.Errorf("failed to create http request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-goog-user-project", appConfig.ProjectID)
 
+	// Inject auth header manually if optional header capture is enabled
+	if appConfig.EnableOptionalHeaderCapture {
+		token, tokenErr := creds.TokenSource.Token()
+		if tokenErr == nil {
+			httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+		}
+	}
+
 	resp, err := oauthClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
+		return nil, "", fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	var sherlogLink string
+	if appConfig.EnableOptionalHeaderCapture {
+		sherlogLink = resp.Header.Get("x-goog-sherlog-link")
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+		return nil, "", fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	var raw map[string]interface{}
 	if err := json.Unmarshal(respBody, &raw); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+		return nil, "", fmt.Errorf("failed to parse JSON response: %w", err)
 	}
 
 	outputs, ok := raw["outputs"].([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("no \"outputs\" array found in response")
+		return nil, "", fmt.Errorf("no \"outputs\" array found in response")
 	}
 
 	for _, out := range outputs {
@@ -96,11 +109,11 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 			// Decode the base64 string directly
 			decodedBytes, err := base64.StdEncoding.DecodeString(data)
 			if err != nil {
-				return nil, fmt.Errorf("failed to decode base64 audio data: %w", err)
+				return nil, "", fmt.Errorf("failed to decode base64 audio data: %w", err)
 			}
-			return decodedBytes, nil
+			return decodedBytes, sherlogLink, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no audio output found in response")
+	return nil, "", fmt.Errorf("no audio output found in response")
 }

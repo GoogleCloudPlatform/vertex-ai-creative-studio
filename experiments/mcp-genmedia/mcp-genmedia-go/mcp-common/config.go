@@ -12,11 +12,12 @@ import (
 )
 
 type Config struct {
-	ProjectID         string
-	Location          string
-	GenmediaBucket    string
-	ApiEndpoint       string // New field
-	AllowUnsafeModels bool
+	ProjectID                   string
+	Location                    string
+	GenmediaBucket              string
+	ApiEndpoint                 string // New field
+	AllowUnsafeModels           bool
+	EnableOptionalHeaderCapture bool
 }
 
 func LoadConfig(serviceName string) *Config {
@@ -71,12 +72,19 @@ func LoadConfig(serviceName string) *Config {
 		log.Printf("Warning: ALLOW_UNSAFE_MODELS is enabled. Strict model validation will be bypassed.")
 	}
 
+	enableCapture := false
+	if strings.ToLower(os.Getenv("ENABLE_OPTIONAL_HEADER_CAPTURE")) == "true" {
+		enableCapture = true
+		log.Printf("Optional header capture is enabled.")
+	}
+
 	return &Config{
-		ProjectID:         projectID,
-		Location:          GetEnv("LOCATION", "us-central1"),
-		GenmediaBucket:    genmediaBucket,
-		ApiEndpoint:       os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
-		AllowUnsafeModels: allowUnsafe,
+		ProjectID:                   projectID,
+		Location:                    GetEnv("LOCATION", "us-central1"),
+		GenmediaBucket:              genmediaBucket,
+		ApiEndpoint:                 os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
+		AllowUnsafeModels:           allowUnsafe,
+		EnableOptionalHeaderCapture: enableCapture,
 	}
 }
 

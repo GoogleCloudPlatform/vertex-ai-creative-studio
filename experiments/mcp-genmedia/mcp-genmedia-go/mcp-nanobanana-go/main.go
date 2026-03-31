@@ -80,6 +80,10 @@ func main() {
 		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
 	}
 
+	if err := common.InjectCaptureHeaders(clientCtx, appConfig, clientConfig); err != nil {
+		log.Printf("Warning: Failed to inject capture headers: %v", err)
+	}
+
 	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Printf("Warning: Error creating global GenAI client: %v. Deferring initialization to runtime.", err)

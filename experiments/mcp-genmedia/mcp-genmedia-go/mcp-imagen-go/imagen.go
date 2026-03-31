@@ -83,6 +83,10 @@ func main() {
 		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
 	}
 
+	if err := common.InjectCaptureHeaders(clientCtx, appConfig, clientConfig); err != nil {
+		log.Printf("Warning: Failed to inject capture headers: %v", err)
+	}
+
 	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Printf("Warning: Error creating global GenAI client: %v. Deferring initialization to runtime.", err)
@@ -385,6 +389,13 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	span.SetAttributes(attribute.Float64("duration_ms", float64(apiCallDuration.Milliseconds())))
 
 	var contentItems []mcp.Content
+
+	// Check for optional Sherlog header
+	if response != nil && response.SDKHTTPResponse != nil && response.SDKHTTPResponse.Headers != nil {
+		if link := response.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {
+			contentItems = append(contentItems, mcp.TextContent{Type: "text", Text: fmt.Sprintf("Optional header capture: %s\n", link)})
+		}
+	}
 
 	if err != nil {
 		errorMessage := fmt.Sprintf("error generating images: %v", err.Error())

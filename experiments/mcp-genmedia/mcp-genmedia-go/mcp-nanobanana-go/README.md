@@ -27,6 +27,8 @@ The tool utilizes the following environment variables:
     *   **Override**: You can override this globally for this specific server by setting `NANOBANANA_PROJECT_ID`.
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry.
     *   Default: `false`
+*   `ENABLE_OPTIONAL_HEADER_CAPTURE` (boolean): Optional (`true`/`false`). Intended for internal debugging. When set to `true`, the server intercepts API requests and injects the raw ADC Bearer token to capture and surface the `x-goog-sherlog-link` header in the tool output. This feature is supported for NanoBanana.
+    *   Default: `false`
 
 ## Example Usage
 
