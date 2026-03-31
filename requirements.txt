@@ -180,7 +180,7 @@ idna==3.11
     #   anyio
     #   httpx
     #   requests
-imageio==2.37.2
+imageio==2.37.3
     # via
     #   moviepy
     #   scikit-image
