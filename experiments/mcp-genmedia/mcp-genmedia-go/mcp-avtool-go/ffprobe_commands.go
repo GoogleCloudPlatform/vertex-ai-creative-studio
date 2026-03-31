@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -14,6 +15,9 @@ import (
 // runFFprobeCommand executes an FFprobe command and returns its combined output.
 func runFFprobeCommand(ctx context.Context, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "ffprobe", args...)
+	if customPath := os.Getenv("MCP_CUSTOM_PATH"); customPath != "" {
+		cmd.Env = append(os.Environ(), "PATH="+customPath)
+	}
 	log.Printf("Running FFprobe command: ffprobe %s", strings.Join(args, " "))
 
 	output, err := cmd.CombinedOutput()

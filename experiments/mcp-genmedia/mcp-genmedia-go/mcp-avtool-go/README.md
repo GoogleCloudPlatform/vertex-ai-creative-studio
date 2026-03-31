@@ -67,6 +67,7 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
 
 The tool is configured using environment variables:
 
+*   `MCP_CUSTOM_PATH`: (Optional) Overrides the system `PATH` for `ffmpeg` and `ffprobe` tool executions. Useful for pointing to custom binary installations (e.g., Homebrew) without polluting the host environment.
 *   `GOOGLE_CLOUD_PROJECT`: (Required for GCS operations) Your Google Cloud Project ID. Note: `PROJECT_ID` is also supported as a fallback.
     *   **Override**: You can override this globally for this specific server by setting `AVTOOL_PROJECT_ID`.
 *   `GENMEDIA_BUCKET`: (Optional) Default Google Cloud Storage bucket to use for outputs if not specified in the tool request.

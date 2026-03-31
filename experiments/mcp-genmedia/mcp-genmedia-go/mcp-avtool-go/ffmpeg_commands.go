@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -18,6 +19,9 @@ import (
 // Otherwise, it logs the last few lines of the output for brevity and returns the full output.
 func runFFmpegCommand(ctx context.Context, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	if customPath := os.Getenv("MCP_CUSTOM_PATH"); customPath != "" {
+		cmd.Env = append(os.Environ(), "PATH="+customPath)
+	}
 	log.Printf("Running FFMpeg command: ffmpeg %s", strings.Join(args, " "))
 
 	output, err := cmd.CombinedOutput()
