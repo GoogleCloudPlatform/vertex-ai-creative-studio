@@ -141,7 +141,7 @@ h11==0.16.0
     #   uvicorn
 httpcore==1.0.9
     # via httpx
-httplib2==0.31.0
+httplib2==0.31.2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
