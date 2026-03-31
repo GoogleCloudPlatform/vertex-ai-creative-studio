@@ -25,6 +25,8 @@ The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID.
     *   **Override**: You can override this globally for this specific server by setting `NANOBANANA_PROJECT_ID`.
+*   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry.
+    *   Default: `false`
 
 ## Example Usage
 

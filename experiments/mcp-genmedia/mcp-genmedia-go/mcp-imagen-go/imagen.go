@@ -266,12 +266,12 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		modelInput = "imagen-4.0-fast-generate-001"
 	}
 
-	canonicalName, found := common.ResolveImagenModel(modelInput)
+	modelInfo, found := common.ResolveImagenModel(modelInput, appConfig.AllowUnsafeModels)
 	if !found {
 		return &mcp.CallToolResult{Content: []mcp.Content{mcp.TextContent{Type: "text", Text: fmt.Sprintf("Error: Model '%s' is not a valid or supported model name.", modelInput)}}}, nil
 	}
-	model := canonicalName
-	modelDetails := common.SupportedImagenModels[model]
+	model := modelInfo.CanonicalName
+	modelDetails := modelInfo
 
 	var numberOfImages int32 = 1
 	if numImagesArg, ok := request.GetArguments()["num_images"]; ok {

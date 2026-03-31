@@ -45,12 +45,12 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	if !ok || modelInput == "" {
 		modelInput = "veo-2.0-generate-001"
 	}
-	canonicalName, found := common.ResolveVeoModel(modelInput)
+	modelInfo, found := common.ResolveVeoModel(modelInput, appConfig.AllowUnsafeModels)
 	if !found {
 		return "", "", "", "", 0, 0, false, "", fmt.Errorf("model '%s' is not a valid or supported model name", modelInput)
 	}
-	model := canonicalName
-	modelDetails := common.SupportedVeoModels[model]
+	model := modelInfo.CanonicalName
+	modelDetails := modelInfo
 
 	// GCS Bucket
 	gcsBucket, _ := args["bucket"].(string)

@@ -273,10 +273,16 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 		localDirectoryPathParameter = strings.TrimSpace(val)
 	}
 
-	modelID := defaultLyriaModelID
+	modelInput := defaultLyriaModelID
 	if val, ok := params["model_id"].(string); ok && strings.TrimSpace(val) != "" {
-		modelID = strings.TrimSpace(val)
+		modelInput = strings.TrimSpace(val)
 	}
+
+	modelInfo, found := common.ResolveLyriaModel(modelInput, appConfig.AllowUnsafeModels)
+	if !found {
+		return mcp.NewToolResultError(fmt.Sprintf("Error: Model '%s' is not a valid or supported model name.", modelInput)), nil
+	}
+	modelID := modelInfo.CanonicalName
 
 	negativePrompt := ""
 	if val, ok := params["negative_prompt"].(string); ok {
@@ -329,7 +335,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}
 	baseFilename = strings.TrimPrefix(baseFilename, "/")
 
-	gcsUploadedObjectName, base64AudioData, err := invokeLyriaAndUpload(predictionClient, ctx, prompt, negativePrompt, seed, sampleCount, modelID, gcsBucketParam, baseFilename)
+	gcsUploadedObjectName, base64AudioData, err := invokeLyriaAndUpload(predictionClient, ctx, prompt, negativePrompt, seed, sampleCount, modelInfo, gcsBucketParam, baseFilename)
 
 	duration := time.Since(startTime)
 	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
@@ -418,7 +424,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 // It constructs the prediction request, sends it to the AI Platform Prediction service,
 // and processes the response. If a GCS bucket is specified, it uploads the generated
 // audio to the bucket.
-func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Context, prompt, negativePrompt string, seed *uint32, sampleCount uint32, modelID, gcsBucket, gcsObjectNameForUpload string) (gcsWrittenObjectName string, audioDataB64 string, err error) {
+func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Context, prompt, negativePrompt string, seed *uint32, sampleCount uint32, modelInfo common.LyriaModelInfo, gcsBucket, gcsObjectNameForUpload string) (gcsWrittenObjectName string, audioDataB64 string, err error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "invokeLyriaAndUpload")
 	defer span.End()
@@ -426,8 +432,10 @@ func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Conte
 	var audioBytes []byte
 	var extractedB64Audio string
 
+	modelID := modelInfo.CanonicalName
+
 	// 1. GENERATE AUDIO DATA
-	if strings.HasPrefix(modelID, "lyria-3") {
+	if modelInfo.EndpointType == "interactions" {
 		// --- V3 INTERACTIONS API ROUTE ---
 		log.Printf("Routing request to Interactions API for model: %s", modelID)
 		audioBytes, err = generateAudioWithInteractions(ctx, modelID, prompt)

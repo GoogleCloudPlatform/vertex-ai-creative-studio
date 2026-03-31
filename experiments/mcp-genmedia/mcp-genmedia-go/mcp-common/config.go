@@ -12,10 +12,11 @@ import (
 )
 
 type Config struct {
-	ProjectID      string
-	Location       string
-	GenmediaBucket string
-	ApiEndpoint    string // New field
+	ProjectID         string
+	Location          string
+	GenmediaBucket    string
+	ApiEndpoint       string // New field
+	AllowUnsafeModels bool
 }
 
 func LoadConfig(serviceName string) *Config {
@@ -64,11 +65,18 @@ func LoadConfig(serviceName string) *Config {
 		log.Println("GENMEDIA_BUCKET is not set.")
 	}
 
+	allowUnsafe := false
+	if strings.ToLower(os.Getenv("ALLOW_UNSAFE_MODELS")) == "true" {
+		allowUnsafe = true
+		log.Printf("Warning: ALLOW_UNSAFE_MODELS is enabled. Strict model validation will be bypassed.")
+	}
+
 	return &Config{
-		ProjectID:      projectID,
-		Location:       GetEnv("LOCATION", "us-central1"),
-		GenmediaBucket: genmediaBucket,
-		ApiEndpoint:    os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
+		ProjectID:         projectID,
+		Location:          GetEnv("LOCATION", "us-central1"),
+		GenmediaBucket:    genmediaBucket,
+		ApiEndpoint:       os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
+		AllowUnsafeModels: allowUnsafe,
 	}
 }
 

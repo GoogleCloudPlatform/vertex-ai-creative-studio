@@ -41,6 +41,8 @@ The tool utilizes the following environment variables:
     *   Default: `"lyria-3-clip-preview"` (fallback if the environment variable is not set).
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if `output_gcs_bucket` is not specified in the tool request. The object name will be `lyria_outputs/<generated_filename>.wav` within this bucket.
     *   Default: `""` (empty string, meaning no default GCS output path is formed from this variable unless `output_gcs_bucket` is also absent).
+*   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry.
+    *   Default: `false`
 *   `PORT` (string, for HTTP transport): The port for the HTTP server to listen on.
     *   Default: `"8080"`
 

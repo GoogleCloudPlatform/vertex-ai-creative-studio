@@ -214,6 +214,7 @@ The following variables can be defined in your `.env` file or as shell environme
     *   **Per-Server Override**: You can override the global project ID for specific servers using `VEO_PROJECT_ID`, `IMAGEN_PROJECT_ID`, `LYRIA_PROJECT_ID`, `GEMINI_PROJECT_ID`, `CHIRP3_PROJECT_ID`, `AVTOOL_PROJECT_ID`, or `NANOBANANA_PROJECT_ID`.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
+*   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry. Defaults to `false`.
 *   `PORT` (string): Specifies the port for the `http` transport. If not set, it defaults to `8080`. Note that for the `sse` transport, most servers use a hardcoded port (typically `8081`) to avoid conflicts.
 *   `GCS_DOWNLOAD_TIMEOUT` (string): The timeout for GCS download/streaming operations. Accepts Go duration strings (e.g. `"30s"`, `"5m"`, `"2m30s"`). Defaults to `5m` if not set. Increase this value when working with large media files like videos or high-resolution images.
 

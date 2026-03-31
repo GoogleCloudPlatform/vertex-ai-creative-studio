@@ -90,10 +90,24 @@ func init() {
 	}
 }
 
-// ResolveImagenModel finds the canonical model name from a user-provided name or alias.
-func ResolveImagenModel(modelInput string) (string, bool) {
+// ResolveImagenModel finds the canonical model info from a user-provided name or alias.
+func ResolveImagenModel(modelInput string, allowUnsafe bool) (ImagenModelInfo, bool) {
 	canonicalName, found := imagenAliasMap[strings.ToLower(modelInput)]
-	return canonicalName, found
+	if found {
+		return SupportedImagenModels[canonicalName], true
+	}
+
+	if allowUnsafe && modelInput != "" {
+		// Return a permissive fallback struct for experimental models
+		return ImagenModelInfo{
+			CanonicalName:         modelInput,
+			MaxImages:             99, // Delegate max limits to the API
+			SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9", "21:9"},
+			SupportedImageSizes:   []string{"1K", "2K"},
+		}, true
+	}
+
+	return ImagenModelInfo{}, false
 }
 
 // BuildImagenModelDescription generates a formatted string for the tool description.
@@ -165,10 +179,22 @@ func init() {
 	}
 }
 
-// ResolveGeminiImageModel finds the canonical model name from a user-provided name or alias.
-func ResolveGeminiImageModel(modelInput string) (string, bool) {
+// ResolveGeminiImageModel finds the canonical model info from a user-provided name or alias.
+func ResolveGeminiImageModel(modelInput string, allowUnsafe bool) (GeminiImageModelInfo, bool) {
 	canonicalName, found := geminiImageAliasMap[strings.ToLower(modelInput)]
-	return canonicalName, found
+	if found {
+		return SupportedGeminiImageModels[canonicalName], true
+	}
+
+	if allowUnsafe && modelInput != "" {
+		// Return a permissive fallback struct for experimental models
+		return GeminiImageModelInfo{
+			CanonicalName:         modelInput,
+			SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"},
+		}, true
+	}
+
+	return GeminiImageModelInfo{}, false
 }
 
 // BuildGeminiImageModelDescription generates a formatted string for the tool description.
@@ -324,10 +350,28 @@ func init() {
 	}
 }
 
-// ResolveVeoModel finds the canonical model name from a user-provided name or alias.
-func ResolveVeoModel(modelInput string) (string, bool) {
+// ResolveVeoModel finds the canonical model info from a user-provided name or alias.
+func ResolveVeoModel(modelInput string, allowUnsafe bool) (VeoModelInfo, bool) {
 	canonicalName, found := veoAliasMap[strings.ToLower(modelInput)]
-	return canonicalName, found
+	if found {
+		return SupportedVeoModels[canonicalName], true
+	}
+
+	if allowUnsafe && modelInput != "" {
+		// Return a permissive fallback struct for experimental models
+		return VeoModelInfo{
+			CanonicalName:          modelInput,
+			DefaultDuration:        5,
+			SupportedDurations:     []int32{4, 5, 6, 7, 8},
+			MaxVideos:              99, // Delegate max limits to the API
+			SupportedAspectRatios:  []string{"16:9", "9:16", "1:1", "3:4", "4:3"},
+			SupportsGenerateAudio:  true,
+			SupportsFirstLast:      true,
+			SupportsReferenceImage: true,
+		}, true
+	}
+
+	return VeoModelInfo{}, false
 }
 
 // BuildVeoModelDescription generates a formatted string for the tool description.
@@ -389,7 +433,32 @@ var SupportedLyriaModels = map[string]LyriaModelInfo{
 	},
 }
 
-// BuildLyriaModelDescription returns a markdown-formatted string listing all supported Lyria models
+// ResolveLyriaModel finds the canonical model info from a user-provided name or alias.
+func ResolveLyriaModel(modelInput string, allowUnsafe bool) (LyriaModelInfo, bool) {
+	// Note: Lyria doesn't use a precomputed alias map in the original code, but we can iterate.
+	modelInputLower := strings.ToLower(modelInput)
+	for canonicalName, info := range SupportedLyriaModels {
+		if strings.ToLower(canonicalName) == modelInputLower {
+			return info, true
+		}
+		for _, alias := range info.Aliases {
+			if strings.ToLower(alias) == modelInputLower {
+				return info, true
+			}
+		}
+	}
+
+	if allowUnsafe && modelInput != "" {
+		// Return a permissive fallback struct for experimental models
+		// Default to Interactions API as it's the newer path for upcoming models.
+		return LyriaModelInfo{
+			CanonicalName: modelInput,
+			EndpointType:  "interactions", 
+		}, true
+	}
+
+	return LyriaModelInfo{}, false
+}
 // and their aliases, suitable for use in an MCP tool description.
 func BuildLyriaModelDescription() string {
 	var sb strings.Builder

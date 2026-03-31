@@ -52,6 +52,18 @@ func TestLoadConfig(t *testing.T) {
 		_ = os.Unsetenv("VEO_PROJECT_ID")
 	})
 
+	t.Run("with ALLOW_UNSAFE_MODELS enabled", func(t *testing.T) {
+		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+		_ = os.Setenv("ALLOW_UNSAFE_MODELS", "TrUe")
+
+		cfg := LoadConfig("test-server")
+
+		if !cfg.AllowUnsafeModels {
+			t.Errorf("expected AllowUnsafeModels to be true")
+		}
+		_ = os.Unsetenv("ALLOW_UNSAFE_MODELS")
+	})
+
 	t.Run("with some env vars missing", func(t *testing.T) {
 		_ = os.Unsetenv("LOCATION")
 		_ = os.Unsetenv("GENMEDIA_BUCKET")
