@@ -106,7 +106,7 @@ google-cloud-audit-log==0.4.0
     # via google-cloud-logging
 google-cloud-bigquery==3.39.0
     # via google-cloud-aiplatform
-google-cloud-core==2.5.0
+google-cloud-core==2.5.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-firestore

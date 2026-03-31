@@ -27,7 +27,7 @@ google-auth==2.49.1
 google-auth-httplib2==0.2.0
 google-cloud-aiplatform==1.138.0
 google-cloud-bigquery==3.38.0
-google-cloud-core==2.4.3
+google-cloud-core==2.5.1
 google-cloud-firestore==2.21.0
 google-cloud-resource-manager==1.14.2
 google-cloud-spanner==3.58.0

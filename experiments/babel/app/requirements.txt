@@ -52,7 +52,7 @@ google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
 google-cloud-audit-log==0.4.0
     # via google-cloud-logging
-google-cloud-core==2.4.3
+google-cloud-core==2.5.1
     # via google-cloud-logging
 google-cloud-logging==3.12.1
     # via babel-web (pyproject.toml)
