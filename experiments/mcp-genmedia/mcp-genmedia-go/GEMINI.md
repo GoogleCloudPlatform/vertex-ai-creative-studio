@@ -64,11 +64,11 @@ s := server.NewMCPServer(
 
 ### **CRITICAL: Environment Variables**
 
-Before running **any** verification or installation command (including `verify.sh` and `install.sh`), you **MUST** ensure the `PROJECT_ID` environment variable is set. The servers will fail to initialize and time out without it.
+Before running **any** verification or installation command (including `verify.sh` and `install.sh`), you **MUST** ensure the `GOOGLE_CLOUD_PROJECT` environment variable is set (or `PROJECT_ID` as a fallback). The servers will fail to initialize and time out without it.
 
 **Example:**
 ```bash
-export PROJECT_ID=$(gcloud config get project)
+export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
 ```
 
 **Operation Timeouts**: Do not reuse `MCP_SERVER_REQUEST_TIMEOUT` for internal operations (like GCS downloads). Instead, prefer dedicated environment variables (e.g., `GCS_DOWNLOAD_TIMEOUT`) with robust defaults (300s+). This ensures internal tasks have enough time to complete before the top-level client timeout is reached.
@@ -81,7 +81,7 @@ After **any** code change to an MCP server, you **must** run the corresponding `
 ./verify.sh
 ```
 
-**Troubleshooting Timeouts:** If `verify.sh` or other commands time out, the *first* thing to check is that the `PROJECT_ID` environment variable is correctly set for the shell session running the command.
+**Troubleshooting Timeouts:** If `verify.sh` or other commands time out, the *first* thing to check is that the `GOOGLE_CLOUD_PROJECT` environment variable is correctly set for the shell session running the command.
 
 A successful build (`go build`) is **not sufficient**. This script performs a basic "liveness" check by calling the `tools` command with `mcptools`. If the script completes successfully, it confirms that the server builds and is responsive to basic MCP requests. This is the primary guardrail against regressions that cause the server to fail silently on startup.
 
@@ -119,14 +119,14 @@ mcptools call <tool_name> --params '<json_payload>' <path_to_server_binary>
 *   `--params '<json_payload>'`: The arguments for the tool, provided as a single, quoted JSON string.
 *   `<path_to_server_binary>`: The path to the compiled MCP server executable.
 
-**Important:** Ensure any required environment variables (like `PROJECT_ID`) are set for the command.
+**Important:** Ensure any required environment variables (like `GOOGLE_CLOUD_PROJECT`) are set for the command.
 
 #### Example
 
 This example calls the `imagen_t2i` tool from the `mcp-imagen-go` server with specific parameters.
 
 ```bash
-export PROJECT_ID=genai-blackbelt-fishfooding
+export GOOGLE_CLOUD_PROJECT=genai-blackbelt-fishfooding
 
 mcptools call imagen_t2i \
   --params '{"prompt": "a majestic lion", "model":"Imagen 3", "output_directory":"./test_output"}' \
@@ -199,3 +199,6 @@ All generated media will be saved to the GCS bucket `gs://genai-blackbelt-fishfo
 
 ### **Version Sync**
 When updating the Go version in `go.mod` or `go.work`, you **must** also search for and update the `go-version` in all relevant GitHub Action workflows (e.g., `.github/workflows/mcp-release.yml` and `mcp-genmedia-go.yml`) to ensure CI compatibility.
+l`) to ensure CI compatibility.
+l`) to ensure CI compatibility.
+l`) to ensure CI compatibility.

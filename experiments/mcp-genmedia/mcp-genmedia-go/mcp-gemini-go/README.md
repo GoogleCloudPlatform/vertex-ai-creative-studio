@@ -44,7 +44,7 @@ Provides a list of supported languages and their BCP-47 codes. Currently, only `
 ### Generating an Image
 
 ```bash
-export PROJECT_ID=your-gcp-project
+export GOOGLE_CLOUD_PROJECT=your-gcp-project
 
 mcptools call gemini_image_generation \
   --params '{"prompt": "a picture of a cat sitting on a table", "output_directory": "./output"}' \
@@ -53,10 +53,10 @@ mcptools call gemini_image_generation \
 
 ### Generating Audio
 
-First, ensure the `PROJECT_ID` environment variable is set. Then, you can call the `gemini_audio_tts` tool. The following example generates an audio file and saves it to a local directory named `tts_output`.
+First, ensure the `GOOGLE_CLOUD_PROJECT` environment variable is set. Then, you can call the `gemini_audio_tts` tool. The following example generates an audio file and saves it to a local directory named `tts_output`.
 
 ```bash
-export PROJECT_ID=$(gcloud config get-value project)
+export GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)
 
 mcptools call gemini_audio_tts \
   --params '{"text": "Hello, this is a test of the Gemini Text-to-Speech API.", "output_directory": "./tts_output"}' \

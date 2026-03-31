@@ -18,8 +18,8 @@ set -e
 
 cd "$(dirname "$0")" # Change to the script's directory
 
-if [[ -z "${PROJECT_ID}" ]]; then
-  echo "PROJECT_ID environment variable must be set."
+if [[ -z "${GOOGLE_CLOUD_PROJECT}" ]]; then
+  echo "GOOGLE_CLOUD_PROJECT environment variable must be set."
   exit 1
 fi
 

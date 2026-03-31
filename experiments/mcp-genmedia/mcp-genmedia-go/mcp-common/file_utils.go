@@ -24,7 +24,7 @@ func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID
 
 	if strings.HasPrefix(fileURI, "gs://") {
 		if gcpProjectID == "" {
-			return "", cleanupFunc, errors.New("PROJECT_ID not set, cannot download from GCS")
+			return "", cleanupFunc, errors.New("GOOGLE_CLOUD_PROJECT not set, cannot download from GCS")
 		}
 		tempDir, errMkdir := os.MkdirTemp("", "input_")
 		if errMkdir != nil {
@@ -134,7 +134,7 @@ func ProcessOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, final
 
 	if outputGCSBucket != "" {
 		if gcpProjectID == "" {
-			return finalLocalPath, "", errors.New("PROJECT_ID not set, cannot upload to GCS")
+			return finalLocalPath, "", errors.New("GOOGLE_CLOUD_PROJECT not set, cannot upload to GCS")
 		}
 		if _, errStat := os.Stat(currentLocalPath); os.IsNotExist(errStat) {
 			return finalLocalPath, "", fmt.Errorf("ffmpeg output file %s not found for GCS upload", currentLocalPath)

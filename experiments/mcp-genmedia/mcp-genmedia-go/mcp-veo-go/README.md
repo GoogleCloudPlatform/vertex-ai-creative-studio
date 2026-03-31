@@ -38,7 +38,7 @@ The server exposes the following tools:
 
 The tool utilizes the following environment variables:
 
-*   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
+*   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services.
     *   Default: `"us-central1"`
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if the `bucket` parameter is not specified in the tool request. The path `veo_outputs/` will be appended to this bucket.

@@ -32,7 +32,7 @@ The following tools are exposed by this server:
 
 The tool utilizes the following environment variables:
 
-*   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
+*   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
 *   `LOCATION` (string): The Google Cloud location/region for services.
     *   Default: `"us-central1"`
 *   `PORT` (string, for HTTP/SSE transport): The port for the server to listen on if using HTTP or SSE transport.

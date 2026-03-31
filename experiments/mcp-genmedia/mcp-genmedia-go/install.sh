@@ -127,16 +127,21 @@ setup_agent_skills() {
 # perform the installation process.
 main() {
 
-  if [[ -z "${PROJECT_ID}" ]]; then
-    echo -e "${YELLOW}PROJECT_ID not set, attempting to retrieve from gcloud config...${NC}"
-    PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
-    if [[ -z "${PROJECT_ID}" ]]; then
-      echo -e "${RED}ERROR: Could not retrieve PROJECT_ID from gcloud. Please set it manually.${NC}"
-      echo "For example: export PROJECT_ID=your-gcp-project-id"
+  # Fallback to PROJECT_ID if GOOGLE_CLOUD_PROJECT is not set
+  if [[ -z "${GOOGLE_CLOUD_PROJECT}" ]] && [[ -n "${PROJECT_ID}" ]]; then
+    export GOOGLE_CLOUD_PROJECT="${PROJECT_ID}"
+  fi
+
+  if [[ -z "${GOOGLE_CLOUD_PROJECT}" ]]; then
+    echo -e "${YELLOW}GOOGLE_CLOUD_PROJECT not set, attempting to retrieve from gcloud config...${NC}"
+    GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project 2>/dev/null)
+    if [[ -z "${GOOGLE_CLOUD_PROJECT}" ]]; then
+      echo -e "${RED}ERROR: Could not retrieve GOOGLE_CLOUD_PROJECT from gcloud. Please set it manually.${NC}"
+      echo "For example: export GOOGLE_CLOUD_PROJECT=your-gcp-project-id"
       exit 1
     else
-      echo -e "${GREEN}Successfully retrieved PROJECT_ID: ${PROJECT_ID}${NC}"
-      export PROJECT_ID
+      echo -e "${GREEN}Successfully retrieved GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}${NC}"
+      export GOOGLE_CLOUD_PROJECT
     fi
   fi
 

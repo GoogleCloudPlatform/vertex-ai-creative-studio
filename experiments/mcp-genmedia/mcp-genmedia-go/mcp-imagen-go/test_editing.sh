@@ -2,9 +2,9 @@
 
 set -e
 
-# Ensure PROJECT_ID is set
-if [ -z "$PROJECT_ID" ]; then
-  echo "Error: PROJECT_ID environment variable is not set." >&2
+# Ensure GOOGLE_CLOUD_PROJECT is set
+if [ -z "$GOOGLE_CLOUD_PROJECT" ]; then
+  echo "Error: GOOGLE_CLOUD_PROJECT environment variable is not set." >&2
   exit 1
 fi
 

@@ -24,7 +24,7 @@ Generates content (text and/or images) based on a multimodal prompt.
 ### Generating an Image
 
 ```bash
-export PROJECT_ID=your-gcp-project
+export GOOGLE_CLOUD_PROJECT=your-gcp-project
 
 mcptools call nanobanana_image_generation \
   --params '{"prompt": "a picture of a cat sitting on a table", "output_directory": "./output"}' \

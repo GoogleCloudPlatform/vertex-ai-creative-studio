@@ -25,11 +25,18 @@ func LoadConfig() *Config {
 		log.Println("Error loading .env file, using environment variables only")
 	}
 
-	projectID := os.Getenv("PROJECT_ID")
+	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectID == "" {
-		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
+		projectID = os.Getenv("PROJECT_ID")
+		if projectID != "" {
+			log.Printf("GOOGLE_CLOUD_PROJECT not set, using PROJECT_ID fallback: %s", projectID)
+		}
 	}
-	log.Printf("PROJECT_ID set to: %s", projectID)
+
+	if projectID == "" {
+		log.Fatal("GOOGLE_CLOUD_PROJECT (or PROJECT_ID) environment variable not set. Please set the env variable, e.g. export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)")
+	}
+	log.Printf("Project ID set to: %s", projectID)
 
 	genmediaBucket := GetEnv("GENMEDIA_BUCKET", "")
 	if genmediaBucket != "" {

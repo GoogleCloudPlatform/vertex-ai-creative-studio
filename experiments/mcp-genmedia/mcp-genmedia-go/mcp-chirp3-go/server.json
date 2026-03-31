@@ -23,7 +23,7 @@
           "is_required": true,
           "format": "string",
           "is_secret": false,
-          "name": "PROJECT_ID"
+          "name": "GOOGLE_CLOUD_PROJECT"
         },
         {
             "description": "The Google Cloud region for the APIs (e.g., `us-central1`).",

@@ -70,9 +70,9 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 
 Before validating, ensure your Google Cloud project ID is set as an environment variable:
 ```bash
-export PROJECT_ID=$(gcloud config get project)
+export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
 # Or, if you prefer to set it manually:
-# export PROJECT_ID="your-google-cloud-project-id"
+# export GOOGLE_CLOUD_PROJECT="your-google-cloud-project-id"
 ```
 
 With the MCP servers for genmedia installed, you can test that they're available by sending a STDIO "tools/list" command (substitute the MCP server in question as needed):
@@ -127,7 +127,7 @@ To use a prompt, you call the `prompts/get` method with the prompt's name and an
 
 ```bash
 # Call the prompt with a required argument
-export PROJECT_ID=$(gcloud config get project)
+export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
 echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-image","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-imagen-go | jq .
 
 # Call the prompt without a required argument
@@ -210,7 +210,7 @@ This allows you to have default values in your `.env` file and override them for
 
 The following variables can be defined in your `.env` file or as shell environment variables:
 
-*   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
+*   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
 *   `PORT` (string): Specifies the port for the `http` transport. If not set, it defaults to `8080`. Note that for the `sse` transport, most servers use a hardcoded port (typically `8081`) to avoid conflicts.
@@ -218,7 +218,7 @@ The following variables can be defined in your `.env` file or as shell environme
 
 *Example:*
 ```bash
-export PROJECT_ID="your-google-cloud-project-id"
+export GOOGLE_CLOUD_PROJECT="your-google-cloud-project-id"
 export LOCATION="us-central1"
 ```
 

@@ -7,8 +7,9 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	t.Run("with all env vars set", func(t *testing.T) {
-		_ = os.Setenv("PROJECT_ID", "test-project")
+	t.Run("with all env vars set (using GOOGLE_CLOUD_PROJECT)", func(t *testing.T) {
+		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+		_ = os.Unsetenv("PROJECT_ID")
 		_ = os.Setenv("LOCATION", "test-location")
 		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
 
@@ -24,6 +25,19 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("expected GenmediaBucket to be 'test-bucket', but got '%s'", cfg.GenmediaBucket)
 		}
 
+	})
+
+	t.Run("with PROJECT_ID fallback", func(t *testing.T) {
+		_ = os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		_ = os.Setenv("PROJECT_ID", "test-project-fallback")
+		_ = os.Setenv("LOCATION", "test-location")
+		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
+
+		cfg := LoadConfig()
+
+		if cfg.ProjectID != "test-project-fallback" {
+			t.Errorf("expected ProjectID to be 'test-project-fallback', but got '%s'", cfg.ProjectID)
+		}
 	})
 
 	t.Run("with some env vars missing", func(t *testing.T) {
