@@ -108,7 +108,7 @@ google-genai==1.29.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-resumable-media==2.7.2
+google-resumable-media==2.8.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage

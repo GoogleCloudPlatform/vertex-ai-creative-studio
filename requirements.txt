@@ -132,7 +132,7 @@ google-genai==1.65.0
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
-google-resumable-media==2.8.0
+google-resumable-media==2.8.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
