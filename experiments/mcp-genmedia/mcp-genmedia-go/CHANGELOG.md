@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-31 (v3.4.0)
+
+*   **Feat:** Introduce `ALLOW_UNSAFE_MODELS` environment variable to bypass strict model validation for experimental testing.
+*   **Fix:** Enforce correct regional routing and fallback logic for Chirp3-HD based on the `LOCATION` parameter.
+*   **Feat:** Implement optional header capture (`ENABLE_OPTIONAL_HEADER_CAPTURE`) to surface `x-goog-sherlog-link` debug links for Gemini, Imagen, NanoBanana, and Lyria.
+
 ## 2026-03-30 (v3.3.0)
 
 *   **Feat:** Support `GOOGLE_CLOUD_PROJECT` as primary project env var across all tools, with fallback to `PROJECT_ID`.
