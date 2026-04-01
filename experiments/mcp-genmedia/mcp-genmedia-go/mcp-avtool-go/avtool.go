@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.4.0" // Synchronize release version
+	version     = "3.4.1" // Synchronize release version
 )
 
 var (

@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-03-31 (v3.4.0)
+## 2026-04-01 (v3.4.1)
 
 *   **Feat:** Introduce `ALLOW_UNSAFE_MODELS` environment variable to bypass strict model validation for experimental testing.
 *   **Fix:** Enforce correct regional routing and fallback logic for Chirp3-HD based on the `LOCATION` parameter.
