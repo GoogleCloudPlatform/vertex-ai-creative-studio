@@ -37,6 +37,7 @@ The tool utilizes the following environment variables:
     *   **Override**: You can override this globally for this specific server by setting `IMAGEN_PROJECT_ID`.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services.
     *   Default: `"us-central1"`
+    *   **Override**: You can override this globally for this specific server by setting `IMAGEN_LOCATION`.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if `gcs_bucket_uri` is not specified in the tool request. The path `imagen_outputs/` will be appended to this bucket.
     *   Default: `""` (empty string, meaning no default GCS output path is formed from this variable unless `gcs_bucket_uri` is also absent).
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry.

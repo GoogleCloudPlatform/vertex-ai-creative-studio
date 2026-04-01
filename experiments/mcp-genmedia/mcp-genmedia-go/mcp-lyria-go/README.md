@@ -33,6 +33,7 @@ The tool utilizes the following environment variables:
 *   `LOCATION` (string): The primary Google Cloud location for services.
     *   Default: `"us-central1"`
     *   Also used as the default for `LYRIA_LOCATION (Deprecated for V3)` if `LYRIA_LOCATION (Deprecated for V3)` is not set.
+    *   **Override**: You can override this globally for this specific server by setting `LYRIA_LOCATION`. (Note: This is now the preferred way to set the location for this server, replacing the deprecated `LYRIA_LOCATION (Deprecated for V3)` variable).
 *   `LYRIA_LOCATION (Deprecated for V3)` (string): The specific Google Cloud location for the Lyria model endpoint.
     *   Default: Value of `LOCATION` environment variable (e.g., `"us-central1"`).
 *   `LYRIA_MODEL_PUBLISHER (Deprecated)` (string): The publisher of the Lyria model in Vertex AI.

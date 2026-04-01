@@ -36,6 +36,7 @@ The tool utilizes the following environment variables:
     *   **Override**: You can override this globally for this specific server by setting `CHIRP3_PROJECT_ID`.
 *   `LOCATION` (string): The Google Cloud region for Chirp3-HD services. Supported regions are: `global`, `us`, `eu`, `asia-southeast1`, `europe-west2`, and `asia-northeast1`.
     *   Default: `"global"` (Note: if you inherit `"us-central1"` from a generic `.env` file, the server will automatically map it to `"us"` or `"global"` to prevent errors, as Chirp3-HD does not support `us-central1`).
+    *   **Override**: You can override this globally for this specific server by setting `CHIRP3_LOCATION`.
 *   `PORT` (string, for HTTP/SSE transport): The port for the server to listen on if using HTTP or SSE transport.
     *   Default for HTTP: `"8080"` (from `getEnv` call in `main` for HTTP).
     *   Default for SSE: `"8081"` (if `-p` flag is not used and transport is `sse`). The `-p` flag can override this.

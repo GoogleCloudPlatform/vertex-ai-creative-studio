@@ -72,6 +72,7 @@ The tool is configured using environment variables:
     *   **Override**: You can override this globally for this specific server by setting `AVTOOL_PROJECT_ID`.
 *   `GENMEDIA_BUCKET`: (Optional) Default Google Cloud Storage bucket to use for outputs if not specified in the tool request.
 *   `LOCATION`: (Optional) Google Cloud location (e.g., `us-central1`). Defaults to `us-central1`. Primarily for GCS client initialization context.
+    *   **Override**: You can override this globally for this specific server by setting `AVTOOL_LOCATION`.
 *   `PORT`: (Optional, for HTTP transport) The port for the HTTP server to listen on. Defaults to `8080`.
 
 ## Running the Tool

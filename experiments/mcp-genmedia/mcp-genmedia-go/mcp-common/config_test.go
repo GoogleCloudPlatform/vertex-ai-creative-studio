@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("with server specific override", func(t *testing.T) {
+	t.Run("with server specific project override", func(t *testing.T) {
 		_ = os.Setenv("VEO_PROJECT_ID", "test-veo-project")
 		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-global-project")
 
@@ -50,6 +50,20 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("expected ProjectID to be 'test-veo-project', but got '%s'", cfg.ProjectID)
 		}
 		_ = os.Unsetenv("VEO_PROJECT_ID")
+	})
+
+	t.Run("with server specific location override", func(t *testing.T) {
+		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+		_ = os.Setenv("VEO_LOCATION", "test-veo-location")
+		_ = os.Setenv("LOCATION", "test-global-location")
+
+		cfg := LoadConfig("mcp-veo-go")
+
+		if cfg.Location != "test-veo-location" {
+			t.Errorf("expected Location to be 'test-veo-location', but got '%s'", cfg.Location)
+		}
+		_ = os.Unsetenv("VEO_LOCATION")
+		_ = os.Unsetenv("LOCATION")
 	})
 
 	t.Run("with ALLOW_UNSAFE_MODELS enabled", func(t *testing.T) {

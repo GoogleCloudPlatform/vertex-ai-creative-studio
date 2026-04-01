@@ -58,6 +58,20 @@ func LoadConfig(serviceName string) *Config {
 	}
 	log.Printf("Project ID set to: %s", projectID)
 
+	var location string
+	if serviceName != "" {
+		prefix := strings.ToUpper(strings.TrimSuffix(strings.TrimPrefix(serviceName, "mcp-"), "-go"))
+		overrideKey := prefix + "_LOCATION"
+		location = os.Getenv(overrideKey)
+		if location != "" {
+			log.Printf("Using server-specific location override %s: %s", overrideKey, location)
+		}
+	}
+
+	if location == "" {
+		location = GetEnv("LOCATION", "us-central1")
+	}
+
 	genmediaBucket := GetEnv("GENMEDIA_BUCKET", "")
 	if genmediaBucket != "" {
 		log.Printf("GENMEDIA_BUCKET set to: %s", genmediaBucket)
@@ -80,7 +94,7 @@ func LoadConfig(serviceName string) *Config {
 
 	return &Config{
 		ProjectID:                   projectID,
-		Location:                    GetEnv("LOCATION", "us-central1"),
+		Location:                    location,
 		GenmediaBucket:              genmediaBucket,
 		ApiEndpoint:                 os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
 		AllowUnsafeModels:           allowUnsafe,
