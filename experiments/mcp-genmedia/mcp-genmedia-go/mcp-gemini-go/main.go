@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "3.4.1" // Synchronize release version
+	version     = "3.4.2" // Synchronize release version
 )
 
 func init() {

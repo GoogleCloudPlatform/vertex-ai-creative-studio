@@ -25,8 +25,9 @@ The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID.
     *   **Override**: You can override this globally for this specific server by setting `NANOBANANA_PROJECT_ID`.
-*   `LOCATION` (string): The Google Cloud location/region for Vertex AI services.
+*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services.
     *   Default: `"us-central1"`
+    *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
     *   **Override**: You can override this globally for this specific server by setting `NANOBANANA_LOCATION`.
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry.
     *   Default: `false`

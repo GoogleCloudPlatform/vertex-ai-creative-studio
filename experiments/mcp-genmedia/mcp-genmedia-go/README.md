@@ -212,8 +212,9 @@ The following variables can be defined in your `.env` file or as shell environme
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
     *   **Per-Server Override**: You can override the global project ID for specific servers using `VEO_PROJECT_ID`, `IMAGEN_PROJECT_ID`, `LYRIA_PROJECT_ID`, `GEMINI_PROJECT_ID`, `CHIRP3_PROJECT_ID`, `AVTOOL_PROJECT_ID`, or `NANOBANANA_PROJECT_ID`.
-*   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
-    *   **Per-Server Override**: You can override the global location for specific servers using `VEO_LOCATION`, `IMAGEN_LOCATION`, `LYRIA_LOCATION`, `GEMINI_LOCATION`, `CHIRP3_LOCATION`, `AVTOOL_LOCATION`, or `NANOBANANA_LOCATION`.
+*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
+    *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
+    *   **Per-Server Override**: You can override the global location for specific servers using `<PREFIX>_LOCATION` (e.g., `VEO_LOCATION`, `IMAGEN_LOCATION`, `LYRIA_LOCATION`, `GEMINI_LOCATION`, `CHIRP3_LOCATION`, `AVTOOL_LOCATION`, or `NANOBANANA_LOCATION`).
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry. Defaults to `false`.
 *   `ENABLE_OPTIONAL_HEADER_CAPTURE` (boolean): Optional (`true`/`false`). Intended for internal debugging. When set to `true`, the server intercepts API requests and injects the raw ADC Bearer token to capture and surface the `x-goog-sherlog-link` header in the tool output. This feature is supported for Imagen, Gemini, NanoBanana, and Lyria, but currently not supported for Veo due to Go SDK limitations with long-running operations. Defaults to `false`.
@@ -223,7 +224,7 @@ The following variables can be defined in your `.env` file or as shell environme
 *Example:*
 ```bash
 export GOOGLE_CLOUD_PROJECT="your-google-cloud-project-id"
-export LOCATION="us-central1"
+export GOOGLE_CLOUD_LOCATION="us-central1"
 ```
 
 ### Local Development & OpenTelemetry

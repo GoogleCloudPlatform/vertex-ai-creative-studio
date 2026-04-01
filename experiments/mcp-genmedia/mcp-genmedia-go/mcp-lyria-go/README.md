@@ -30,12 +30,12 @@ The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
     *   **Override**: You can override this globally for this specific server by setting `LYRIA_PROJECT_ID`.
-*   `LOCATION` (string): The primary Google Cloud location for services.
+*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services.
     *   Default: `"us-central1"`
-    *   Also used as the default for `LYRIA_LOCATION (Deprecated for V3)` if `LYRIA_LOCATION (Deprecated for V3)` is not set.
+    *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
     *   **Override**: You can override this globally for this specific server by setting `LYRIA_LOCATION`. (Note: This is now the preferred way to set the location for this server, replacing the deprecated `LYRIA_LOCATION (Deprecated for V3)` variable).
 *   `LYRIA_LOCATION (Deprecated for V3)` (string): The specific Google Cloud location for the Lyria model endpoint.
-    *   Default: Value of `LOCATION` environment variable (e.g., `"us-central1"`).
+    *   Default: Value of `GOOGLE_CLOUD_LOCATION` or `LOCATION` environment variable (e.g., `"us-central1"`).
 *   `LYRIA_MODEL_PUBLISHER (Deprecated)` (string): The publisher of the Lyria model in Vertex AI.
     *   Default: `"google"`
 *   `DEFAULT_LYRIA_MODEL_ID (Deprecated)` (string): The default Lyria model ID to be used if not specified in the request.

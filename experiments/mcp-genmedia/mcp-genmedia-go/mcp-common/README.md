@@ -7,7 +7,7 @@ This package provides common functionality for the MCP services in this reposito
 The `config.go` file provides a way to load configuration from environment variables. The `LoadConfig` function returns a `Config` struct that contains the following fields:
 
 * `ProjectID`: The Google Cloud project ID.
-* `Location`: The Google Cloud location.
+* `Location`: The Google Cloud location/region for services (configured via `GOOGLE_CLOUD_LOCATION`, `LOCATION`, or server-specific overrides).
 * `GenmediaBucket`: The Google Cloud Storage bucket for general media.
 
 Additionally, the `GetGCSDownloadTimeout` function reads the `GCS_DOWNLOAD_TIMEOUT` environment variable to configure the timeout for GCS download operations. It accepts Go duration strings (e.g. `"30s"`, `"5m"`) and defaults to `5m`.

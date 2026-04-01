@@ -69,6 +69,10 @@ func LoadConfig(serviceName string) *Config {
 	}
 
 	if location == "" {
+		location = os.Getenv("GOOGLE_CLOUD_LOCATION")
+	}
+
+	if location == "" {
 		location = GetEnv("LOCATION", "us-central1")
 	}
 

@@ -10,6 +10,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("with all env vars set (using GOOGLE_CLOUD_PROJECT)", func(t *testing.T) {
 		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
 		_ = os.Unsetenv("PROJECT_ID")
+		_ = os.Unsetenv("GOOGLE_CLOUD_LOCATION")
 		_ = os.Setenv("LOCATION", "test-location")
 		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
 
@@ -55,6 +56,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("with server specific location override", func(t *testing.T) {
 		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
 		_ = os.Setenv("VEO_LOCATION", "test-veo-location")
+		_ = os.Setenv("GOOGLE_CLOUD_LOCATION", "test-google-location")
 		_ = os.Setenv("LOCATION", "test-global-location")
 
 		cfg := LoadConfig("mcp-veo-go")
@@ -63,6 +65,21 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("expected Location to be 'test-veo-location', but got '%s'", cfg.Location)
 		}
 		_ = os.Unsetenv("VEO_LOCATION")
+		_ = os.Unsetenv("GOOGLE_CLOUD_LOCATION")
+		_ = os.Unsetenv("LOCATION")
+	})
+
+	t.Run("with GOOGLE_CLOUD_LOCATION fallback", func(t *testing.T) {
+		_ = os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+		_ = os.Setenv("GOOGLE_CLOUD_LOCATION", "test-google-location")
+		_ = os.Setenv("LOCATION", "test-global-location")
+
+		cfg := LoadConfig("mcp-veo-go")
+
+		if cfg.Location != "test-google-location" {
+			t.Errorf("expected Location to be 'test-google-location', but got '%s'", cfg.Location)
+		}
+		_ = os.Unsetenv("GOOGLE_CLOUD_LOCATION")
 		_ = os.Unsetenv("LOCATION")
 	})
 

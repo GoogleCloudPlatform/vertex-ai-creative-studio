@@ -7,8 +7,9 @@ This document lists environment variables used by the MCP servers in this reposi
 | `GOOGLE_CLOUD_PROJECT` | Yes | The primary Google Cloud Project ID used for API calls and GCS operations. | None | All |
 | `PROJECT_ID` | Fallback | Legacy fallback for `GOOGLE_CLOUD_PROJECT`. | None | All |
 | `<PREFIX>_PROJECT_ID` | No | Server-specific override for `GOOGLE_CLOUD_PROJECT` (e.g., `VEO_PROJECT_ID`, `IMAGEN_PROJECT_ID`). | None | All |
-| `LOCATION` | No | The Google Cloud location/region for Vertex AI services (e.g., `us-central1`, `europe-west2`). | `us-central1`* | All |
-| `<PREFIX>_LOCATION` | No | Server-specific override for `LOCATION` (e.g., `CHIRP3_LOCATION=eu`). | None | All |
+| `GOOGLE_CLOUD_LOCATION` | No | The preferred Google Cloud location/region for Vertex AI services (e.g., `us-central1`, `europe-west2`). | `us-central1`* | All |
+| `LOCATION` | Fallback | Fallback for `GOOGLE_CLOUD_LOCATION`. | `us-central1`* | All |
+| `<PREFIX>_LOCATION` | No | Server-specific override for location (e.g., `CHIRP3_LOCATION=eu`). | None | All |
 | `ALLOW_UNSAFE_MODELS` | No | Optional (`true`/`false`). Allows users to bypass strict local model constraint validation to test experimental or pre-release model strings. | `false` | Veo, Imagen, Gemini, NanoBanana, Lyria |
 | `ENABLE_OPTIONAL_HEADER_CAPTURE` | No | Optional (`true`/`false`). Intended for internal debugging. Injects raw Bearer token to capture `x-goog-sherlog-link`. | `false` | Imagen, Gemini, NanoBanana, Lyria |
 | `GENMEDIA_BUCKET` | No | A default GCS bucket to use for outputs if one isn't specified in a tool request. | None | All |

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-01 (v3.4.2)
+
+*   **Feat:** Support `GOOGLE_CLOUD_LOCATION` as the primary environment variable for location, with `LOCATION` as a fallback.
+*   **Feat:** Enhanced configuration flexibility for mixed-region deployments with prefix-based overrides (e.g., `CHIRP3_LOCATION`).
+
 ## 2026-04-01 (v3.4.1)
 
 *   **Feat:** Introduce `ALLOW_UNSAFE_MODELS` environment variable to bypass strict model validation for experimental testing.
