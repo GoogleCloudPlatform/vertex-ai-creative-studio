@@ -337,6 +337,17 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportsFirstLast:      true,
 		SupportsReferenceImage: true,
 	},
+	"veo-3.1-lite-generate-001": {
+		CanonicalName:          "veo-3.1-lite-generate-001",
+		Aliases:                []string{"Veo 3.1 Lite"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"720p", "1080p"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: false,
+	},
 }
 
 var veoAliasMap = make(map[string]string)

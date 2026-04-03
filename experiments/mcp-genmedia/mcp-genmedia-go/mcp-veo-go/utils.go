@@ -101,7 +101,11 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	// Aspect Ratio
 	finalAspectRatio, _ := args["aspect_ratio"].(string)
 	if finalAspectRatio == "" {
-		finalAspectRatio = "16:9"
+		if len(modelDetails.SupportedAspectRatios) > 0 {
+			finalAspectRatio = modelDetails.SupportedAspectRatios[0]
+		} else {
+			finalAspectRatio = "16:9"
+		}
 	}
 	validRatio := false
 	for _, r := range modelDetails.SupportedAspectRatios {

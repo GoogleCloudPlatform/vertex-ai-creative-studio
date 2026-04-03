@@ -43,7 +43,7 @@ jobs:
 
     - name: Test, Build, Lint and Verify
       env:
-        PROJECT_ID: test-project-id
+        GOOGLE_CLOUD_PROJECT: test-project-id
       run: |
         for dir in mcp-avtool-go mcp-chirp3-go mcp-common mcp-gemini-go mcp-imagen-go mcp-lyria-go mcp-veo-go mcp-nanobanana-go; do
           echo "Processing $dir"

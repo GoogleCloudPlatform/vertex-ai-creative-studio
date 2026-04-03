@@ -1,4 +1,4 @@
-# MCP Veo Server (Version: 1.3.7)
+# MCP Veo Server (Version: 3.5.0)
 
 This tool provides video generation capabilities using Google's Veo models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to allow LLMs and other MCP clients to generate videos from text prompts or source images.
 
@@ -119,6 +119,13 @@ Build the tool using `go build` or `go install`.
       "num_videos": 1,
       "aspect_ratio": "16:9",
       "duration": 6,
+      "bucket": "your-gcs-bucket/veo_i2v_outputs",
+      "output_directory": "./veo_videos_i2v"
+    }
+  }
+}
+```
+ 6,
       "bucket": "your-gcs-bucket/veo_i2v_outputs",
       "output_directory": "./veo_videos_i2v"
     }

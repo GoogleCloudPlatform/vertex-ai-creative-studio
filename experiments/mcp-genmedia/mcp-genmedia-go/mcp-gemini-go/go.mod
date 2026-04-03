@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260331014230-8df9c8745d06
 	github.com/mark3labs/mcp-go v0.45.0
 	go.opentelemetry.io/otel v1.42.0
-	google.golang.org/genai v1.51.0
+	google.golang.org/genai v1.52.1
 )
 
 require (

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-04-02 (v3.5.0)
+
+*   **Feat:** Add support for the `veo-3.1-lite-generate-001` model.
+
 ## 2026-04-01 (v3.4.2)
 
 *   **Feat:** Support `GOOGLE_CLOUD_LOCATION` as the primary environment variable for location, with `LOCATION` as a fallback.
