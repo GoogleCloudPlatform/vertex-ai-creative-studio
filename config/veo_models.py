@@ -103,6 +103,7 @@ VEO_MODELS: List[VeoModelConfig] = [
         requires_prompt_enhancement=True,
         default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
+
     ),
     VeoModelConfig(
         version_id="3.0-fast",
@@ -125,23 +126,6 @@ VEO_MODELS: List[VeoModelConfig] = [
         version_id="3.1-fast",
         model_name="veo-3.1-fast-generate-001",
         display_name="Veo 3.1 Fast",
-        supported_modes=["t2v", "i2v", "interpolation"],
-        supported_aspect_ratios=["16:9", "9:16"],
-        resolutions=["720p", "1080p", "4k"],
-        min_duration=4,
-        max_duration=8,
-        default_duration=8,
-        max_samples=4,
-        default_samples=1,
-        supports_prompt_enhancement=True,
-        requires_prompt_enhancement=True,
-        default_prompt_enhancement=True,
-        supported_durations=[4, 6, 8],
-    ),
-    VeoModelConfig(
-        version_id="3.1-fast-preview",
-        model_name="veo-3.1-fast-generate-preview",
-        display_name="Veo 3.1 Fast Preview",
         supported_modes=["t2v", "i2v", "interpolation", "r2v"],
         supported_aspect_ratios=["16:9", "9:16"],
         resolutions=["720p", "1080p", "4k"],
@@ -169,23 +153,6 @@ VEO_MODELS: List[VeoModelConfig] = [
         version_id="3.1",
         model_name="veo-3.1-generate-001",
         display_name="Veo 3.1",
-        supported_modes=["t2v", "i2v", "interpolation"],
-        supported_aspect_ratios=["16:9", "9:16"],
-        resolutions=["720p", "1080p", "4k"],
-        min_duration=4,
-        max_duration=8,
-        default_duration=8,
-        max_samples=4,
-        default_samples=1,
-        supports_prompt_enhancement=True,
-        requires_prompt_enhancement=True,
-        default_prompt_enhancement=True,
-        supported_durations=[4, 6, 8],
-    ),
-    VeoModelConfig(
-        version_id="3.1-preview",
-        model_name="veo-3.1-generate-preview",
-        display_name="Veo 3.1 preview",
         supported_modes=["t2v", "i2v", "interpolation", "r2v"],
         supported_aspect_ratios=["16:9", "9:16"],
         resolutions=["720p", "1080p", "4k"],
@@ -225,6 +192,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         requires_prompt_enhancement=True,
         default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
+        supports_video_extension=True,
+        supported_extension_durations=[7],
     ),
 ]
 
@@ -235,3 +204,19 @@ def get_veo_model_config(version_id: str) -> Optional[VeoModelConfig]:
         if model.version_id == version_id:
             return model
     return None
+
+def get_models_by_mode(mode: str) -> List[VeoModelConfig]:
+    """Finds and returns all model configurations that support a specific mode."""
+    return [model for model in VEO_MODELS if mode in model.supported_modes]
+
+def get_version_id_by_model_name(model_name: str) -> Optional[str]:
+    """Finds the version_id corresponding to a specific model_name."""
+    for model in VEO_MODELS:
+        if model.model_name == model_name:
+            return model.version_id
+    return None
+
+from config.default import Default
+cfg = Default()
+# Resolve or fallback safely
+DEFAULT_VEO_VERSION_ID = get_version_id_by_model_name(cfg.DEFAULT_VEO_MODEL_NAME) or "3.1-fast"

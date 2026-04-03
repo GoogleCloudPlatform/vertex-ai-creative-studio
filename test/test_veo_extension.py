@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_veo_extension(
-    input_video_gcs: str, model_id: str = "veo-3.1-fast-generate-preview"
+    input_video_gcs: str, model_id: str = "veo-3.1-fast-generate-001"
 ):
     """
     Test the Veo video extension capability.

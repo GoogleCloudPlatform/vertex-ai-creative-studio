@@ -21,7 +21,7 @@ The workflow consists of four main steps:
 -   **Models**:
     -   `gemini-2.5-flash` (or configured text model) for scene direction/storyboarding.
     -   `gemini-2.5-flash-image` (or configured image model) for 8-bit and character sheet generation.
-    -   `veo-3.1-generate-preview` (or compatible Veo 3+ model) for video generation.
+    -   `veo-3.1-generate-001` (or compatible Veo 3+ model) for video generation.
 -   **Libraries**:
     -   `pillow`: For image compositing in 2-player mode.
     -   `moviepy` / `ffmpeg`: For video concatenation.

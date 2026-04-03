@@ -43,6 +43,7 @@ from components.page_scaffold import (
 )
 from components.selfie_camera.selfie_camera import selfie_camera
 from config.default import ABOUT_PAGE_CONTENT, Default
+from config.veo_models import VEO_MODELS, get_veo_model_config, DEFAULT_VEO_VERSION_ID
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import VideoGenerationRequest, generate_video
 from models.video_processing import convert_mp4_to_gif
@@ -86,7 +87,7 @@ class PageState:
     gif_display_url: str = ""
     is_converting_gif: bool = False
 
-    veo_model: str = "3.1-fast-preview"
+    veo_model: str = DEFAULT_VEO_VERSION_ID
     veo_prompt_input: str = ""
 
     # I2V reference Image
@@ -105,7 +106,6 @@ class PageState:
 
 
 from config.portrait_styles import PORTRAIT_STYLES
-from config.veo_models import VEO_MODELS, get_veo_model_config
 
 
 @me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")

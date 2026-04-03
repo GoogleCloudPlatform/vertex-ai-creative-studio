@@ -47,7 +47,7 @@ export class RunVeoRun extends LitElement {
   @state() private prompt = 'A futuristic cyberpunk runner sprinting through neon streets, industrial techno vibe';
   @state() private error = '';
   
-  @state() private selectedModel = 'veo-3.1-fast-generate-preview';
+  @state() private selectedModel = 'veo-3.1-fast-generate-preview'; // TODO: Update to veo-3.1-fast-generate-001 as preview is deprecated
   @state() private selectedAspectRatio = '16:9';
   @state() private useContinuity = true;
   @state() private genMode: GenMode = 'text';

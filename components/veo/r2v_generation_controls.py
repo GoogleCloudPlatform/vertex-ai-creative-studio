@@ -14,7 +14,7 @@
 
 import mesop as me
 
-from config.veo_models import get_veo_model_config
+from config.veo_models import get_veo_model_config, get_models_by_mode
 from state.veo_and_me_state import PageState
 
 
@@ -28,7 +28,7 @@ def r2v_generation_controls(on_selection_change_veo_model):
         return
 
     # Define the specific models available on this page
-    r2v_models = ["2.0-exp", "3.1", "3.1-fast-preview"]
+    r2v_models = [model.version_id for model in get_models_by_mode("r2v")]
     model_options = [
         me.SelectOption(label=get_veo_model_config(v).display_name, value=v) for v in r2v_models
     ]

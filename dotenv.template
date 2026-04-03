@@ -76,12 +76,12 @@ PROJECT_ID=
 # VEO_PROJECT_ID=
 
 # [OPTIONAL] The experimental/newer Veo model version.
-# Default: veo-3.1-generate-preview
-# VEO_EXP_MODEL_ID=veo-3.1-generate-preview
+# Default: veo-3.1-generate-001
+# VEO_EXP_MODEL_ID=veo-3.1-generate-001
 
 # [OPTIONAL] The faster, lower-latency experimental Veo model.
-# Default: veo-3.1-fast-generate-preview
-# VEO_EXP_FAST_MODEL_ID=veo-3.1-fast-generate-preview
+# Default: veo-3.1-fast-generate-001
+# VEO_EXP_FAST_MODEL_ID=veo-3.1-fast-generate-001
 
 # [OPTIONAL] Project ID for experimental Veo models.
 # Default: Same as PROJECT_ID

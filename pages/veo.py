@@ -42,6 +42,7 @@ from models.model_setup import VeoModelSetup
 from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video
 from state.state import AppState
 from state.veo_state import PageState
+from config.veo_models import get_veo_model_config, DEFAULT_VEO_VERSION_ID
 
 config = Default()
 
@@ -59,7 +60,7 @@ def on_veo_load(e: me.LoadEvent):
 
     if image_path:
         # When an image is passed, default to the i2v mode and Veo 3.1 Fast model.
-        _update_state_for_new_model("3.1-fast-preview")
+        _update_state_for_new_model(DEFAULT_VEO_VERSION_ID)
 
         image_uri = ""
         if image_path.startswith("https://"):
@@ -473,7 +474,7 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
-    state.veo_model = "3.1-fast-preview"
+    state.veo_model = DEFAULT_VEO_VERSION_ID
     # Get default duration for the reset model
     model_config = get_veo_model_config(state.veo_model)
     state.video_length = model_config.default_duration if model_config else 8

@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.5.1"  # Fallback if package metadata is missing
+    VERSION: str = "1.7.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -110,15 +110,17 @@ class Default:
     LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", 15))
 
     # Veo
+    DEFAULT_VEO_MODEL_NAME: str = os.environ.get("DEFAULT_VEO_MODEL_NAME", "veo-3.1-fast-generate-001")
+
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-3.1-fast-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
     VEO_EXP_MODEL_ID: str = os.environ.get(
-        "VEO_EXP_MODEL_ID", "veo-3.1-generate-preview",
+        "VEO_EXP_MODEL_ID", "veo-3.1-generate-001",
     )
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
         "VEO_EXP_FAST_MODEL_ID",
-        "veo-3.1-fast-generate-preview",
+        "veo-3.1-fast-generate-001",
     )
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 

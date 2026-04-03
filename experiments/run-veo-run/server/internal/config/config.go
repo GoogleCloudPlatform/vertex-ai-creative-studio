@@ -49,7 +49,7 @@ func Load() *Config {
 
 	veoModel := os.Getenv("VEO_MODEL")
 	if veoModel == "" {
-		veoModel = "veo-3.1-fast-generate-preview"
+		veoModel = "veo-3.1-fast-generate-preview" // TODO: Update to veo-3.1-fast-generate-001 as preview is deprecated
 	}
 
 	veoBucket := os.Getenv("VEO_BUCKET")

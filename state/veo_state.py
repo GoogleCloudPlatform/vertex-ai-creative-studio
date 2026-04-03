@@ -15,6 +15,7 @@
 from dataclasses import field
 
 import mesop as me
+from config.veo_models import DEFAULT_VEO_VERSION_ID
 
 
 @me.stateclass
@@ -23,7 +24,7 @@ class PageState:
     
     # pylint: disable=E3701:invalid-field-call
 
-    veo_model: str = "3.1-fast-preview"
+    veo_model: str = DEFAULT_VEO_VERSION_ID
     veo_prompt_input: str = ""
     veo_prompt_placeholder: str = ""
     veo_prompt_textarea_key: int = 0

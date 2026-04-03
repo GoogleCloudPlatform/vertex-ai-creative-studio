@@ -32,6 +32,7 @@ from models.veo import generate_video, VideoGenerationRequest
 from models.video_processing import process_videos
 from state.storyboarder_state import PageState
 from state.state import AppState
+from config.veo_models import get_veo_model_config, DEFAULT_VEO_VERSION_ID
 
 @me.page(
     path="/storyboarder",
@@ -193,7 +194,7 @@ def on_generate_video_click(e: me.ClickEvent):
             print(f"Veo Prompt for clip {i}: {veo_prompt}")
             
             request = VideoGenerationRequest(
-                model_version_id="3.1-fast-preview", # Use Veo 3.1 Fast Preview
+                model_version_id=DEFAULT_VEO_VERSION_ID, # Use default model
                 reference_image_gcs=image_uri,
                 reference_image_mime_type="image/png",
                 duration_seconds=4, # 4s is supported

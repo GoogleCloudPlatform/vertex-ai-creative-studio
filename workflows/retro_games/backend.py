@@ -45,7 +45,7 @@ class RetroGameWorkflowState:
     # Configuration
     theme_context: str = ""
     include_bumper: bool = True
-    model_version: str = "veo-3.1-preview"
+    model_version: str = "veo-3.1"
     duration: int = 8
     scene_count: int = 1
     
@@ -76,7 +76,7 @@ def initialize_workflow(
     player2_image_uri: str | None = None,
     theme_context: str = "",
     include_bumper: bool = True,
-    model_version: str = "veo-3.1-preview",
+    model_version: str = "veo-3.1",
     duration: int = 8,
     scene_count: int = 1
 ) -> RetroGameWorkflowState:
