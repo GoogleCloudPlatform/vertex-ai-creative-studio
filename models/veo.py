@@ -34,11 +34,19 @@ logger = get_logger(__name__)
 
 load_dotenv(override=True)
 
-client = genai.Client(
-    vertexai=True,
-    project=config.VEO_PROJECT_ID,
-    location=config.LOCATION,
-)
+_clients = {}
+
+def get_veo_client(model_name: str) -> genai.Client:
+    """Get or create a genai.Client with the correct location based on the model name."""
+    location = config.PREVIEW_LOCATION if "preview" in model_name.lower() else config.VEO_LOCATION
+    
+    if location not in _clients:
+        _clients[location] = genai.Client(
+            vertexai=True,
+            project=config.VEO_PROJECT_ID,
+            location=location,
+        )
+    return _clients[location]
 
 # Map for person generation options
 PERSON_GENERATION_MAP = {
@@ -57,6 +65,8 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         raise GenerationError(
             f"Unsupported VEO model version: {request.model_version_id}"
         )
+
+    client = get_veo_client(model_config.model_name)
 
     # Prepare Generation Configuration
     # Start with the default from the model config

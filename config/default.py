@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.7.1"  # Fallback if package metadata is missing
+    VERSION: str = "1.7.2"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -111,6 +111,8 @@ class Default:
 
     # Veo
     DEFAULT_VEO_MODEL_NAME: str = os.environ.get("DEFAULT_VEO_MODEL_NAME", "veo-3.1-fast-generate-001")
+    VEO_LOCATION: str = os.environ.get("VEO_LOCATION", "us-central1")
+    PREVIEW_LOCATION: str = os.environ.get("PREVIEW_LOCATION", "global")
 
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-3.1-fast-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)

@@ -70,6 +70,10 @@ PROJECT_ID=
 # [OPTIONAL] The standard Veo model version.
 # Default: veo-3.1-fast-generate-001
 # VEO_MODEL_ID=veo-3.1-fast-generate-001
+# Default: us-central1
+# VEO_LOCATION=us-central1
+# Default: global
+# PREVIEW_LOCATION=global
 
 # [OPTIONAL] Allows using a different project for Veo quota if needed.
 # Default: Same as PROJECT_ID
