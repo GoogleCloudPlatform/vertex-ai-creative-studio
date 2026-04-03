@@ -15,9 +15,10 @@ When new code, features, or experiments are added, it's crucial to update the re
 ## 8. Mesop Development Practices
 
 ### Refactoring and State Management
+*   **Dynamic UI Binding:** UI components must never hardcode lists of available models for specific modes. Instead, add helper functions to the respective `config/*_models.py` file (e.g., `get_models_by_mode`) and dynamically generate UI dropdowns based on the model configuration's declared capabilities.
 *   **Component Modularity:** Mesop pages can quickly grow to thousands of lines. Proactively refactor UI sections (e.g., `upload_ui`, `controls`, `gallery`) into separate files within a `components/` directory to keep page files tractable.
 *   **Event Handler Factories:** When sharing UI components across multiple pages that maintain their own `PageState` classes, use closure factories (e.g., `def get_on_click_handler(state_class): ...`) to generate reusable event handlers. This avoids duplicating state-mutation logic across pages.
-*   **Safe Python Refactoring:** When executing large refactors via CLI tools, be extremely cautious with string replacements (`sed` or python scripts) on nested Mesop structures (`with me.box():`). Missing or extra spaces will cause fatal `IndentationError`s. Prefer targeted replacements or abstracting the block into a function first.
+*   **Safe Python Refactoring:** When executing large refactors via CLI tools, be extremely cautious with string replacements (`sed` or python scripts) on nested Mesop structures (`with me.box():`). Missing or extra spaces will cause fatal `IndentationError`s. Prefer targeted replacements or abstracting the block into a function first. When using python scripts to modify large configuration lists or Mesop component trees, avoid greedy regex replacements (`re.sub`). Rely on exact string matching or AST manipulation to prevent accidentally corrupting adjacent, structurally identical blocks.
 
 ### Component Styling Gotchas
 *   **Button Types:** The `me.content_button` component strictly enforces the `type` argument as a literal: `'raised'`, `'flat'`, `'stroked'`, or `'icon'`. Using invalid MD3 concepts like `'tonal'` will cause a Pydantic `ValidationError` and crash the UI block.

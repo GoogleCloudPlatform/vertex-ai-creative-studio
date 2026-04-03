@@ -2,6 +2,10 @@
 
 This document provides guidelines for AI agents working on the GenMedia Creative Studio codebase.
 
+## Scope of Work
+
+- Do not modify code within the `experiments/` directory when refactoring or updating the main application. If a global change (like a model deprecation) impacts an experiment, add an inline `# TODO:` or `// TODO:` comment near the affected code in the experiment rather than attempting to refactor its logic.
+
 ## Styling
 
 - Prefer using shared styles from `components/styles.py` for common UI elements and layout structures.
