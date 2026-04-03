@@ -20,7 +20,7 @@ from google.cloud import aiplatform_v1beta1
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = "us-central1"
-VEO = "veo-2.0-generate-exp"
+VEO = "veo-2.0-generate-001" # was veo-2.0-generate-exp
 api_regional_endpoint = f"{LOCATION}-aiplatform.googleapis.com"
 veo_model = f"projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{VEO}"
 OUTPUT_GCS = os.getenv("OUTPUT_GCS") # gs://etc

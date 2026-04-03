@@ -31,7 +31,7 @@ MODELS = [
     "veo-3.1-fast-generate-001",
     "veo-3.1-generate-001",
     "veo-3.1-fast-generate-001",
-    "veo-2.0-generate-exp",
+    # "veo-2.0-generate-exp" - deprecated,
 ]
 
 SCENARIOS = [

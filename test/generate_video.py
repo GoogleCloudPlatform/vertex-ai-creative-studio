@@ -29,7 +29,7 @@ from google.protobuf import json_format
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = "us-central1"
-#VEO = "veo-2.0-generate-exp"
+#VEO = "veo-2.0-generate-001" # was veo-2.0-generate-exp
 VEO = "veo-2.0-generate-001"
 api_regional_endpoint = f"{LOCATION}-aiplatform.googleapis.com"
 veo_model = f"projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{VEO}"

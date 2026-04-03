@@ -249,7 +249,7 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportsFirstLast:      false,
 		SupportsReferenceImage: false,
 	},
-	"veo-2.0-generate-exp": {
+	"veo-2.0-generate-exp": { // TODO: Deprecated, remove
 		CanonicalName:          "veo-2.0-generate-exp",
 		Aliases:                []string{"Veo 2 Exp"},
 		DefaultDuration:        8,

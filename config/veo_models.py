@@ -70,24 +70,6 @@ VEO_MODELS: List[VeoModelConfig] = [
         supported_extension_durations=[7],
     ),
     VeoModelConfig(
-        version_id="2.0-exp",
-        model_name="veo-2.0-generate-exp",
-        display_name="Veo 2.0 Exp",
-        supported_modes=["t2v", "i2v", "interpolation", "r2v"],
-        supported_aspect_ratios=["16:9", "9:16"],
-        resolutions=["720p"],
-        min_duration=5,
-        max_duration=8,
-        default_duration=5,
-        max_samples=4,
-        default_samples=1,
-        supports_prompt_enhancement=False,
-        default_prompt_enhancement=False,
-        mode_overrides={
-            "r2v": ModeOverride(supported_durations=[8], default_duration=8)
-        },
-    ),
-    VeoModelConfig(
         version_id="3.0",
         model_name="veo-3.0-generate-001",
         display_name="Veo 3.0",
