@@ -193,7 +193,7 @@ def on_generate_video_click(e: me.ClickEvent):
             print(f"Veo Prompt for clip {i}: {veo_prompt}")
             
             request = VideoGenerationRequest(
-                model_version_id="3.1-fast", # Use Veo 3.1 Fast
+                model_version_id="3.1-fast-preview", # Use Veo 3.1 Fast Preview
                 reference_image_gcs=image_uri,
                 reference_image_mime_type="image/png",
                 duration_seconds=4, # 4s is supported

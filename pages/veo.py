@@ -59,7 +59,7 @@ def on_veo_load(e: me.LoadEvent):
 
     if image_path:
         # When an image is passed, default to the i2v mode and Veo 3.1 Fast model.
-        _update_state_for_new_model("3.1-fast")
+        _update_state_for_new_model("3.1-fast-preview")
 
         image_uri = ""
         if image_path.startswith("https://"):
@@ -473,7 +473,7 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
-    state.veo_model = "3.1-fast"
+    state.veo_model = "3.1-fast-preview"
     # Get default duration for the reset model
     model_config = get_veo_model_config(state.veo_model)
     state.video_length = model_config.default_duration if model_config else 8
