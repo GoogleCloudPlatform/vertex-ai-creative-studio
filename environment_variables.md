@@ -37,10 +37,13 @@ Configuration for the Veo video generation models.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`VEO_MODEL_ID`** | `veo-2.0-generate-001` | The standard Veo model version. |
+| **`DEFAULT_VEO_MODEL_NAME`** | `veo-3.1-fast-generate-001` | The fallback model name for the UI when a user clears their session or deep links. |
+| **`VEO_LOCATION`** | `us-central1` | Region for GA Veo API calls. |
+| **`PREVIEW_LOCATION`** | `global` | Region for Preview Veo API calls (models with "preview" in their name). |
+| **`VEO_MODEL_ID`** | `veo-3.1-fast-generate-001` | The standard Veo model version. |
 | **`VEO_PROJECT_ID`** | `PROJECT_ID` | Allows using a different project for Veo quota if needed. |
-| **`VEO_EXP_MODEL_ID`** | `veo-3.0-generate-001` | The experimental/newer Veo model version. |
-| **`VEO_EXP_FAST_MODEL_ID`** | `veo-3.0-fast-generate-001` | The faster, lower-latency experimental Veo model. |
+| **`VEO_EXP_MODEL_ID`** | `veo-3.1-generate-001` | The experimental/newer Veo model version. |
+| **`VEO_EXP_FAST_MODEL_ID`** | `veo-3.1-fast-generate-001` | The faster, lower-latency experimental Veo model. |
 | **`VEO_EXP_PROJECT_ID`** | `PROJECT_ID` | Project ID for experimental Veo models. |
 
 ## 🎨 Imagen (Image Generation & Editing)
@@ -116,8 +119,8 @@ These variables are exposed in `variables.tf` and directly map to environment va
 | `project_id` | `PROJECT_ID` | *(Required)* |
 | `region` | `LOCATION` | `us-central1` |
 | `model_id` | `MODEL_ID` | `gemini-2.5-flash` |
-| `veo_model_id` | `VEO_MODEL_ID` | `veo-3.0-generate-001` |
-| `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.0-generate-preview` |
+| `veo_model_id` | `VEO_MODEL_ID` | `veo-3.1-fast-generate-001` |
+| `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.1-generate-001` |
 | `lyria_model_id` | `LYRIA_MODEL_VERSION` | `lyria-002` |
 | `edit_images_enabled` | `EDIT_IMAGES_ENABLED` | `true` |
 
@@ -139,7 +142,7 @@ These variables are computed within `main.tf` based on the resources Terraform c
 The following variables are **not** explicitly set in the `main.tf` configuration. This means the application will use the **default values defined in `config/default.py`** when deployed via Terraform.
 
 *   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL`, `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
-*   **Veo:** `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
+*   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `VEO_LOCATION`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
 *   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
 *   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`

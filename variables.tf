@@ -51,13 +51,13 @@ variable "model_id" {
 variable "veo_model_id" {
   description = "Veo model ID to use for video generation"
   type        = string
-  default     = "veo-3.0-generate-001"
+  default     = "veo-3.1-fast-generate-001"
 }
 
 variable "veo_exp_model_id" {
   description = "Experimental Veo model ID to use for video generation"
   type        = string
-  default     = "veo-3.0-generate-preview"
+  default     = "veo-3.1-generate-001"
 }
 
 variable "lyria_model_id" {
