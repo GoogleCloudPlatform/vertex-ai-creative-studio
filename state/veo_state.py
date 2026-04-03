@@ -67,7 +67,7 @@ class PageState:
     info_dialog_open: bool = False
 
     # extend
-    video_extend_length: int = 0  # 4-7
+    video_extend_length: int = 7  # 4-7
 
     # Rewriter
     auto_enhance_prompt: bool = False

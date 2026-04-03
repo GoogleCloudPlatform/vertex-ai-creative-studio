@@ -368,7 +368,7 @@ def on_click_extend_video(e: me.ClickEvent):
         model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
-        duration_seconds=state.video_extend_length, # Use extension length
+        duration_seconds=state.video_extend_length if state.video_extend_length != 0 else (model_config.supported_extension_durations[0] if model_config.supported_extension_durations else 7), # Use extension length or default
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
         generate_audio=state.generate_audio,

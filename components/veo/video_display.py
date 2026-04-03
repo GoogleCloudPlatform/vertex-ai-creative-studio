@@ -110,7 +110,7 @@ def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
             
             model_config = get_veo_model_config(state.veo_model)
             if model_config and model_config.supports_video_extension:
-                options = [me.SelectOption(label="None", value="0")]
+                options = []
                 
                 # Use configured durations if available, otherwise fallback to generic range
                 if model_config.supported_extension_durations:
@@ -125,17 +125,20 @@ def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
                         me.SelectOption(label="7 seconds", value="7"),
                     ])
 
+                # Fallback to the first available if not configured
+                display_len = state.video_extend_length if state.video_extend_length != 0 else (model_config.supported_extension_durations[0] if model_config.supported_extension_durations else 7)
+                
                 me.select(
                     label="extend",
                     options=options,
                     appearance="outline",
-                    value=f"{state.video_extend_length}",
+                    value=str(display_len),
                     on_selection_change=on_selection_change_extend_length,
                 )
                 me.button(
                     label="Extend",
                     on_click=on_click_extend,
-                    disabled=True if state.video_extend_length == 0 else False,
+                    disabled=False,
                 )
 
             me.button("Convert to GIF", key=gcs_uri_for_gif, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
