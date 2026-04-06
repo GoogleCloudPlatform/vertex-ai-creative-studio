@@ -2162,7 +2162,7 @@ wheels = [
 
 [[package]]
 name = "vertex-ai-genmedia-creative-studio"
-version = "1.7.2"
+version = "1.7.4"
 source = { virtual = "." }
 dependencies = [
     { name = "black" },

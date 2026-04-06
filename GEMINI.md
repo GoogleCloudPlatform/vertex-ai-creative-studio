@@ -76,6 +76,14 @@ If a Go application initializes network-dependent clients (like Google Cloud `ge
 *   **Targeted Execution:** To avoid massive, unintended changes across the entire project, always run linting and formatting tools (e.g., `ruff`, `black`, `isort`) on **only the files you have modified**.
 *   **Command Pattern:** Prefer `ruff check --fix path/to/file.py` and `ruff format path/to/file.py` over running them on the project root (`.`).
 
+### Python Refactoring Risk: Automated Tooling
+*   **The Problem:** Running `ruff check --fix .` or similar automated formatters globally on a large codebase can sometimes aggressively strip out "unused" imports that are actually load-bearing. For example, in Mesop applications, `import pages.my_page` might not be explicitly called but is required for its `@me.page` decorators to register routes.
+*   **The Fix:** 
+    1. **Never run global formatting commands.** If you modify 3 files, run `ruff format` and `ruff check --fix` *only* on those 3 files.
+    2. Before committing, always run `git diff` and manually verify that no unexpected imports were deleted or critical structure was modified.
+    3. If a linter warns about an unused import that you know is required for registration, append `# noqa: F401` to the import line instead of deleting it.
+
+
 ### Mesop Import Protection
 *   **Critical Imports:** In Mesop applications, imports in `main.py` (and other entry points) are often required for route registration via decorators (e.g., `@me.page`). Linters may incorrectly flag these as unused.
 *   **Preservation:** ALWAYS preserve these imports by adding a `# noqa: F401` comment to the end of the import line. NEVER allow a linter to remove them, as this will break the application's routing.
