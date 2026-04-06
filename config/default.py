@@ -91,10 +91,12 @@ class Default:
         MODEL_ID,
     )
     GEMINI_CRITIQUE_MODEL_ID: str = os.environ.get(
-        "GEMINI_CRITIQUE_MODEL_ID", "gemini-3-flash-preview",
+        "GEMINI_CRITIQUE_MODEL_ID",
+        "gemini-3-flash-preview",
     )
     GEMINI_CRITIQUE_LOCATION: str = os.environ.get(
-        "GEMINI_CRITIQUE_LOCATION", PREVIEW_LOCATION,
+        "GEMINI_CRITIQUE_LOCATION",
+        "global",
     )
 
     # Collections
@@ -119,7 +121,8 @@ class Default:
 
     # Veo
     DEFAULT_VEO_MODEL_NAME: str = os.environ.get(
-        "DEFAULT_VEO_MODEL_NAME", "veo-3.1-fast-generate-001",
+        "DEFAULT_VEO_MODEL_NAME",
+        "veo-3.1-fast-generate-001",
     )
     VEO_LOCATION: str = os.environ.get("VEO_LOCATION", "us-central1")
     PREVIEW_LOCATION: str = os.environ.get("PREVIEW_LOCATION", "global")
