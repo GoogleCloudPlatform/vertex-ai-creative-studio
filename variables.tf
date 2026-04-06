@@ -96,3 +96,16 @@ variable "sleep_time" {
   type        = number
   default     = 45
 }
+
+variable "gemini_critique_model_id" {
+  description = "Gemini model ID to use for Imagen critiques"
+  type        = string
+  default     = "gemini-3-flash-preview"
+}
+
+variable "gemini_critique_location" {
+  description = "Location for the Gemini critique model"
+  type        = string
+  default     = "global"
+}
+

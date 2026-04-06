@@ -121,6 +121,8 @@ These variables are exposed in `variables.tf` and directly map to environment va
 | `project_id` | `PROJECT_ID` | *(Required)* |
 | `region` | `LOCATION` | `us-central1` |
 | `model_id` | `MODEL_ID` | `gemini-2.5-flash` |
+| `gemini_critique_model_id` | `GEMINI_CRITIQUE_MODEL_ID` | `gemini-3-flash-preview` |
+| `gemini_critique_location` | `GEMINI_CRITIQUE_LOCATION` | `global` |
 | `veo_model_id` | `VEO_MODEL_ID` | `veo-3.1-fast-generate-001` |
 | `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.1-generate-001` |
 | `lyria_model_id` | `LYRIA_MODEL_VERSION` | `lyria-002` |
