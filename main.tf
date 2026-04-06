@@ -20,7 +20,7 @@ terraform {
       version = "~> 6.49"
     }
     google-beta = {
-      version = "~> 7.0"
+      version = "~> 6.49"
     }
   }
 }
