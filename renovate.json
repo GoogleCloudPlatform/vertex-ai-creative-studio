@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["hashicorp/google", "hashicorp/google-beta"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
   ]
 }
