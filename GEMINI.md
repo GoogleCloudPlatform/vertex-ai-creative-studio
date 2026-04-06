@@ -91,3 +91,6 @@ If a Go application initializes network-dependent clients (like Google Cloud `ge
 ### Transitive Dependency Awareness
 *   **OpenSSL Errors:** If you encounter `ModuleNotFoundError: No module named 'OpenSSL'`, this usually indicates that `pyOpenSSL` is missing. 
 *   **Resolution:** While not always directly imported, `pyOpenSSL` is a common transitive dependency for secure transport in Google SDKs and `google-auth`. Add `pyOpenSSL` to `pyproject.toml` and run `uv sync` to resolve the issue.
+
+### 10. Dependency and Version Management
+*   **Version Bumping:** When updating the application version number in `pyproject.toml`, you **MUST** also update the hardcoded `VERSION` fallback string in `config/default.py` (e.g., `VERSION: str = "1.7.4"`). This fallback is critical for local development environments where the package is not installed as an editable module via `uv`, which causes `importlib.metadata` to fail.
