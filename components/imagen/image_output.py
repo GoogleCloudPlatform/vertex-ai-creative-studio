@@ -20,6 +20,7 @@ from components.svg_icon.svg_icon import svg_icon
 
 from components.edit_button.edit_button import edit_button
 from components.veo_button.veo_button import veo_button
+from common.utils import create_display_url
 
 
 @me.component
@@ -47,7 +48,7 @@ def image_output():
                     style=me.Style(margin=me.Margin(top=10)),
                 )
 
-        elif state.image_output:
+        elif state.image_gcs_uris:
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -63,11 +64,11 @@ def image_output():
                         justify_content="center",
                     )
                 ):
-                    for img_uri in state.image_output:
+                    for img_uri in state.image_gcs_uris:
                         if img_uri:
                             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
                                 me.image(
-                                    src=img_uri,
+                                    src=create_display_url(img_uri),
                                     style=me.Style(
                                         width="300px",
                                         height="300px",

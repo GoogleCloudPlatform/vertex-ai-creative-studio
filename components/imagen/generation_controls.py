@@ -19,7 +19,6 @@ import time
 import mesop as me
 import datetime # Required for timestamp
 
-from common.utils import create_display_url
 
 from common.analytics import track_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
@@ -158,7 +157,7 @@ def on_click_generate_images(e: me.ClickEvent):
         return
 
     state.is_loading = True
-    state.image_output = []  # Reset image output
+    state.image_gcs_uris = []  # Reset image output
     state.image_commentary = ""
     state.error_message = ""  # Clear previous errors
     yield  # UI: Spinner ON, outputs cleared
@@ -178,10 +177,9 @@ def on_click_generate_images(e: me.ClickEvent):
 
         # Save both the permanent GCS URIs and the display URLs to the state.
         state.image_gcs_uris = new_image_uris
-        state.image_output = [create_display_url(uri) for uri in new_image_uris]
         state.is_loading = False
 
-        if state.image_output:
+        if state.image_gcs_uris:
             # Generate commentary in the background using the permanent GCS URIs
             state.image_commentary = generate_compliment(current_prompt, new_image_uris)
 
@@ -242,7 +240,7 @@ def on_click_generate_images(e: me.ClickEvent):
         print(f"Error during the image generation or critique process: {ex}")
         state.dialog_message = f"An unexpected error occurred: {str(ex)}"
         state.show_dialog = True
-        state.image_output = []
+        state.image_gcs_uris = []
         state.is_loading = False
     yield
 
@@ -289,7 +287,7 @@ def on_click_clear_images(e: me.ClickEvent):
     state = me.state(PageState)
     state.image_prompt_input = ""
     state.image_prompt_placeholder = ""  # Clear placeholder as well
-    state.image_output = []  # Use assignment for list reset
+    state.image_gcs_uris = []  # Use assignment for list reset
     state.image_gcs_uris = []
     state.image_commentary = ""
     state.image_negative_prompt_input = ""

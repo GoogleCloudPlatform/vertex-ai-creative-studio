@@ -25,7 +25,6 @@ class PageState:
     """Local Page State"""
 
     # Image generation model selection and output
-    image_output: list[str] = field(default_factory=list) # This will hold the display URLs
     image_gcs_uris: list[str] = field(default_factory=list) # This will hold the permanent GCS URIs
     image_commentary: str = ""
     image_model_name: str = "imagen-4.0-generate-001"
