@@ -184,7 +184,7 @@ def on_click_generate_images(e: me.ClickEvent):
                 )
             except Exception as e:
                 print(f"Warning: Image critique failed: {e}")
-                state.image_commentary = "Critique is currently unavailable due to high demand. Please try again later."
+                state.image_commentary = "Critique currently unavailable. Please try again later."
 
         end_time = time.time()
         execution_time = end_time - start_time
@@ -296,7 +296,7 @@ def on_click_retry_critique(e: me.ClickEvent):
             )
         except Exception as err:
             print(f"Warning: Image critique failed on retry: {err}")
-            state.image_commentary = "Critique is currently unavailable due to high demand. Please try again later."
+            state.image_commentary = "Critique currently unavailable. Please try again later."
         yield
 
 
