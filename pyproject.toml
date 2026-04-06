@@ -1,6 +1,6 @@
 [project]
 name = "vertex-ai-genmedia-creative-studio"
-version = "1.7.3"
+version = "1.7.4"
 description = "GenMedia Creative Studio - Veo, Lyria, Nano Banana, Imagen, Gemini, Gemini TTS"
 readme = "README.md"
 requires-python = ">=3.14, <3.15"

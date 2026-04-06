@@ -59,7 +59,8 @@ class Default:
 
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
-        "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}",
+        "API_BASE_URL",
+        f"http://localhost:{os.environ.get('PORT', '8080')}",
     )
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
@@ -86,7 +87,14 @@ class Default:
         "gemini-2.5-flash",
     )
     GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
-        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID,
+        "GEMINI_WRITERS_WORKSHOP_MODEL_ID",
+        MODEL_ID,
+    )
+    GEMINI_CRITIQUE_MODEL_ID: str = os.environ.get(
+        "GEMINI_CRITIQUE_MODEL_ID", "gemini-3-flash-preview",
+    )
+    GEMINI_CRITIQUE_LOCATION: str = os.environ.get(
+        "GEMINI_CRITIQUE_LOCATION", PREVIEW_LOCATION,
     )
 
     # Collections
@@ -110,7 +118,9 @@ class Default:
     LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", 15))
 
     # Veo
-    DEFAULT_VEO_MODEL_NAME: str = os.environ.get("DEFAULT_VEO_MODEL_NAME", "veo-3.1-fast-generate-001")
+    DEFAULT_VEO_MODEL_NAME: str = os.environ.get(
+        "DEFAULT_VEO_MODEL_NAME", "veo-3.1-fast-generate-001",
+    )
     VEO_LOCATION: str = os.environ.get("VEO_LOCATION", "us-central1")
     PREVIEW_LOCATION: str = os.environ.get("PREVIEW_LOCATION", "global")
 
@@ -118,7 +128,8 @@ class Default:
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
     VEO_EXP_MODEL_ID: str = os.environ.get(
-        "VEO_EXP_MODEL_ID", "veo-3.1-generate-001",
+        "VEO_EXP_MODEL_ID",
+        "veo-3.1-generate-001",
     )
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
         "VEO_EXP_FAST_MODEL_ID",
@@ -151,10 +162,12 @@ class Default:
     # Character Consistency
     CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
     CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get(
-        "CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001",
+        "CHARACTER_CONSISTENCY_VEO_MODEL",
+        "veo-3.0-fast-generate-001",
     )
     CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get(
-        "CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID,
+        "CHARACTER_CONSISTENCY_GEMINI_MODEL",
+        MODEL_ID,
     )
 
     # Lyria
@@ -178,10 +191,12 @@ class Default:
     )
 
     IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get(
-        "IMAGEN_GENERATED_SUBFOLDER", "generated_images",
+        "IMAGEN_GENERATED_SUBFOLDER",
+        "generated_images",
     )
     IMAGEN_EDITED_SUBFOLDER: str = os.environ.get(
-        "IMAGEN_EDITED_SUBFOLDER", "edited_images",
+        "IMAGEN_EDITED_SUBFOLDER",
+        "edited_images",
     )
 
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"

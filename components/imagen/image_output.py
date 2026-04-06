@@ -13,14 +13,14 @@
 # limitations under the License.
 
 import mesop as me
-from components.styles import _BOX_STYLE
 
-from state.imagen_state import PageState
-from components.svg_icon.svg_icon import svg_icon
-
-from components.edit_button.edit_button import edit_button
-from components.veo_button.veo_button import veo_button
 from common.utils import create_display_url
+from components.edit_button.edit_button import edit_button
+from components.imagen.generation_controls import on_click_retry_critique
+from components.styles import _BOX_STYLE
+from components.svg_icon.svg_icon import svg_icon
+from components.veo_button.veo_button import veo_button
+from state.imagen_state import PageState
 
 
 @me.component
@@ -29,7 +29,7 @@ def image_output():
     state = me.state(PageState)
     print(f"Rendering image_output, commentary: {state.image_commentary}")
     with me.box(style=_BOX_STYLE):
-        #me.text("Output", style=me.Style(font_weight=500))
+        # me.text("Output", style=me.Style(font_weight=500))
         me.box(style=me.Style(height=10))
 
         if state.is_loading:
@@ -40,7 +40,7 @@ def image_output():
                     align_items="center",
                     flex_direction="column",
                     min_height="200px",
-                )
+                ),
             ):
                 me.progress_spinner()
                 me.text(
@@ -54,7 +54,7 @@ def image_output():
                     display="flex",
                     flex_direction="column",
                     align_items="center",
-                )
+                ),
             ):
                 with me.box(
                     style=me.Style(
@@ -62,11 +62,15 @@ def image_output():
                         flex_wrap="wrap",
                         gap="15px",
                         justify_content="center",
-                    )
+                    ),
                 ):
                     for img_uri in state.image_gcs_uris:
                         if img_uri:
-                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
+                            with me.box(
+                                style=me.Style(
+                                    display="flex", flex_direction="column", gap=8,
+                                ),
+                            ):
                                 me.image(
                                     src=create_display_url(img_uri),
                                     style=me.Style(
@@ -77,7 +81,14 @@ def image_output():
                                         box_shadow="0 2px 4px rgba(0,0,0,0.1)",
                                     ),
                                 )
-                                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        gap=8,
+                                        justify_content="center",
+                                    ),
+                                ):
                                     edit_button(gcs_uri=img_uri)
                                     veo_button(gcs_uri=img_uri)
                 if state.imagen_watermark:
@@ -87,7 +98,7 @@ def image_output():
                             flex_direction="row",
                             align_items="center",
                             margin=me.Margin(top=15),
-                        )
+                        ),
                     ):
                         svg_icon(icon_name="digitalWatermarkIcon")
                         me.text(
@@ -106,7 +117,7 @@ def image_output():
                                 align_items="center",
                                 gap="8px",
                                 margin=me.Margin(bottom=10),
-                            )
+                            ),
                         ):
                             me.icon("assistant")
                             me.text(
@@ -116,9 +127,19 @@ def image_output():
                         me.markdown(
                             text=state.image_commentary,
                             style=me.Style(
-                                padding=me.Padding(left=15, right=15, bottom=15)
+                                padding=me.Padding(left=15, right=15, bottom=15),
                             ),
                         )
+                        if (
+                            "unavailable" in state.image_commentary
+                            or "failed" in state.image_commentary
+                        ):
+                            me.button(
+                                "Retry Critique",
+                                on_click=on_click_retry_critique,
+                                type="stroked",
+                                style=me.Style(margin=me.Margin(left=15, bottom=15)),
+                            )
         else:
             me.text(
                 text="Generate some images to see them here!",
