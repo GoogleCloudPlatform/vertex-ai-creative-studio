@@ -40,7 +40,7 @@ fastapi==0.118.3
     # via google-adk
 google-adk==1.15.1
     # via adk-genmedia-agent
-google-api-core==2.30.1
+google-api-core==2.30.2
     # via
     #   google-api-python-client
     #   google-cloud-aiplatform
