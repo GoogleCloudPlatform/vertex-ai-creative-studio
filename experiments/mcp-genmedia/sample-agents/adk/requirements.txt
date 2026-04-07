@@ -22,7 +22,7 @@ cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.6
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   google-adk
     #   uvicorn

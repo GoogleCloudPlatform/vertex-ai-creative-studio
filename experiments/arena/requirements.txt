@@ -11,7 +11,7 @@ cachetools==6.2.6
 certifi==2025.11.12
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.6
-click==8.3.1
+click==8.3.2
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
 cryptography==46.0.6

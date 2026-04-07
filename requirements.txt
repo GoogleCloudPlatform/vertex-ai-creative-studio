@@ -38,7 +38,7 @@ cffi==2.0.0
     #   soundfile
 charset-normalizer==3.4.6
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   black
     #   flask
