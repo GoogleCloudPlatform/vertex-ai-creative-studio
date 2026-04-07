@@ -225,7 +225,7 @@ matplotlib-inline==0.2.1
     # via ipython
 mediapy==1.2.4
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
-mesop==1.2.3
+mesop==1.2.5
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 moviepy==2.2.1
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)

@@ -1216,7 +1216,7 @@ wheels = [
 
 [[package]]
 name = "mesop"
-version = "1.2.3"
+version = "1.2.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -1230,7 +1230,7 @@ dependencies = [
     { name = "werkzeug" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/3d/50f2dcbb32670b240a21109f0879d2dddff858568110a87767957bbc76c8/mesop-1.2.3-py3-none-any.whl", hash = "sha256:9bf9258bde06e7fa3bffc59b08a8e0e2d673afccdfbd19985cf275ed84f8ea76", size = 7448076, upload-time = "2026-03-16T18:01:44.905Z" },
+    { url = "https://files.pythonhosted.org/packages/62/e0/a31d0fa95d54eb0f44fa5dfaab6218d959b93e48cc1c4f7f7bc04adca4c3/mesop-1.2.5-py3-none-any.whl", hash = "sha256:9776a868be094b02f3ac69fc1f2cc76c7f3dc79ebb259a5c23c49d2243299b4c", size = 7449247, upload-time = "2026-03-31T03:07:24.413Z" },
 ]
 
 [[package]]
@@ -2162,7 +2162,7 @@ wheels = [
 
 [[package]]
 name = "vertex-ai-genmedia-creative-studio"
-version = "1.7.5"
+version = "1.7.6"
 source = { virtual = "." }
 dependencies = [
     { name = "black" },
