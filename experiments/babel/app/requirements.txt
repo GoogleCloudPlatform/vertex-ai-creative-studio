@@ -14,7 +14,7 @@ cachetools==6.2.6
     # via google-auth
 certifi==2025.11.12
     # via requests
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
 click==8.3.1
     # via

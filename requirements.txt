@@ -36,7 +36,7 @@ cffi==2.0.0
     # via
     #   cryptography
     #   soundfile
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
 click==8.3.1
     # via
