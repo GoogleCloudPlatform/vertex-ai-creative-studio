@@ -14,6 +14,23 @@ To configure these servers for gemini cli, you can either add these to your ~/.g
 
 > **Existing Users:** If you have previously installed the GenMedia extension using the older JSON format, please see the [Migration Guide](MIGRATION.md) for quick instructions on upgrading to the new interactive setup.
 
+## .gemini/settings.json: Global Tool Timeout
+
+If you intend to use long-running tools like **Veo** (which takes minutes to generate video) or complex **Gemini TTS** prompts, you **MUST** increase the global tool execution timeout in your `~/.gemini/settings.json` file. 
+
+The `MCP_REQUEST_MAX_TOTAL_TIMEOUT` environment variable controls the wait time for a specific server, but the Gemini CLI itself has a hard global timeout that will kill the connection if not adjusted.
+
+Add the `toolExecutionTimeout` (in milliseconds) to the `experimental` or `general` block:
+
+```json
+{
+  "experimental": {
+    "enableAgents": true,
+    "toolExecutionTimeout": 240000 
+  }
+}
+```
+
 ## .gemini/settings.json: mcpServers
 
 Add the following to your .gemini/settings.json `mcpServers` - you can do this at your ~/.gemini or per project directory.
