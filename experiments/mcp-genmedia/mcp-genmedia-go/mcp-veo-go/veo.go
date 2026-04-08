@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.5.0" // Synchronize release version
+	version     = "3.5.1" // Synchronize release version
 )
 
 // init handles command-line flags and initial logging setup.
@@ -110,11 +110,9 @@ func main() {
 			mcp.Description("Number of videos to generate. Note: the maximum is model-dependent."),
 		),
 		mcp.WithString("aspect_ratio",
-			mcp.DefaultString("16:9"),
 			mcp.Description("Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent."),
 		),
 		mcp.WithNumber("duration",
-			mcp.DefaultNumber(5),
 			mcp.Description("Duration of the generated video in seconds. Note: the supported duration range is model-dependent."),
 		),
 		mcp.WithBoolean("generate_audio",

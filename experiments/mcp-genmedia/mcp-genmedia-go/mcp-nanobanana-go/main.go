@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-nanobanana-go"
-	version     = "3.5.0" // Synchronize release version
+	version     = "3.5.1" // Synchronize release version
 )
 
 func init() {

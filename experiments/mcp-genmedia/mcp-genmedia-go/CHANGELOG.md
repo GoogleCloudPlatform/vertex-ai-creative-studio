@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-08 (v3.5.1)
+
+*   **Fix:** Corrected the `SupportedAspectRatios` for `veo-3.1-lite-generate-001` in `mcp-veo-go` to use standard `"16:9"` and `"9:16"` instead of `"720p"` and `"1080p"` (which were rejected by the API).
+*   **Fix:** Removed hardcoded defaults for `duration` and `aspect_ratio` in `mcp-veo-go` tool schemas, allowing model-specific fallbacks (like the strict 4/6/8 second constraints of Veo 3.1 Lite) to function correctly.
+*   **Fix:** Added an explicit 120-second timeout context for the `gemini_audio_tts` API call in `mcp-gemini-go` to prevent long-running generative prompts from hanging indefinitely.
+*   **Docs:** Updated Gemini CLI integration documentation to explicitly call out the necessity of increasing the global `toolExecutionTimeout` for long-running media generation tools (like Veo and TTS).
+*   **Chore:** Incremented versions for all `mcp-*` servers to `3.5.1` to synchronize the release.
+
 ## 2026-04-02 (v3.5.0)
 
 *   **Feat:** Add support for the `veo-3.1-lite-generate-001` model.

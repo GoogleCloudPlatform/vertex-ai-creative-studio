@@ -48,5 +48,9 @@
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     }
+  },
+  "experimental": {
+    "enableAgents": true,
+    "toolExecutionTimeout": 240000
   }
 }

@@ -343,7 +343,7 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		DefaultDuration:        8,
 		SupportedDurations:     []int32{4, 6, 8},
 		MaxVideos:              4,
-		SupportedAspectRatios:  []string{"720p", "1080p"},
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
 		SupportsGenerateAudio:  true,
 		SupportsFirstLast:      true,
 		SupportsReferenceImage: false,
