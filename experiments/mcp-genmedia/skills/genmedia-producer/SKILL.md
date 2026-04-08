@@ -23,7 +23,7 @@ For video >8 seconds, construct a scene-by-scene narrative that can be segmented
 ## Veo Video Generation (Veo 3.1)
 - Use the **Five-Part Formula** for prompts: Cinematography, Subject, Action, Context, and Style.
 - **Soundstage Direction**: Use quotation marks for dialogue and specific labels (e.g., `[loud thunder]`) for sound effects.
-- **Advanced Modalities**: Use `veo_first_last_to_video` for transitions and `veo_ingredients_to_video` for character/style consistency across scenes.
+- **Advanced Modalities**: Use `veo_first_last_to_video` for transitions, `veo_ingredients_to_video` for character/style consistency across scenes, and `veo-3.1-lite-generate-001` for faster, 720p/1080p generation.
 - If a request times out, retry once. If it fails again, reduce the `duration` parameter and inform the user.
 - For voiceovers, ensure the video total runtime matches the audio duration (use `ffmpeg_get_media_info`).
 - The `bucket` parameter must be a full GCS URI (`gs://...`).

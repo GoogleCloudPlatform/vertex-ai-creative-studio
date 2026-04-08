@@ -20,6 +20,7 @@ When generating video, use the [Veo 3.1 Prompting Guide](https://cloud.google.co
 - **Advanced Modalities**:
     - Use `veo_first_last_to_video` for precise control over transitions between two key frames.
     - Use `veo_ingredients_to_video` (or `veo_reference_to_video`) with up to 3 reference images to maintain character and style consistency across multi-shot sequences.
+    - Use the `veo-3.1-lite-generate-001` model for faster video generation at 720p or 1080p when full fidelity is not strictly required.
 
 ### Image-on-Video Overlay
 When placing logos, watermarks, or static elements on a video:
