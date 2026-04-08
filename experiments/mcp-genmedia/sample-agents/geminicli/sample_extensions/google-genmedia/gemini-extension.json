@@ -38,6 +38,13 @@
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
     }
   },
   "settings": [

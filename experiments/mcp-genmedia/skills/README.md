@@ -7,6 +7,7 @@ This directory contains a set of expert **Agent Skills** designed to provide AI 
 - **`genmedia-producer`**: The high-level orchestrator. Use this for storyboarding, podcast creation, and managing complex production pipelines.
 - **`genmedia-video-editor`**: Specialized in post-production. Use this for FFmpeg composition, image-on-video overlays, and creating high-quality GIFs.
 - **`genmedia-audio-engineer`**: Specialized in sound design. Use this for high-fidelity speech synthesis, music generation, and multi-track audio mixing.
+- **`genmedia-voice-director`**: Expert in casting, directing, and generating expressive text-to-speech. Use this for virtual voice actor personas and "take 3 on the bounce" variations.
 - **`genmedia-image-artist`**: Specialized in visual arts. Use this for high-fidelity image generation, prompt optimization, and iterative collaborative refinement.
 
 ## Installation & Usage

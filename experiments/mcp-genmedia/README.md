@@ -22,6 +22,7 @@ We provide a set of expert **Agent Skills** that provide AI agents (like Gemini 
 *   `genmedia-video-editor`: Expertise in FFmpeg composition, image overlays, and GIF generation.
 *   `genmedia-audio-engineer`: Specialist in high-fidelity TTS synthesis and multi-track mixing.
 *   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
+*   `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
 
 See the [Agent Skills](./skills/README.md) directory for more information on how to link or install these skills.
 

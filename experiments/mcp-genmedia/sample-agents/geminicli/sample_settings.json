@@ -39,6 +39,14 @@
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
     }
   }
 }

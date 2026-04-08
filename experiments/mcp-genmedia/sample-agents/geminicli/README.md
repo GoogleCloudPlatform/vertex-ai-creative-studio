@@ -62,6 +62,14 @@ A `sample_settings.json` is provided for your convenience.
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
     }
   }
 }
@@ -159,6 +167,13 @@ Then, add to that directory a `gemini-extension.json`
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
     }
   }
 }
@@ -207,6 +222,7 @@ Once linked or installed, Gemini CLI can automatically activate these skills whe
 - `genmedia-video-editor`: Expert in FFmpeg composition, overlays, and GIF generation.
 - `genmedia-audio-engineer`: Specialist in TTS synthesis, music generation, and multi-track mixing.
 - `genmedia-image-artist`: Expert in high-fidelity visual generation and prompt optimization.
+- `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
 
 #### 4. Example Interaction
 Once the `genmedia-producer` skill is active, you gain access to expert workflows:
@@ -235,6 +251,8 @@ Error connecting to MCP server 'lyria': failed to start or connect to MCP server
 Error: spawn mcp-lyria-go ENOENT
 Error connecting to MCP server 'avtool': failed to start or connect to MCP server 'avtool' {"command":"mcp-avtool-go","trust":true}; 
 Error: spawn mcp-avtool-go ENOENT
+Error connecting to MCP server 'gemini': failed to start or connect to MCP server 'gemini' {"command":"mcp-gemini-go","trust":true}; 
+Error: spawn mcp-gemini-go ENOENT
 ```
 
 **Cause:** This error indicates that the Genmedia MCP server binaries (installed via Go) are not in your terminal's `PATH`. The Gemini CLI cannot locate the commands like `mcp-veo-go`, `mcp-imagen-go`, etc.
@@ -292,6 +310,7 @@ After updating your `PATH`, verify that the MCP servers are accessible:
 which mcp-veo-go
 which mcp-imagen-go
 which mcp-chirp3-go
+which mcp-gemini-go
 ```
 
 Each command should return a path like `/home/username/go/bin/mcp-veo-go`. If they do, your `PATH` is configured correctly.
