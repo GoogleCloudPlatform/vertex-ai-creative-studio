@@ -47,7 +47,7 @@ The actual text to be spoken. This is where you use **Inline Audio Tags** to cre
 
 ## Using Inline Audio Tags
 
-You can use bracketed tags in the Transcript to steer the performance. Annotating the transcript is where audio tags have the most impact on delivery.
+You can use bracketed tags in the Transcript to steer the performance. Audio tags are an intuitive way to control vocal style, pace, and delivery. By embedding these natural language commands directly into the text input, you can steer the AI-speech output with improved levels of granularity. Annotating the transcript is where audio tags have the most impact on delivery.
 
 **Important Notes:**
 * These tags are suggestions/examples, not an exhaustive or limited list.

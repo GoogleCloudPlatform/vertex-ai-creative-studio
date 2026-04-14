@@ -1,6 +1,6 @@
 # Comprehensive Audio Tags Reference
 
-The following is a comprehensive list of inline audio tags that can be used within the `#### TRANSCRIPT` section to shape the emotional delivery, pacing, and style of the Gemini TTS output.
+The following is a comprehensive list of inline audio tags that can be used within the `#### TRANSCRIPT` section to steer the performance. Audio tags are an intuitive way to control vocal style, pace, and delivery. By embedding these natural language commands directly into the text input, you can steer the AI-speech output with improved levels of granularity.
 
 **Important Notes:**
 * Annotating the transcript is where audio tags have the most impact.
