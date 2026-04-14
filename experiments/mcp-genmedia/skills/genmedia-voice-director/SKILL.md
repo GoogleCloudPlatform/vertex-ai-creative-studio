@@ -16,7 +16,7 @@ Your goal is to treat the Gemini TTS model like a virtual voice talent, setting 
 - **Persona Creation:** You can design detailed "Audio Profiles" for characters (e.g., Radio DJ, Beauty Influencer) that define their core identity, archetype, and background.
 - **Scene Setting:** You establish the physical environment and emotional "vibe" to ground the performance.
 - **Performance Direction:** You provide precise "Director's Notes" regarding style, pacing, and accent.
-- **Expressive Markup:** You strategically use bracketed markup tags (e.g., `[sigh]`, `[laughing]`, `[sarcasm]`) to inject realistic non-speech sounds or modify the delivery of subsequent phrases.
+- **Expressive Audio Tags:** You strategically use bracketed inline audio tags (e.g., `[sigh]`, `[laughing]`, `[enthusiasm]`) within the transcript to inject realistic non-speech sounds or shape the emotional delivery of phrases.
 - **Multi-Take Generation:** You can orchestrate a "take 3 on the bounce" workflow, generating multiple, distinct variations of a single line within a single TTS request.
 
 ## Tools
@@ -37,23 +37,26 @@ Briefly describe the persona of the character. Give them a Name and a Role (arch
 Set the context for the scene, including location, mood, and environmental details. Describe what is happening around the character.
 
 ### 3. DIRECTOR'S NOTES
-This is the most critical section. Provide specific performance guidance. Do not overspecify; balance the role and scene with specific rules.
-* **Style:** The tone and emotion (e.g., "The 'Vocal Smile'", "Frustrated and angry").
+Set the overall performance guidance. Do not overspecify; balance the role and scene with specific rules.
+* **Style:** The baseline tone (e.g., "The 'Vocal Smile'", "Conversational and intimate").
 * **Accent:** Be as specific as possible (e.g., "Southern California Valley Girl from Laguna Beach", "British English accent as heard in Croydon").
-* **Pacing:** Overall pacing and variations (e.g., "Speaks at an energetic pace, keeping up with fast music", "The tempo is incredibly slow and liquid").
+* **Pacing:** Overall pacing (e.g., "Speaks at an energetic pace, keeping up with fast music", "The tempo is incredibly slow and liquid").
 
-### 4. TRANSCRIPT
-The actual text to be spoken. Use Emotionally Rich Text; don't rely on prompts and tags alone. Give the model descriptive text to work with (e.g., "I think someone is in the house" is better for a 'scared' prompt than "The meeting is at 4 PM").
+### 4. TRANSCRIPT (with Audio Tags)
+The actual text to be spoken. This is where you use **Inline Audio Tags** to create moment-to-moment emotional shifts and non-speech sounds. Give the model emotionally rich text to work with.
 
-## Using Markup Tags
+## Using Inline Audio Tags
 
-You can use bracketed tags in the Transcript to steer the performance.
+You can use bracketed tags in the Transcript to steer the performance. Annotating the transcript is where audio tags have the most impact on delivery.
 
-1. **Non-speech sounds:** `[sigh]`, `[laughing]`, `[uhm]` (Inserts a sound; highly reliable).
-2. **Style modifiers:** `[sarcasm]`, `[robotic]`, `[shouting]`, `[whispering]`, `[extremely fast]` (Modifies subsequent speech; highly reliable).
-3. **Pacing and pauses:** `[short pause]` (~250ms), `[medium pause]` (~500ms), `[long pause]` (~1000ms+) (Inserts silence; highly reliable).
+**Important Notes:**
+* These tags are suggestions/examples, not an exhaustive or limited list.
+* The tags must be in **English only**, but these English-language tags can be combined with text in other languages (e.g., `[anger] Je ne sais pas!`).
 
-*Warning: Avoid using adjectives as tags (e.g., `[scared]`, `[curious]`, `[bored]`) as the word itself may be spoken. Prefer setting these in the Director's Notes instead.*
+**Examples of Audio Tags:**
+* **Emotional Delivery:** `[determination]`, `[enthusiasm]`, `[adoration]`, `[interest]`, `[awe]`, `[admiration]`, `[nervousness]`, `[frustration]`, `[excitement]`, `[curiosity]`, `[hope]`, `[annoyance]`, `[amusement]`, `[aggression]`, `[tension]`, `[agitation]`, `[confusion]`, `[anger]`, `[positive]`, `[neutral]`, `[negative]`
+* **Vocal Actions/Styles:** `[whispers]`, `[laughs]`, `[sigh]`, `[robotic]`, `[shouting]`
+* **Pacing and pauses:** `[short pause]` (~250ms), `[medium pause]` (~500ms), `[long pause]` (~1000ms+)
 
 ## Generating Variations: "Take 3 on the bounce"
 
@@ -71,14 +74,12 @@ See `references/take-3-strategies.md` for specific approaches to structuring a 3
 It is 10:00 PM in a glass-walled studio overlooking the moonlit London skyline, but inside, it is blindingly bright. Jaz is bouncing on the balls of their heels to a thumping backing track.
 
 ### DIRECTOR'S NOTES
-Style:
-* The "Vocal Smile": You must hear the grin in the audio.
-* Dynamics: High projection without shouting. Punchy consonants.
+Style: High projection without shouting. Punchy consonants.
 Pace: Energetic, "bouncing" cadence.
 Accent: Brixton, London.
 
 #### TRANSCRIPT
-Yes, massive vibes in the studio! [short pause] You are locked in and it is absolutely popping off in London right now. [laughing] If you're stuck on the tube... stop it. Turn this up!
+[enthusiasm] Yes, massive vibes in the studio! [short pause] [excitement] You are locked in and it is absolutely popping off in London right now. [laughs] [amusement] If you're stuck on the tube... stop it. Turn this up!
 ```
 
 ## Reference Material
@@ -86,3 +87,4 @@ Yes, massive vibes in the studio! [short pause] You are locked in and it is abso
 When working with users to define characters or planning a multi-take session, consult the following reference files:
 * `references/personas.md`: A library of pre-built Audio Profiles and Scenes.
 * `references/take-3-strategies.md`: Strategies for structuring 3-on-the-bounce variations.
+* `references/audio-tags.md`: A comprehensive list of supported inline audio tags.
