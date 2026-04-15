@@ -41,9 +41,8 @@ When merging multiple clips:
 ### Audio-Video Sync
 When adding a soundtrack or voiceover:
 1. Check the audio duration using `ffmpeg_get_media_info`.
-2. Ensure the video matches this duration. 
-3. Use `ffmpeg_combine_audio_and_video`.
-
+2. Ensure the video matches this duration.
+3. Use `ffmpeg_combine_audio_and_video`. Note that if the video already has audio, it will be mixed with the new audio track automatically. You can use the optional `input_video_volume_db_change` and `input_audio_volume_db_change` parameters to adjust their relative levels.
 ## Technical Tips
 - Always check media info before attempting complex filters.
 - Prefer `.mp4` (H.264) for output compatibility unless otherwise specified.

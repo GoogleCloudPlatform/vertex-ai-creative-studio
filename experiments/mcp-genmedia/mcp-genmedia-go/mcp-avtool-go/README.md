@@ -27,8 +27,8 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
     *   Output: GIF image file. Can be saved locally and/or to a GCS bucket.
 
 *   **`ffmpeg_combine_audio_and_video`**:
-    *   Combines a separate video file and an audio file into a single video file with the new audio track.
-    *   Inputs: URI of the input video file, URI of the input audio file.
+    *   Combines a separate video file and an audio file into a single video file. If the video already has an audio track, it mixes the new audio with the existing audio.
+    *   Inputs: URI of the input video file, URI of the input audio file, optional `input_video_volume_db_change`, optional `input_audio_volume_db_change`.
     *   Output: Combined video file (e.g., MP4). Can be saved locally and/or to a GCS bucket.
 
 *   **`ffmpeg_overlay_image_on_video`**:

@@ -49,7 +49,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "3.5.2" // Synchronize release version
+	version     = "3.6.0" // Synchronize release version
 )
 
 func init() {
