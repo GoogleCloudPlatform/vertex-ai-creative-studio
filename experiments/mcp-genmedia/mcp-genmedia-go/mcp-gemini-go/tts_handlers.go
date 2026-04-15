@@ -20,7 +20,7 @@ import (
 
 const (
 	geminiTTSAPIEndpoint     = "https://texttospeech.googleapis.com/v1/text:synthesize"
-	defaultGeminiTTSModel    = "gemini-2.5-flash-tts"
+	defaultGeminiTTSModel    = "gemini-3.1-flash-tts-preview"
 	defaultGeminiTTSVoice    = "Callirrhoe"
 	timeFormatForTTSFilename = "20060102-150405"
 )
@@ -314,7 +314,8 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 // --- API Helper Function ---
 
 func callGeminiTTSAPI(ctx context.Context, text, stylePrompt, voiceName, modelName, audioEncoding, languageCode string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	// Detach from parent context to avoid inherited short timeouts from the server/client
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	client, err := texttospeech.NewClient(ctx)

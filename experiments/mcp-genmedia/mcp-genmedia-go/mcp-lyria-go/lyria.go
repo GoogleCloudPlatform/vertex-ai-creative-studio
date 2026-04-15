@@ -56,7 +56,7 @@ var (
 
 const (
 	serviceName         = "mcp-lyria-go"
-	version     = "3.7.2" // Synchronize release version
+	version     = "3.8.0" // Synchronize release version
 	defaultPublisher    = "google"
 	defaultLyriaModelID = "lyria-3-clip-preview"
 	defaultSampleCount  = 1

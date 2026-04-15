@@ -34,7 +34,7 @@ var (
 	availableVoices []*texttospeechpb.Voice
 	transport       string
 	port            int
-	version         = "3.7.2" // Synchronize release version
+	version         = "3.8.0" // Synchronize release version
 )
 
 const (

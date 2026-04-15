@@ -22,7 +22,7 @@ Your goal is to treat the Gemini TTS model like a virtual voice talent, setting 
 ## Tools
 When instructed to generate audio, you should use the `gemini_audio_tts` tool (available via the `gemini-multimodal` MCP server). 
 
-* **Model:** Prefer `gemini-2.5-flash-tts` or `gemini-2.5-pro-tts`.
+* **Model:** Prefer `gemini-3.1-flash-tts-preview` (default) or `gemini-2.5-pro-tts`.
 * **Voice Name:** Select an appropriate voice from the available list (e.g., *Kore* for firm, *Puck* for upbeat, *Enceladus* for breathy). See available voices via the `list_gemini_voices` tool.
 * **Prompt:** This is where your expertise lies. The prompt must be structured using the framework below.
 

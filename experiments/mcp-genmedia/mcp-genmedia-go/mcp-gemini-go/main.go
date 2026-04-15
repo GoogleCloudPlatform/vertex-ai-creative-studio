@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "3.7.2" // Synchronize release version
+	version     = "3.8.0" // Synchronize release version
 )
 
 func init() {
@@ -131,7 +131,7 @@ func main() {
 		mcp.WithString("model_name",
 			mcp.DefaultString(defaultGeminiTTSModel),
 			mcp.Description("The model to use."),
-			mcp.Enum("gemini-2.5-flash-tts", "gemini-2.5-pro-tts", "gemini-2.5-flash-lite-preview-tts"),
+			mcp.Enum("gemini-3.1-flash-tts-preview", "gemini-2.5-flash-tts", "gemini-2.5-pro-tts", "gemini-2.5-flash-lite-preview-tts"),
 		),
 		mcp.WithString("language_code",
 			mcp.DefaultString("en-US"),

@@ -25,7 +25,7 @@ Synthesizes speech from text using Gemini models, allowing for granular control 
 - `text` (string, required): The text to synthesize (up to 800 characters).
 - `prompt` (string, optional): Stylistic instructions on how to synthesize the content.
 - `voice_name` (string, optional): The voice to use. Defaults to `Callirrhoe`. Use the `list_gemini_voices` tool to see all options.
-- `model_name` (string, optional): The model to use. Defaults to `gemini-2.5-flash-preview-tts`.
+- `model_name` (string, optional): The model to use. Defaults to `gemini-3.1-flash-tts-preview`.
 - `output_directory` (string, optional): Local directory to save the generated audio file to.
 - `output_filename_prefix` (string, optional): A prefix for the output WAV filename.
 
