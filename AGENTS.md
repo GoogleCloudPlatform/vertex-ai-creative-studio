@@ -66,7 +66,7 @@ Run `bd prime` for workflow context, or install hooks (`bd hooks install`) for a
 - `bd ready` - Find unblocked work
 - `bd create "Title" --type task --priority 2` - Create issue
 - `bd close <id>` - Complete work
-- `bd sync` - Sync with git (run at session end)
+- `bd dolt push` - Sync with git (run at session end)
 
 For full workflow details: `bd prime`
 
@@ -76,7 +76,7 @@ For full workflow details: `bd prime`
 
 When working with issues using the `bd` (beads) command-line tool, adhere to the following tactical guidelines:
 
-*   **Continuous Synchronization:** Always run `bd sync` at the beginning of a session to ensure your local issue tracker is aligned with the remote git repository. Run `bd sync` again at the very end of your session before your final `git push`.
+*   **Continuous Synchronization:** Always run `bd dolt push` at the beginning of a session to ensure your local issue tracker is aligned with the remote git repository. Run `bd dolt push` again at the very end of your session before your final `git push`.
 *   **State Awareness:** When analyzing a bug or feature request, first run `bd ready` to check if there is already an existing, unblocked issue tracking the work. Do not create duplicate issues.
 *   **Atomic Updates:** When you complete a task or fix a bug, immediately close the corresponding issue (`bd close <id>`) in the same commit or PR as the fix. Do not leave issues dangling.
 *   **Clear Descriptions:** If you discover a new bug during your workflow that is out of scope for your current task, log it immediately using `bd create "Title" --type bug --priority <level>`. Ensure the description clearly outlines the reproduction steps and the context in which it was found.
@@ -146,7 +146,7 @@ This system is powered by the [Gemini CLI](https://github.com/google-github-acti
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bd dolt push
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -159,6 +159,7 @@ This system is powered by the [Gemini CLI](https://github.com/google-github-acti
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- **SSH PASSPHRASE**: If a `git push` command hangs or fails asking for an SSH passphrase, ABORT the automated push attempt and explicitly instruct the user to execute the push manually.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
@@ -205,4 +206,5 @@ bd close <id>         # Complete work
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- **SSH PASSPHRASE**: If a `git push` command hangs or fails asking for an SSH passphrase, ABORT the automated push attempt and explicitly instruct the user to execute the push manually.
 <!-- END BEADS INTEGRATION -->

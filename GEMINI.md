@@ -77,7 +77,7 @@ If a Go application initializes network-dependent clients (like Google Cloud `ge
 *   **Command Pattern:** Prefer `ruff check --fix path/to/file.py` and `ruff format path/to/file.py` over running them on the project root (`.`).
 
 ### Python Refactoring Risk: Automated Tooling
-*   **The Problem:** Running `ruff check --fix .` or similar automated formatters globally on a large codebase can sometimes aggressively strip out "unused" imports that are actually load-bearing. For example, in Mesop applications, `import pages.my_page` might not be explicitly called but is required for its `@me.page` decorators to register routes.
+*   **The Problem:** Running `ruff check --fix .` or similar automated formatters globally on a large codebase can sometimes aggressively strip out "unused" imports that are actually load-bearing. For example, in Mesop applications, `import pages.my_page` might not be explicitly called but is required for its `@me.page` decorators to register routes. **This is also highly dangerous for configuration files (like `config/` or `__init__.py`) which often "re-export" variables for other modules to use.**
 *   **The Fix:** 
     1. **Never run global formatting commands.** If you modify 3 files, run `ruff format` and `ruff check --fix` *only* on those 3 files.
     2. Before committing, always run `git diff` and manually verify that no unexpected imports were deleted or critical structure was modified.
