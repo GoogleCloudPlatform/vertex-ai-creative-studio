@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.5.2" // Synchronize release version
+	version     = "3.6.0" // Synchronize release version
 )
 
 // init handles command-line flags and initial logging setup.

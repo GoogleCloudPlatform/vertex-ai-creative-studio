@@ -351,6 +351,8 @@ func addCombineAudioVideoTool(s *server.MCPServer, cfg *common.Config) {
 		mcp.WithDescription("Combines separate audio and video files into a single video file."),
 		mcp.WithString("input_video_uri", mcp.Required(), mcp.Description("URI of the input video file (local path or gs://).")),
 		mcp.WithString("input_audio_uri", mcp.Required(), mcp.Description("URI of the input audio file (local path or gs://).")),
+		mcp.WithNumber("input_video_volume_db_change", mcp.Description("Optional. Volume change in dB for the input video's audio track (e.g., -10).")),
+		mcp.WithNumber("input_audio_volume_db_change", mcp.Description("Optional. Volume change in dB for the input audio track (e.g., +5).")),
 		mcp.WithString("output_file_name", mcp.Description("Optional. Desired name for the output video file (e.g., 'combined.mp4').")),
 		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output video file.")),
 		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output video file to.")),
@@ -382,6 +384,9 @@ func ffmpegCombineAudioVideoHandler(ctx context.Context, request mcp.CallToolReq
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
 	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	inputVideoVolume, hasVideoVol := argsMap["input_video_volume_db_change"].(float64)
+	inputAudioVolume, hasAudioVol := argsMap["input_audio_volume_db_change"].(float64)
 
 	if outputGCSBucket == "" && cfg.GenmediaBucket != "" {
 		outputGCSBucket = cfg.GenmediaBucket
@@ -423,7 +428,56 @@ func ffmpegCombineAudioVideoHandler(ctx context.Context, request mcp.CallToolReq
 	}
 	defer outputCleanup()
 
-	_, ffmpegErr := runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-i", localInputAudio, "-map", "0", "-map", "1:a", "-c:v", "copy", "-shortest", tempOutputFile)
+	// Check if video has audio
+	mediaInfoJSON, err := executeGetMediaInfo(ctx, localInputVideo)
+	hasAudio := false
+	if err == nil {
+		var info struct {
+			Streams []struct {
+				CodecType string `json:"codec_type"`
+			} `json:"streams"`
+		}
+		if json.Unmarshal([]byte(mediaInfoJSON), &info) == nil {
+			for _, s := range info.Streams {
+				if s.CodecType == "audio" {
+					hasAudio = true
+					break
+				}
+			}
+		}
+	}
+
+	var ffmpegErr error
+	if hasAudio {
+		// Mix audio tracks using amix filter
+		var filterParts []string
+		
+		if hasVideoVol {
+			filterParts = append(filterParts, fmt.Sprintf("[0:a]volume=%.2fdB[v_a]", inputVideoVolume))
+		} else {
+			filterParts = append(filterParts, "[0:a]anull[v_a]")
+		}
+		
+		if hasAudioVol {
+			filterParts = append(filterParts, fmt.Sprintf("[1:a]volume=%.2fdB[a_a]", inputAudioVolume))
+		} else {
+			filterParts = append(filterParts, "[1:a]anull[a_a]")
+		}
+		
+		filterParts = append(filterParts, "[v_a][a_a]amix=inputs=2:duration=longest[a]")
+		filterComplex := strings.Join(filterParts, "; ")
+
+		_, ffmpegErr = runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-i", localInputAudio, "-filter_complex", filterComplex, "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", tempOutputFile)
+	} else {
+		// Just add the audio track directly if video has no audio
+		if hasAudioVol {
+			filterComplex := fmt.Sprintf("[1:a]volume=%.2fdB[a]", inputAudioVolume)
+			_, ffmpegErr = runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-i", localInputAudio, "-filter_complex", filterComplex, "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", tempOutputFile)
+		} else {
+			_, ffmpegErr = runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-i", localInputAudio, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", tempOutputFile)
+		}
+	}
+
 	if ffmpegErr != nil {
 		span.RecordError(ffmpegErr)
 		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg combine audio/video failed: %v", ffmpegErr)), nil

@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.5.2" // Synchronize release version
+	version     = "3.6.0" // Feature: Added volume control and amix for video+audio
 )
 
 var (

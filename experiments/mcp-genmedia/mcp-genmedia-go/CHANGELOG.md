@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-14 (v3.6.0)
+
+*   **Feat:** Updated `ffmpeg_combine_audio_and_video` in `mcp-avtool-go` to check if the input video already contains an audio stream. If it does, the tool now uses the `amix` filter to mix the tracks properly instead of appending a secondary audio track.
+*   **Feat:** Added optional `input_video_volume_db_change` and `input_audio_volume_db_change` parameters to `ffmpeg_combine_audio_and_video` to allow for independent volume control during mixing.
+
 ## 2026-04-08 (v3.5.2)
 
 *   **Fix:** Corrected the `SupportedAspectRatios` for `veo-3.1-lite-generate-001` in `mcp-veo-go` to use standard `"16:9"` and `"9:16"` instead of `"720p"` and `"1080p"` (which were rejected by the API).
