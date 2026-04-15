@@ -15,6 +15,7 @@ PROJECT_ID=
 # [OPTIONAL] The default GCP region for most services (Vertex AI, etc.).
 # Default: us-central1
 # LOCATION=us-central1
+# GEMINI_TTS_LOCATION=global
 
 # [OPTIONAL] Defines the environment (e.g., 'dev', 'prod').
 # Used to load environment-specific content files like config/about_content.{env}.json.

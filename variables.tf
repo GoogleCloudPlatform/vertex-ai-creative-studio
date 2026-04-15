@@ -116,3 +116,8 @@ variable "character_consistency_gemini_location" {
   default     = "global"
 }
 
+
+variable "gemini_tts_location" {
+  description = "Location for the Gemini TTS model"
+  default     = "global"
+}

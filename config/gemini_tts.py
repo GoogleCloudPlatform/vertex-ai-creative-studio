@@ -15,6 +15,13 @@
 """Consolidated configuration for Gemini TTS models, voices, and languages."""
 
 GEMINI_TTS_MODELS = {
+    "gemini-3.1-flash-tts-preview": {
+        "id": "gemini-3.1-flash-tts-preview",
+        "label": "Gemini 3.1 Flash TTS Preview",
+        "description": "New Gemini 3.1 Flash Text-to-Speech preview model (Global).",
+        "tags": ["TTS", "Gemini 3.1 Flash"],
+        "version": "3.1-flash-preview",
+    },
     "gemini-2.5-flash-tts": {
         "id": "gemini-2.5-flash-tts",
         "label": "Gemini 2.5 Flash TTS",
