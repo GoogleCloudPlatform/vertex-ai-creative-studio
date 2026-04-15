@@ -47,6 +47,20 @@ When you need to add a new model or change the parameters of an existing one, fo
 
 This pattern ensures that our tools are robust, self-describing, and easy to maintain.
 
+### Veo API Usage (GenerateVideos vs GenerateVideosFromSource)
+
+When working with Veo in the `google.golang.org/genai` SDK, **always** use the `GenerateVideosFromSource` method instead of `GenerateVideos`. The older `GenerateVideos` method is kept for backward compatibility and does not support newer features like video extension.
+
+**Correct Pattern:**
+```go
+source := &genai.GenerateVideosSource{
+    Prompt: "your prompt", // Optional
+    Image:  inputImage,   // Optional
+    Video:  inputVideo,   // Optional (for extension)
+}
+operation, err := client.Models.GenerateVideosFromSource(ctx, modelName, source, config)
+```
+
 ### Enabling Server Capabilities
 
 The MCP Server is modular. Features like `tools`, `prompts`, and `resources` must be explicitly enabled during server initialization. If you encounter errors like 'resources not supported', ensure you are passing the correct `server.With...Capabilities()` option to the `server.NewMCPServer()` constructor in the `main.go` file for the relevant server.
