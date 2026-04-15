@@ -39,7 +39,7 @@ func inferMimeTypeFromURI(uri string) string {
 }
 
 // parseCommonVideoParams extracts and validates video generation parameters from the request arguments.
-func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, bool, string, error) {
+func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config, isExtend bool) (string, string, string, string, int32, int32, bool, string, error) {
 	// Model
 	modelInput, ok := args["model"].(string)
 	if !ok || modelInput == "" {
@@ -78,24 +78,29 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 
 	// Duration
-	durationSecs := modelDetails.DefaultDuration
-	if durationArg, ok := args["duration"].(float64); ok {
-		durationSecs = int32(durationArg)
-	}
-	validDuration := false
-	for _, d := range modelDetails.SupportedDurations {
-		if d == durationSecs {
-			validDuration = true
-			break
+	var durationSecs int32
+	if isExtend {
+		durationSecs = 7
+	} else {
+		durationSecs = modelDetails.DefaultDuration
+		if durationArg, ok := args["duration"].(float64); ok {
+			durationSecs = int32(durationArg)
 		}
-	}
-	if !validDuration {
-		// Create a string representation of the supported durations for the error message
-		durationsStr := make([]string, len(modelDetails.SupportedDurations))
-		for i, d := range modelDetails.SupportedDurations {
-			durationsStr[i] = fmt.Sprintf("%d", d)
+		validDuration := false
+		for _, d := range modelDetails.SupportedDurations {
+			if d == durationSecs {
+				validDuration = true
+				break
+			}
 		}
-		return "", "", "", "", 0, 0, false, "", fmt.Errorf("duration '%d' is not supported by model %s. Supported durations are: [%s]", durationSecs, model, strings.Join(durationsStr, ", "))
+		if !validDuration {
+			// Create a string representation of the supported durations for the error message
+			durationsStr := make([]string, len(modelDetails.SupportedDurations))
+			for i, d := range modelDetails.SupportedDurations {
+				durationsStr[i] = fmt.Sprintf("%d", d)
+			}
+			return "", "", "", "", 0, 0, false, "", fmt.Errorf("duration '%d' is not supported by model %s. Supported durations are: [%s]", durationSecs, model, strings.Join(durationsStr, ", "))
+		}
 	}
 
 	// Aspect Ratio

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-14 (v3.7.1)
+
+*   **Fix:** Corrected parameter parsing in `mcp-veo-go`'s `veo_extend_video` tool to correctly bypass standard duration validation and supply the required 7-second duration to the Vertex AI API.
+*   **Chore:** Bumped minor versions for all MCP servers to synchronize the release.
+
 ## 2026-04-14 (v3.7.0)
 
 *   **Feat:** Upgraded `google.golang.org/genai` SDK to `v1.54.0` across all MCP servers.

@@ -49,7 +49,7 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig, false)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -202,7 +202,7 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		})
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig, false)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -277,7 +277,7 @@ func veoExtendVideoHandler(client *genai.Client, ctx context.Context, request mc
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig, true)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}

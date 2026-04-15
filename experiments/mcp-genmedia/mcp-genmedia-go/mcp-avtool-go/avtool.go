@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.7.0" // Feature: Veo Video Extend
+	version     = "3.7.1" // Fix: Veo Video Extend validation
 )
 
 var (

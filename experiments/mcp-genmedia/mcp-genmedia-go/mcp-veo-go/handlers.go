@@ -40,7 +40,7 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required for text-to-video"), nil
 	}
 
-	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig, false)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -125,7 +125,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig, false)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
