@@ -9,6 +9,10 @@ wheels/
 # Virtual environments
 .venv
 
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
 # Configuration files
 .env
 
@@ -18,3 +22,6 @@ wheels/
 samples/
 
 .commit.txt
+
+drivectl-mcp.log
+.genkit/

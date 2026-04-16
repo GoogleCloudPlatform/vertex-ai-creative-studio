@@ -18,7 +18,12 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["components*", "config*", "models*", "pages*", "state*"]
+include = ["components*", "config*", "models*", "pages*", "state*", "services*", "cli*"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
 
 [dependency-groups]
 dev = [

@@ -16,14 +16,15 @@ import json
 from typing import Any, Dict, Optional, Union
 
 import mesop as me
+from google.genai.types import GenerateContentConfig
 from pydantic import BaseModel, Field, ValidationError
 
 from components.header import header
-from models.gemini import gemini_generate_content
+from config.default import Default
 from models.parsers import parse_evaluation_markdown
-from state.state import AppState
-
 from models.prompts import VIDEO_PROMPT_HEALTH_CHECKLIST
+from services.llm_client import LLMClient
+from state.state import AppState
 
 
 # Pydantic Models for structured response
@@ -477,17 +478,28 @@ def on_click_evaluate_prompt(e: me.ClickEvent):
     page_state.processing = True
     yield
 
-    response_text = gemini_generate_content(
-        system_prompt=VIDEO_PROMPT_HEALTH_CHECKLIST,
-        prompt="""# Prompt for Analysis\n<PROMPT>\n{}\n</PROMPT>\n""".format(
-            page_state.prompt_input
-        ),
-    )
-    page_state.prompt_response = (
-        response_text  # Store full raw response for potential fallback display
-    )
-
     try:
+        client = LLMClient()
+        config = Default()
+        response = client.generate_content(
+            model=config.MODEL_ID,
+            contents="""# Prompt for Analysis
+<PROMPT>
+{}
+</PROMPT>
+""".format(
+                page_state.prompt_input
+            ),
+            config=GenerateContentConfig(
+                system_instruction=VIDEO_PROMPT_HEALTH_CHECKLIST,
+                response_modalities=["TEXT"],
+            ),
+        )
+        response_text = response.text
+        page_state.prompt_response = (
+            response_text  # Store full raw response for potential fallback display
+        )
+
         parsed_data = parse_evaluation_markdown(response_text)
         if parsed_data:
             # Sort the parsed data so that items with issues appear first
@@ -506,7 +518,8 @@ def on_click_evaluate_prompt(e: me.ClickEvent):
     except Exception as e:
         print(f"Error processing response: {e}")
         # Fallback: treat the entire response as commentary if parsing fails.
-        page_state.commentary_suffix = response_text.strip()
+        page_state.prompt_response = page_state.prompt_response if page_state.prompt_response else f"Error: {e}"
+        page_state.commentary_suffix = page_state.prompt_response.strip()
         page_state.parsed_response_json_str = None
 
     page_state.processing = False

@@ -32,6 +32,7 @@ page_json = [
     {"display": "Promptlandia", "icon": "try", "route": "/"},
     {"display": "Checklist", "icon": "fact_check", "route": "/checklist"},
     {"display": "Video Checklist", "icon": "movie", "route": "/video_checklist"},
+    {"display": "Trimmer", "icon": "content_cut", "route": "/trimmer"},
     {"display": "Prompt", "icon": "question_answer", "route": "/prompt"},
     # {"display": "Playground", "icon": "auto_awesome", "route": "/playground"},
 ]

@@ -18,7 +18,7 @@ variable "service_name" {
 variable "model_id" {
   description = "The ID of the Gemini model to use."
   type        = string
-  default     = "gemini-2.5-flash"
+  default     = "gemini-3.1-pro-preview"
 }
 
 variable "iap_members" {

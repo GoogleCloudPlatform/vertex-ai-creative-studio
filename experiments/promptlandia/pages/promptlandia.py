@@ -17,10 +17,7 @@ import re
 import mesop as me
 
 from components.header import header
-from models.gemini import (
-    gemini_improve_this_prompt,
-    gemini_thinking_thoughts,
-)
+from services.improver import PromptImprover
 
 
 @me.stateclass
@@ -31,6 +28,7 @@ class PageState:
 
     processing: bool = False
     processing_status: str = ""
+    error_message: str = ""
 
     system_prompt_input: str = ""
     system_prompt_textarea_key: int = 0
@@ -85,6 +83,18 @@ def promptlandia_page_content(app_state: me.state):
                 header("Promptlandia", "try")
                 me.text("Improve an existing prompt")
                 me.box(style=me.Style(height=32))
+
+                if state.error_message:
+                    with me.box(
+                        style=me.Style(
+                            background=me.theme_var("error-container"),
+                            color=me.theme_var("on-error-container"),
+                            padding=me.Padding.all(16),
+                            border_radius=8,
+                            margin=me.Margin(bottom=16),
+                        )
+                    ):
+                        me.text(state.error_message)
 
                 # Existing prompt entry
                 if not state.processing_status:
@@ -169,9 +179,7 @@ def promptlandia_page_content(app_state: me.state):
                             )
                             me.box(style=me.Style(height=8))
                             with me.box(
-                                style=me.Style(
-                                    display="flex", flex_direction="row", gap=5
-                                ),
+                                style=me.Style(display="flex", flex_direction="row", gap=5)
                             ):
                                 me.progress_spinner(diameter=16)
                                 me.text(state.processing_status)
@@ -275,10 +283,9 @@ def extract_double_braces(text):
     Returns:
       A list of strings containing the extracted phrases, or an empty list if none are found.
     """
-    pattern = r"\{\{(.*?)\}\}"  # Non-greedy matching
+    pattern = r"\{\{(.*?)\}"  # Non-greedy matching
     matches = re.findall(pattern, text)
     return matches
-
 
 def on_blur_prompt(e: me.InputBlurEvent):
     """Handles the blur event for the prompt input.
@@ -432,46 +439,41 @@ def on_click_generate_content(e: me.ClickEvent):  # pylint: disable=unused-argum
     """
     page_state = me.state(PageState)
     page_state.improved_prompt_response = ""
+    page_state.error_message = ""
     yield
     page_state.processing = True
     yield
     page_state.processing_status = "Planning ..."
     yield
 
-    prompt = page_state.prompt_input
-    system_prompt = page_state.system_prompt_input
-    prompt_improvement_instructions = page_state.improvement_prompt_input
+    try:
+        prompt = page_state.prompt_input
+        system_prompt = page_state.system_prompt_input
+        prompt_improvement_instructions = page_state.improvement_prompt_input
 
-    plan = gemini_thinking_thoughts(
-        system_prompt=system_prompt,
-        prompt=prompt,
-        prompt_improvement_instructions=prompt_improvement_instructions,
-    )
-    print(f"plan:\n{plan}")
-    yield
+        improver = PromptImprover()
 
-    page_state.processing_status = "Improving ..."
-    improved_prompt = gemini_improve_this_prompt(
-        system_prompt=system_prompt,
-        prompt=prompt,
-        basic_instructions=prompt_improvement_instructions,
-        plan=plan,
-    )
-    print(f"improved prompt:\n{improved_prompt}")
-    yield
+        plan_object = improver.generate_plan(
+            system_prompt=system_prompt,
+            prompt=prompt,
+            instructions=prompt_improvement_instructions,
+        )
+        print(f"plan:\n{plan_object.generated_plan}")
+        yield
 
-    page_state.improved_prompt_response = improved_prompt
-    # page_state.improved_prompt_response = gemini_plan_and_improve(
-    #    page_state.system_prompt_input,
-    #    page_state.prompt_input,
-    #    page_state.improvement_prompt_input,
-    # )
-    # page_state.improved_prompt_response = gemini_generate_content(
-    #    page_state.system_prompt_input, page_state.prompt_input
-    # )
-    page_state.processing_status = "improved"
-    page_state.processing = False
-    yield
+        page_state.processing_status = "Improving ..."
+        result = improver.improve_prompt(plan=plan_object)
+        print(f"improved prompt:\n{result.improved_prompt}")
+        yield
+
+        page_state.improved_prompt_response = result.improved_prompt
+        page_state.processing_status = "improved"
+    except Exception as e:
+        page_state.error_message = f"An error occurred: {str(e)}"
+        page_state.processing_status = ""
+    finally:
+        page_state.processing = False
+        yield
 
 
 def gemini_plan_and_improve(
@@ -492,23 +494,13 @@ def gemini_plan_and_improve(
     Returns:
         The improved prompt as a string.
     """
-    plan = gemini_thinking_thoughts(
+    improver = PromptImprover()
+    result = improver.run(
         system_prompt=system_prompt,
         prompt=prompt,
-        prompt_improvement_instructions=prompt_improvement_instructions,
+        instructions=prompt_improvement_instructions,
     )
-    print(f"plan:\n{plan}")
-
-    improved_prompt = gemini_improve_this_prompt(
-        system_prompt=system_prompt,
-        prompt=prompt,
-        basic_instructions=prompt_improvement_instructions,
-        plan=plan,
-    )
-
-    print(f"improved prompt:\n{improved_prompt}")
-
-    return improved_prompt
+    return result.improved_prompt
 
 
 def on_click_clear_prompt(e: me.ClickEvent):

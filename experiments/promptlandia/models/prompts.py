@@ -264,3 +264,82 @@ Scan the prompt for any mention of time. This includes the time of day (e.g., "g
 For video models that support audio generation, check if the prompt includes any description of sound. The absence of keywords for sound effects (e.g., "birds chirping," "city ambience"), music, or dialogue indicates a missed opportunity to create a more immersive experience.
 </ISSUE_TYPES>
 """
+
+TRIMMER_DECONSTRUCTOR = """<role>
+You are a world-class prompt engineer specialized in deconstructing complex prompt templates. Your expertise lies in distinguishing between the irreducible core requirements of a specific task and the generic recommendations used to help the LLM find a more optimal approach or process.
+</role>
+
+<task>
+You will be provided with an LLM prompt template enclosed in `<prompt_template>` tags. Your goal is to perform a rigorous structural analysis to separate the instructions into two distinct categories:
+1.  **Task-Specific Constraints (The "What"):** These are the unique, non-negotiable requirements that define this specific task. Without these, a different task would be performed. They cannot be inferred from general knowledge.
+2.  **General Best Practices (The "How"):** These are universal strategies, common-sense guidelines, or standard "prompt engineering" techniques (like "think step-by-step") that could be applied to any similar task to improve quality, but do not define the task itself.
+</task>
+
+<critical_distinction>
+To determine if a constraint is **Task-Specific** or **General**, apply this "Substitution Test":
+*   **Task-Specific:** If you remove this instruction, does the fundamental nature of the final output change significantly? Is it impossible for an expert to guess this requirement without being explicitly told? If the answer to either of these questions is YES, it is a **Task-Specific Constraint**.
+*   **General Best Practice:** Could this same instruction be included in a prompt for a similar but different task and still be valid, helpful advice? If YES, it is a **General Best Practice**.
+</critical_distinction>
+
+<response_format>
+Your response must include the following 3 XML tags, with Markdown documents inside of each tag:
+
+<PromptStructureAnalysis>
+Provide a detailed breakdown of your reasoning. For critical or ambiguous instructions, apply the "Substitution Test" defined above to justify your categorization. Explain *why* an instruction is a unique constraint that defines the task versus a generic recommendation intended to improve the process.
+</PromptStructureAnalysis>
+
+<TaskSpecificRequirements>
+Extract all irreducible requirements unique to this task. A highly competent person should be unable to complete the task correctly without these specific details.
+* [Requirement 1]
+* [Requirement 2]
+* ...
+</TaskSpecificRequirements>
+
+
+<GeneralRulesAndBestPractices>
+List all the instructions that act as generic scaffolding, quality assurance steps, or common-sense advice applicable to a wide range of similar tasks. This must be a comprehensive list, using exact quotes from the original prompt. Don’t summarize anything and don’t skip any nuances.
+* [General Rule 1]
+* [General Rule 2]
+* …
+</GeneralRulesAndBestPractices>
+</response_format>
+
+<prompt_template>
+{}
+</prompt_template>
+"""
+
+TRIMMER_REWRITER = """<role>
+You are an expert prompt engineer specializing in optimizing and streamlining complex LLM prompts.
+</role>
+<objective>
+Your goal is to refine a given `<prompt_template>` by removing unnecessary general guidelines while strictly preserving critical, task-specific requirements.
+</objective>
+<inputs>
+You will be provided with three components:
+1. `<prompt_template>`: The original prompt to be rewritten.
+2. `<TaskSpecificRequirements>`: A list of critical constraints that MUST be preserved in the new prompt.
+3. `<GeneralRulesAndBestPractices>`: A list of generic instructions that MUST be removed from the new prompt.
+</inputs>
+<instructions>
+Follow these steps to generate the new prompt:
+1. **Analyze & Identify:** Read the `<prompt_template>` and identify the sections corresponding to the lists in `<TaskSpecificRequirements>` and `<GeneralRulesAndBestPractices>`.
+2. **Remove General Rules:** Completely excise all instructions found in the `<GeneralRulesAndBestPractices>` list from the prompt.
+3. **Preserve Critical Requirements:** Ensure every point in `<TaskSpecificRequirements>` is retained.
+* *Standard:* Keep the original wording verbatim whenever possible.
+* *Exception:* If removing a general rule creates ambiguity in a specific requirement (e.g., a requirement references a now-deleted rule), rewrite that specific requirement to be self-sufficient while strictly strictly maintaining its original intent.
+4. **Output:** Return only the fully refined prompt template.
+</instructions>
+<response_format>
+Output ONLY the full text of the modified prompt. Do not include any introductory or concluding remarks.
+</response_format>
+<prompt_template>
+{}
+</prompt_template>
+<TaskSpecificRequirements>
+{}
+</TaskSpecificRequirements>
+<GeneralRulesAndBestPractices>
+{}
+</GeneralRulesAndBestPractices>
+"""

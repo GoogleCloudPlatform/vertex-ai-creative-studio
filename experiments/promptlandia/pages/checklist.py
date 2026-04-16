@@ -13,116 +13,17 @@
 # limitations under the License.
 
 import json
-from typing import Any, Dict, Optional, Union
+from typing import Optional
 
 import mesop as me
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
 from components.header import header
-from models.gemini import gemini_generate_content
-from models.parsers import parse_evaluation_markdown
-
-from models.prompts import PROMPT_HEALTH_CHECKLIST
-
-
-# Pydantic Models for structured response
-class ChecklistItemDetail(BaseModel):
-    """Represents the details of a single checklist item."""
-
-    score: bool
-    explanation: Optional[str] = None
-
-
-class IssueDetail(BaseModel):
-    """Represents the structured details of an identified issue."""
-
-    issue_name: str
-    location_in_prompt: str
-    rationale: str
-
-
-class CategoryData(BaseModel):
-    """Represents the data for a single category in the checklist."""
-
-    items: Dict[str, bool] = Field(default_factory=dict)
-    details: Optional[Dict[str, Union[IssueDetail, str]]] = (
-        None  # Can hold structured issue details or simple string explanations
-    )
-    explanation: Optional[str] = None  # For overall category explanation
-
-    @classmethod
-    def parse_category_data(cls, data: Dict[str, Any]) -> "CategoryData":
-        """Parses a dictionary into a CategoryData object.
-
-        Args:
-            data: The dictionary to parse.
-
-        Returns:
-            A CategoryData object.
-        """
-        items = {}
-        details_dict = {}  # Initialize as an empty dict
-        category_explanation_str = None
-
-        if isinstance(data, dict):
-            # Correctly parse nested items
-            raw_items = data.get("items")
-            if isinstance(raw_items, dict):
-                for key, value in raw_items.items():
-                    if isinstance(value, bool):
-                        items[key] = value
-
-            raw_details = data.get("details")
-            if isinstance(raw_details, dict):
-                for key, value in raw_details.items():
-                    if isinstance(value, dict):
-                        try:
-                            # Attempt to parse as a structured IssueDetail
-                            details_dict[key] = IssueDetail(**value)
-                        except ValidationError:
-                            # If it fails, treat it as a plain string (or handle error appropriately)
-                            details_dict[key] = str(value)
-                    else:
-                        # Keep it as a string if it's not a dictionary
-                        details_dict[key] = str(value)
-
-            category_explanation_str = data.get("explanation")
-            if not isinstance(category_explanation_str, str):
-                category_explanation_str = None
-
-        return cls(
-            items=items,
-            details=details_dict if details_dict else None,
-            explanation=category_explanation_str,
-        )
-
-
-class ParsedChecklistResponse(BaseModel):
-    """Represents the entire checklist response."""
-
-    categories: Dict[str, CategoryData] = Field(default_factory=dict)
-
-    @classmethod
-    def from_json_dict(cls, json_dict: Dict[str, Any]) -> "ParsedChecklistResponse":
-        """Creates a ParsedChecklistResponse from a JSON dictionary.
-
-        Args:
-            json_dict: The JSON dictionary to parse.
-
-        Returns:
-            A ParsedChecklistResponse object.
-        """
-        parsed_categories = {}
-        for cat_name, cat_data in json_dict.items():
-            if isinstance(cat_data, dict):
-                parsed_categories[cat_name] = CategoryData.parse_category_data(cat_data)
-            else:
-                # Handle cases where a category might not be a dict as expected
-                print(
-                    f"Warning: Category '{cat_name}' data is not a dictionary, skipping."
-                )
-                parsed_categories[cat_name] = CategoryData()  # empty category
-        return cls(categories=parsed_categories)
+from services.checklist import PromptChecklist
+from models.checklist_models import (
+    IssueDetail,
+    ParsedChecklistResponse,
+)
 
 
 @me.stateclass
@@ -136,7 +37,6 @@ class PageState:
     prompt_response: str = ""  # Raw text from Gemini
     # Store the successfully parsed JSON as a string to avoid Mesop deserialization issues
     parsed_response_json_str: Optional[str] = None
-    # commentary_prefix: Optional[str] = None # No longer storing prefix
     commentary_suffix: Optional[str] = None
 
 
@@ -197,7 +97,6 @@ def checklist_page_content(app_state: me.state):
                             pydantic_response = ParsedChecklistResponse.from_json_dict(
                                 raw_dict
                             )
-                            # me.text("Evaluation Results", style=me.Style(font_weight="bold", font_size=18, margin=me.Margin(bottom=12)))
                             render_pydantic_response(pydantic_response)
                         except (json.JSONDecodeError, ValidationError) as e:
                             me.text(
@@ -399,7 +298,6 @@ def render_pydantic_response(response: ParsedChecklistResponse):
 def gemini_prompt_input():
     """Renders the Gemini prompt input text area and buttons."""
     page_state = me.state(PageState)
-    # ... (rest of gemini_prompt_input is unchanged)
     with me.box(
         style=me.Style(
             border_radius=16,
@@ -476,20 +374,20 @@ def on_click_evaluate_prompt(e: me.ClickEvent):
     page_state.processing = True
     yield
 
-    response_text = gemini_generate_content(
-        system_prompt=PROMPT_HEALTH_CHECKLIST,
-        prompt="""# Prompt for Analysis\n<PROMPT>\n{}\n</PROMPT>\n""".format(
-            page_state.prompt_input
-        ),
-    )
-    page_state.prompt_response = (
-        response_text  # Store full raw response for potential fallback display
-    )
-
     try:
-        parsed_data = parse_evaluation_markdown(response_text)
-        if parsed_data:
+        checklist_service = PromptChecklist()
+        structured_response, raw_text = checklist_service.evaluate_prompt(page_state.prompt_input)
+        page_state.prompt_response = raw_text
+
+        if structured_response:
+            # We need to convert the Pydantic model back to a dict for JSON serialization
+            # to store it in the Mesop state string.
+            # We also want to sort it as before.
+            parsed_data = structured_response.model_dump()["categories"]
+
             # Sort the parsed data so that items with issues appear first
+            # Note: The structure of parsed_data matches what we had before because
+            # our Pydantic models mirror that structure.
             sorted_data = dict(
                 sorted(
                     parsed_data.items(),
@@ -499,18 +397,19 @@ def on_click_evaluate_prompt(e: me.ClickEvent):
             )
             page_state.parsed_response_json_str = json.dumps(sorted_data)
         else:
-            # If no data is parsed, treat the whole response as commentary.
-            page_state.commentary_suffix = response_text.strip()
+            # If no structured response, treat the whole response as commentary.
+            page_state.commentary_suffix = raw_text.strip()
 
     except Exception as e:
         print(f"Error processing response: {e}")
         # Fallback: treat the entire response as commentary if parsing fails.
-        page_state.commentary_suffix = response_text.strip()
+        # We might not have raw_text if evaluate_prompt failed early, so handle that.
+        page_state.prompt_response = page_state.prompt_response if page_state.prompt_response else f"Error: {e}"
+        page_state.commentary_suffix = page_state.prompt_response.strip()
         page_state.parsed_response_json_str = None
 
     page_state.processing = False
     yield
-
 
 def on_click_clear_prompt(e: me.ClickEvent):
     """Handles the click event for the clear prompt button.
@@ -525,5 +424,4 @@ def on_click_clear_prompt(e: me.ClickEvent):
     state.processing = False
     state.prompt_response = ""
     state.parsed_response_json_str = None
-    # state.commentary_prefix = None # Prefix is no longer stored
     state.commentary_suffix = None

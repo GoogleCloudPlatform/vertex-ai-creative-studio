@@ -23,11 +23,14 @@ import html
 import mesop as me
 
 from components.header import header
+from config.default import Default
 from models.prompts import (
     PROMPT_IMPROVEMENT_INSTRUCTIONS,
     PROMPT_IMPROVEMENT_PLANNING_INSTRUCTIONS,
     PROMPT_HEALTH_CHECKLIST,
     VIDEO_PROMPT_HEALTH_CHECKLIST,
+    TRIMMER_DECONSTRUCTOR,
+    TRIMMER_REWRITER,
 )
 
 
@@ -70,50 +73,53 @@ def settings_page_content(app_state: me.state):
 
                 me.text("Settings for Promptlandia")
                 me.box(style=me.Style(height=32))
-
+                
                 with me.box():
                     me.text(
-                        "Prompt Improvement Instructions",
+                        "Promptlandia settings",
                         style=me.Style(font_weight="bold"),
                     )
                     me.box(style=me.Style(height=8))
-                    with me.box(style=PROMPT_BOX_STYLE):
-                        me.markdown(text=html.escape(PROMPT_IMPROVEMENT_INSTRUCTIONS))
+                    me.text(f"Model: {Default.MODEL_ID}")
+                    me.text(f"Location: {Default.LOCATION}")
 
                 me.box(style=me.Style(height=32))
 
-                with me.box():
-                    me.text(
-                        "Prompt Planning Instructions",
-                        style=me.Style(font_weight="bold"),
-                    )
-                    me.box(style=me.Style(height=8))
+                with me.expansion_panel(title="Prompt Improvement Instructions"):
+                    with me.box(style=PROMPT_BOX_STYLE):
+                        me.markdown(text=html.escape(PROMPT_IMPROVEMENT_INSTRUCTIONS))
+
+                me.box(style=me.Style(height=16))
+
+                with me.expansion_panel(title="Prompt Planning Instructions"):
                     with me.box(style=PROMPT_BOX_STYLE):
                         me.markdown(
                             text=html.escape(PROMPT_IMPROVEMENT_PLANNING_INSTRUCTIONS)
                         )
 
-                me.box(style=me.Style(height=32))
+                me.box(style=me.Style(height=16))
 
-                with me.box():
-                    me.text(
-                        "Prompt Health Checklist",
-                        style=me.Style(font_weight="bold"),
-                    )
-                    me.box(style=me.Style(height=8))
+                with me.expansion_panel(title="Prompt Health Checklist"):
                     with me.box(style=PROMPT_BOX_STYLE):
                         me.markdown(text=html.escape(PROMPT_HEALTH_CHECKLIST))
 
-                me.box(style=me.Style(height=32))
+                me.box(style=me.Style(height=16))
 
-                with me.box():
-                    me.text(
-                        "Video Prompt Health Checklist",
-                        style=me.Style(font_weight="bold"),
-                    )
-                    me.box(style=me.Style(height=8))
+                with me.expansion_panel(title="Video Prompt Health Checklist"):
                     with me.box(style=PROMPT_BOX_STYLE):
                         me.markdown(text=html.escape(VIDEO_PROMPT_HEALTH_CHECKLIST))
+
+                me.box(style=me.Style(height=16))
+
+                with me.expansion_panel(title="Trimmer Deconstructor Prompt"):
+                    with me.box(style=PROMPT_BOX_STYLE):
+                        me.markdown(text=html.escape(TRIMMER_DECONSTRUCTOR))
+
+                me.box(style=me.Style(height=16))
+
+                with me.expansion_panel(title="Trimmer Rewriter Prompt"):
+                    with me.box(style=PROMPT_BOX_STYLE):
+                        me.markdown(text=html.escape(TRIMMER_REWRITER))
 
 
 PROMPT_BOX_STYLE = me.Style(

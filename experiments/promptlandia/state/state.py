@@ -34,6 +34,11 @@ class AppState:
         name: The name of the user.
         current_page: The route of the currently active page.
         theme_mode: The current theme mode (e.g., "light" or "dark").
+        trimmer_input: The user's input prompt for the trimmer page.
+        trimmer_output: The final trimmed prompt.
+        trimmer_analysis: The intermediate analysis from the deconstructor.
+        trimmer_loading: Whether the trimmer process is currently running.
+        trimmer_duration: The time taken (in seconds) for the last trim operation.
     """
 
     sidenav_open: bool = False
@@ -41,3 +46,10 @@ class AppState:
     name: str = "World"
     current_page: str = "/"
     theme_mode: str = "light"
+
+    # Trimmer Page State
+    trimmer_input: str = ""
+    trimmer_output: str = ""
+    trimmer_analysis: str = ""
+    trimmer_loading: bool = False
+    trimmer_duration: float = 0.0
