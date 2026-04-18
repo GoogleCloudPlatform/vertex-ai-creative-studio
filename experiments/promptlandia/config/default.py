@@ -43,5 +43,6 @@ class Default:
 
     PROJECT_ID: str = field(default_factory=lambda: os.environ.get("PROJECT_ID"))
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.1-pro-preview")
+    PLANNING_MODEL_ID: str = os.environ.get("PLANNING_MODEL_ID")
     INIT_VERTEX: bool = True

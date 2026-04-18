@@ -1,6 +1,6 @@
 [project]
 name = "Promptlandia"
-version = "0.1.0"
+version = "0.2.0"
 description = "Promptlandia - a prompt analysis and improvement playground"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -18,7 +18,12 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["components*", "config*", "models*", "pages*", "state*"]
+include = ["components*", "config*", "models*", "pages*", "state*", "services*", "cli*"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
 
 [dependency-groups]
 dev = [

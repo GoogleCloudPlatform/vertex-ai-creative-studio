@@ -20,11 +20,11 @@ displaying the results.
 """
 
 import mesop as me
+from google.genai.types import GenerateContentConfig
 
 from components.header import header
-
-
-from models.gemini import gemini_generate_content
+from config.default import Default
+from services.llm_client import LLMClient
 
 
 @me.stateclass
@@ -197,7 +197,19 @@ def on_click_generate_content(e: me.ClickEvent):  # pylint: disable=unused-argum
     page_state.processing = True
     yield
     print(f"using prompt: {page_state.prompt_input}")
-    page_state.prompt_response = gemini_generate_content("", page_state.prompt_input)
+    
+    try:
+        client = LLMClient()
+        config = Default()
+        response = client.generate_content(
+            model=config.MODEL_ID,
+            contents=page_state.prompt_input,
+            config=GenerateContentConfig(response_modalities=["TEXT"]),
+        )
+        page_state.prompt_response = response.text
+    except Exception as ex:
+        page_state.prompt_response = f"Error: {ex}"
+        
     page_state.processing = False
     yield
 

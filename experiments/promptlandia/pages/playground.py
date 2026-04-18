@@ -146,7 +146,7 @@ def playground_page_content(app_state: me.state):
         with me.box(style=_STYLE_CONFIG_COLUMN):
             me.select(
                 options=[
-                    me.SelectOption(label="Gemini 1.5", value="gemini-1.5"),
+                    me.SelectOption(label="Gemini 3.1 Pro Preview", value="gemini-3.1-pro-preview"),
                     me.SelectOption(label="Chat-GPT Turbo", value="gpt-3.5-turbo"),
                 ],
                 label="Model",

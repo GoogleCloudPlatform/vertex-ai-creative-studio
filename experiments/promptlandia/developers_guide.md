@@ -4,14 +4,65 @@ This document provides a detailed analysis of the Promptlandia codebase and offe
 
 ## Codebase Analysis
 
-The Promptlandia application is a well-structured web application built with the Mesop framework. It is organized into several directories, each with a specific purpose:
+The Promptlandia application is a well-structured web application built with the Mesop framework, complemented by a suite of command-line tools. It is organized into several directories, each with a specific purpose:
 
-*   **`pages`**: Each file in this directory defines a specific page within the application. This separates the concerns of each view and makes the code easier to understand and maintain.
-*   **`components`**: This directory contains reusable UI components that are used throughout the application. This promotes code reuse and a consistent user interface.
-*   **`state`**: This directory manages the application's state using Mesop's state management capabilities. This is essential for a reactive web application.
-*   **`config`**: This directory handles the application's configuration, which is loaded from a `.env` file. This makes it easy to configure the application without modifying the code.
-*   **`models`**: This directory contains the logic for interacting with the generative AI model. It includes the prompts used for evaluation and improvement, as well as parsers for the model's output.
-*   **`tests`**: This directory contains tests for the application. This is a good practice for ensuring code quality and maintainability.
+*   **`pages/`**: Each file in this directory defines a specific page within the web application. This separates the concerns of each view and makes the code easier to understand and maintain.
+*   **`components/`**: This directory contains reusable UI components that are used throughout the application. This promotes code reuse and a consistent user interface.
+*   **`state/`**: This directory manages the application's state using Mesop's state management capabilities. This is essential for a reactive web application.
+*   **`config/`**: This directory handles the application's configuration, which is loaded from a `.env` file. This makes it easy to configure the application without modifying the code.
+*   **`models/`**: This directory contains the logic for interacting with the generative AI model. It includes the prompts used for evaluation and improvement, as well as parsers for the model's output.
+*   **`cli/`**: This directory contains command-line interface scripts (`trim.py`, `improve.py`, `checklist.py`) that expose the core functionality for terminal-based workflows.
+*   **`tests/`**: This directory contains tests for the application. This is a good practice for ensuring code quality and maintainability.
+
+## Key Features
+
+Promptlandia offers several core tools for prompt engineering:
+
+1.  **Prompt Improver:** Uses a "thinking" process to iteratively improve a prompt based on specific user instructions.
+2.  **Prompt Health Check:** Evaluates a prompt against a comprehensive checklist of best practices.
+3.  **Prompt Trimmer:** Reduces prompt size by removing generic LLM best practices while preserving core task-specific instructions. This is available both in the web UI and as a CLI tool.
+
+## Planning & Methodology
+
+This project uses the **Vibe Tasking** methodology for task management and AI-assisted development.
+
+*   **Methodology:** We follow a structured approach using "Stories" and "AI Guides" to maintain context and ensure high-quality AI contributions.
+*   **Location:** The Vibe Tasking framework and documentation are **vendored** in the `planning/vibe-tasking/` directory.
+    *   *Note:* We chose to vendor (copy) these files rather than using a Git Submodule to ensure compatibility with the larger monorepo structure this project is part of.
+*   **Usage:** Developers and AI assistants should refer to `planning/vibe-tasking/README.md` and the `CONTEXT.md` file in the project root to understand the workflow.
+*   **Roadmap:** Critical architectural plans are located in `planning/CRITICAL_ROADMAP.md` and `planning/IMPLEMENTATION_PLAN.md`.
+
+## Running the Application
+
+### Web Interface
+The application is built with the [Mesop](https://google.github.io/mesop/) framework.
+
+1.  **Start the development server:**
+    ```bash
+    mesop app.py
+    ```
+
+### Command Line Interface (CLI)
+For users who prefer the terminal or want to integrate Promptlandia into scripts, the `cli/` directory provides direct access to the tools.
+
+**Prerequisites:** Ensure you have `uv` installed and your `.env` file configured.
+
+**Examples:**
+
+*   **Trim a prompt:**
+    ```bash
+    uv run cli/trim.py "Your verbose prompt here..."
+    ```
+*   **Improve a prompt:**
+    ```bash
+    uv run cli/improve.py -i "Make it shorter" "Write a story."
+    ```
+*   **Check prompt health:**
+    ```bash
+    uv run cli/checklist.py "My prompt"
+    ```
+
+For detailed usage instructions, refer to `cli/README.md`.
 
 ## Testing
 
@@ -21,13 +72,13 @@ The project uses Playwright for end-to-end testing. The tests are located in the
 
 To run the tests, you will need to have the Mesop application running in one terminal:
 
-```
+```bash
 mesop app.py
 ```
 
 And in another terminal, you can run the Playwright tests using `pytest`:
 
-```
+```bash
 pytest
 ```
 
@@ -68,31 +119,23 @@ While the architecture is solid, the following suggestions could enhance it furt
 
 The code uses type hints, which is excellent. However, some of the type hints could be more specific. For example, in `pages/checklist.py`, the `details` field in the `CategoryData` class is typed as `Optional[Dict[str, Union[IssueDetail, str]]]`. It would be more precise to define a separate `TypedDict` for the `details` field to enforce a more specific structure.
 
-### 3. Error Handling
-
-The error handling in the `gemini` module is good, but it could be improved. For example, instead of catching a generic `Exception`, it would be better to catch more specific exceptions, such as `google.api_core.exceptions.GoogleAPICallError`. This would allow for more granular error handling and reporting.
-
-### 4. Configuration Management
-
-The application uses a `.env` file for configuration, which is a good practice. However, the `ModelSetup` class reads the configuration directly from the environment. It would be better to pass the configuration to the `ModelSetup` class as an argument. This would make the code more modular and easier to test.
-
-### 5. Code Duplication
+### 3. Code Duplication
 
 There is some code duplication in the `pages` directory. For example, the `gemini_prompt_input` component is defined in both `pages/generate.py` and `pages/checklist.py`. It would be better to move this component to the `components` directory to avoid duplication.
 
-### 6. Logging
+### 4. Logging
 
 The application does not have any logging. It would be beneficial to add logging to the application to help with debugging and monitoring. The `logging` module in the Python standard library can be used for this purpose.
 
-### 7. Docstrings
+### 5. Docstrings
 
 The docstrings in the code are good, but they could be more detailed. For example, the docstrings for the functions in the `gemini` module could include information about the exceptions that can be raised.
 
-### 8. Code Formatting
+### 6. Code Formatting
 
 The code is well-formatted, but it would be beneficial to use a code formatter, such as `black` or `ruff`, to ensure consistent formatting throughout the codebase.
 
-### 9. Pre-commit Hooks
+### 7. Pre-commit Hooks
 
 It would be beneficial to use pre-commit hooks to automatically run the code formatter and linter before each commit. This would help to ensure that the code is always well-formatted and free of linting errors.
 

@@ -1,1 +1,1 @@
-web: gunicorn --workers 3 --timeout 180 --bind :8080 app:me
+web: gunicorn --workers 3 --timeout 360 --bind :8080 app:me
