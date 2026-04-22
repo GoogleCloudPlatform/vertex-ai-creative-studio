@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# ==============================================================================
 # Veo Variations Studio - Cloud Run Deployment Script
 # 
 # This script automates the deployment of the Veo Variations Studio to Google 
@@ -10,7 +9,6 @@
 #
 # Optionally, it supports securing the Cloud Run service behind Identity-Aware 
 # Proxy (IAP) by setting `USE_IAP=true`.
-# ==============================================================================
 
 # ------------------------------------------------------------------------------
 # 1. Load Environment Configuration
@@ -51,9 +49,7 @@ IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 USE_IAP="${USE_IAP:-false}"
 # EAP_GROUP="${EAP_GROUP:-your-iap-access-group@example.com}"
 
-echo "===================================================================="
 echo " Deploying Veo Variations Studio to Cloud Run"
-echo "===================================================================="
 
 # ------------------------------------------------------------------------------
 # 3. Provision IAM Service Account and Roles
