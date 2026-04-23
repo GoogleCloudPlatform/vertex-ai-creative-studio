@@ -2,14 +2,28 @@ import os
 import subprocess
 import tempfile
 import numpy as np
+import shutil
 from pathlib import Path
 import pyiqa
 import torch
 
+# Initialize PyTorch device and models globally to prevent OOM errors
+# and avoid reloading heavy weights on every concurrent API request.
+_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_niqe_metric = pyiqa.create_metric("niqe", device=_device)
+
 def extract_frames(video_path, output_dir, num_frames=5):
     """Extracts a fixed number of frames from a video using ffmpeg."""
+    # Copy video to the local temporary directory to avoid FUSE random-access bottlenecks
+    local_video_path = Path(output_dir) / "temp_video.mp4"
+    try:
+        shutil.copy2(video_path, local_video_path)
+    except Exception as e:
+        print(f"Failed to copy video to local tmpfs: {e}")
+        return []
+
     # Get total duration
-    cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)]
+    cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(local_video_path)]
     try:
         duration = float(subprocess.check_output(cmd).decode().strip())
     except subprocess.CalledProcessError as e:
@@ -25,19 +39,26 @@ def extract_frames(video_path, output_dir, num_frames=5):
     for i, timestamp in enumerate(intervals):
         frame_path = Path(output_dir) / f"frame_{i:03d}.png"
         cmd = [
-            "ffmpeg", "-ss", str(timestamp), "-i", str(video_path),
+            "ffmpeg", "-ss", str(timestamp), "-i", str(local_video_path),
             "-frames:v", "1", "-q:v", "2", str(frame_path), "-y"
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"ffmpeg frame extraction failed for timestamp {timestamp}: {result.stderr}")
     
-    return list(Path(output_dir).glob("*.png"))
+    # Return all PNGs extracted, but exclude the temporary video file we copied
+    return list(Path(output_dir).glob("frame_*.png"))
 
 def evaluate_technical_quality(video_path, metric_name="niqe"):
     """Calculates no-reference quality metrics using pyiqa."""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    iqa_metric = pyiqa.create_metric(metric_name, device=device)
+    
+    # Use the globally initialized metric
+    if metric_name != "niqe":
+        # Fallback for dynamic metrics, though currently unused
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        iqa_metric = pyiqa.create_metric(metric_name, device=device)
+    else:
+        iqa_metric = _niqe_metric
     
     with tempfile.TemporaryDirectory() as tmpdir:
         frames = extract_frames(video_path, tmpdir)
