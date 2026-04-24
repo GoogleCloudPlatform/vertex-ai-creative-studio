@@ -5,19 +5,19 @@ const PRESETS = [
   {
     id: 'cola',
     label: 'Cola',
-    image: '/samples/brit_cola.png',
+    image: '/samples/brit_cola.webp',
     prompt: 'changes to whimsical fairy like environment, a vibrant, whimsical explosion of sparkling bubbles, floating lime slices, and ethereal botanical shapes erupts around the can. The soda begins to levitate and spin slowly in a weightless, dreamlike space filled with glowing particles and soft-focus garden greenery'
   },
   {
     id: 'chair',
     label: 'Chair',
-    image: '/samples/velvet_chair.png',
+    image: '/samples/velvet_chair.webp',
     prompt: 'The environment rapidly dissolves into a surreal, neon-drenched cyberpunk lounge. Holographic rain begins to fall around the chair, illuminating it with pulsing magenta and cyan light. The velvet fabric seems to breathe and shift slightly as glowing digital data streams swirl in the air, transforming the room into a high-tech, atmospheric sanctuary.'
   },
   {
     id: 'sneaker',
     label: 'Sneaker',
-    image: '/samples/neon_sneaker.png',
+    image: '/samples/neon_sneaker.webp',
     prompt: 'The puddle beneath the sneaker suddenly bursts into a dynamic portal of swirling liquid gold. The shoe is propelled upward as ribbons of molten, glowing metal wrap around the sole, solidifying into an intricate, gravity-defying sculpture. The asphalt shatters into floating, zero-gravity debris, backlit by intense, dramatic rim lighting in a void-like space.'
   }
 ];
@@ -221,7 +221,7 @@ export class ConceptSidebar extends LitElement {
     try {
       const response = await fetch(preset.image);
       const blob = await response.blob();
-      const file = new File([blob], `preset_${preset.id}.png`, { type: 'image/png' });
+      const file = new File([blob], `preset_${preset.id}.webp`, { type: 'image/webp' });
       this.selectedFile = file;
       this.imagePreview = URL.createObjectURL(file);
     } catch (e) {
