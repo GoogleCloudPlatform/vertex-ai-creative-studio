@@ -213,8 +213,8 @@ markupsafe==3.0.3 \
     #   flask
     #   jinja2
     #   werkzeug
-mesop==1.1.0 \
-    --hash=sha256:3e1f00c5595a06d98f06f3cd957cfa6fc33e31166ebd67a6515e438c4ccf8772
+mesop==1.2.3 \
+    --hash=sha256:9bf9258bde06e7fa3bffc59b08a8e0e2d673afccdfbd19985cf275ed84f8ea76
     # via promptlandia
 msgpack==1.1.2 \
     --hash=sha256:04fb995247a6e83830b62f0b07bf36540c213f6eac8e851166d8d86d83cbd014 \
