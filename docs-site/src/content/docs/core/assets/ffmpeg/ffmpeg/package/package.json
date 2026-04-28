@@ -1,0 +1,64 @@
+{
+  "name": "@ffmpeg/ffmpeg",
+  "version": "0.12.10",
+  "description": "FFmpeg WebAssembly version for browser",
+  "main": "./dist/umd/ffmpeg.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "node": "./dist/esm/empty.mjs",
+      "default": {
+        "import": "./dist/esm/index.js",
+        "require": "./dist/umd/ffmpeg.js"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "webpack -w --mode development",
+    "lint": "eslint src",
+    "clean": "rimraf dist",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:umd": "webpack",
+    "build": "npm run clean && npm run build:esm && npm run build:umd",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "types/ffmpeg.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ffmpegwasm/ffmpeg.wasm.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "WebAssembly",
+    "video",
+    "audio",
+    "transcode"
+  ],
+  "author": "Jerome Wu <jeromewus@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ffmpegwasm/ffmpeg.wasm/issues"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "homepage": "https://github.com/ffmpegwasm/ffmpeg.wasm#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "eslint": "^8.45.0",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.1.6",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@ffmpeg/types": "^0.12.2"
+  }
+}

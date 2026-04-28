@@ -94,3 +94,22 @@ If a Go application initializes network-dependent clients (like Google Cloud `ge
 
 ### 10. Dependency and Version Management
 *   **Version Bumping:** When updating the application version number in `pyproject.toml`, you **MUST** also update the hardcoded `VERSION` fallback string in `config/default.py` (e.g., `VERSION: str = "1.7.4"`). This fallback is critical for local development environments where the package is not installed as an editable module via `uv`, which causes `importlib.metadata` to fail.
+
+## 11. Starlight Documentation Workflows
+
+The project uses Starlight (Astro) for its primary documentation site, located in the `docs-site/` directory. When asking Gemini to create or update documentation, adhere to these guidelines:
+
+### Modifying Starlight Documentation
+*   **Target Directory:** All Starlight markdown files reside in `docs-site/src/content/docs/`.
+*   **Frontmatter Requirement:** Every markdown file within the Starlight content directory MUST have YAML frontmatter with a `title` attribute. Example:
+    ```markdown
+    ---
+    title: "Your Document Title"
+    ---
+    ```
+*   **Relative Paths:** When linking to local images (e.g., `assets/image.png`), you MUST use correct relative paths based on the file's final location in the Starlight directory structure, not the original source code location.
+*   **Sidebar Configuration:** If you add a new page or section, you must update `docs-site/astro.config.mjs` to include the new `slug` in the sidebar configuration so it appears in the site navigation.
+*   **Local Development:** Instruct the user to run `npm run dev` inside `docs-site/` to preview changes locally. If images break or frontmatter schemas fail, restart the dev server to clear the Vite cache.
+
+### The "Minimal Stub" Pattern for Source READMEs
+When fully documenting an experiment or module, move the detailed content (architecture, tutorials, guides) into the Starlight `docs-site/` structure. Replace the original `README.md` file (e.g., `experiments/my-app/README.md`) with a "Minimal Stub" that provides basic local setup instructions and a prominent link pointing developers to the centralized Starlight documentation site.
