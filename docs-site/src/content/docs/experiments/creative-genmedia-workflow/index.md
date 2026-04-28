@@ -18,11 +18,11 @@ google-genai             1.20.0
 
 ## Screenshots
 
-![ss1](images/cym_ss1.png)
+![ss1](images/cym_ss1.webp)
 
-![ss2](images/cym_ss2.png)
+![ss2](images/cym_ss2.webp)
 
-![ss3](images/cym_ss3.png)
+![ss3](images/cym_ss3.webp)
 
 ## Run locally
 

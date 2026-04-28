@@ -28,4 +28,4 @@ npm run start
 Open Genkit dev tools at localhost:4000
 
 
-![genkt devtools screenshot](./assets/genkit-devtools.png)
+![genkt devtools screenshot](./assets/genkit-devtools.webp)

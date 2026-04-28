@@ -251,7 +251,7 @@ Once the `genmedia-producer` skill is active, you gain access to expert workflow
 
 Now, when you start up gemini cli you should see the mpc servers listed when issuing the slash command, `/mcp`
 
-![geminicli x genmedia mcp](../assets/geminiclixgenmedia.png)
+![geminicli x genmedia mcp](../assets/geminiclixgenmedia.webp)
 
 ## Troubleshooting
 

@@ -168,7 +168,7 @@ DEBUG_MODE=true uv run main.py
 Please note, for local deployment, start the babel service first and specify the `BABEL_ENDPOINT` environment variable.
 
 
-![](./assets/babel_01.png)
+![](./assets/babel_01.webp)
 
 
 ### Create a service account
@@ -229,4 +229,4 @@ LOCATION=us-central1
 GENMEDIA_BUCKET=YOUR_BUCKET_WITH_PATH
 ```
 
-![](./assets/architecture.png)
+![](./assets/architecture.webp)

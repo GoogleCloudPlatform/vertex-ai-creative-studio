@@ -27,7 +27,7 @@ To preventing stylistic drift during extensions, the app employs a closed-loop f
 
 ## 🏗️ Architecture
 
-![Run, Veo, Run Architecture](docs/architecture_infographic.png)
+![Run, Veo, Run Architecture](docs/architecture_infographic.webp)
 
 *   **Frontend:** Lit WebComponents + Tailwind CSS (Techno-Brutalist Theme).
 *   **Backend:** Go (1.25+) acting as a secure proxy for Vertex AI and GCS.
