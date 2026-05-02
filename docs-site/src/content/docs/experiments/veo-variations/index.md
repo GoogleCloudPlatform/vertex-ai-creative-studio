@@ -6,6 +6,10 @@ This application generates creative variations of a video concept and evaluates 
 
 <img width="1438" height="843" alt="Image" src="https://github.com/user-attachments/assets/87971fcb-72c8-4c60-80e9-76822c1c20d8" />
 
+## Architecture
+
+![System Architecture](./architecture_rendered.webp)
+
 ## Project Structure
 
 - **api/main.py**: FastAPI backend that orchestrates the workflow.
