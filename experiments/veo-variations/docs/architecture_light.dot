@@ -1,0 +1,52 @@
+digraph G {
+  bgcolor="#ffffff"
+  fontcolor="#0f1115"
+  fontname="Helvetica"
+  node [fontname="Helvetica", shape="box", style="rounded,filled", color="#cbd5e1", fillcolor="#f8fafc", fontcolor="#0f1115", penwidth=2]
+  edge [color="#64748b", fontname="Helvetica", fontcolor="#334155"]
+
+  subgraph cluster_frontend {
+    label="Frontend (Web UI)"
+    color="#e2e8f0"
+    fontcolor="#334155"
+    style="rounded,dashed"
+    
+    UI [label="Lit Web Components\n(Concept Sidebar, Variations Grid)"]
+  }
+
+  subgraph cluster_backend {
+    label="Backend (Cloud Run)"
+    color="#e2e8f0"
+    fontcolor="#334155"
+    style="rounded,dashed"
+
+    API [label="FastAPI Application\n(api/main.py)", fillcolor="#f1f5f9"]
+    Generator [label="Video Generator\n(core/generator.py)"]
+    Variations [label="Concept Variations\n(core/variations.py)"]
+    Metrics [label="Technical Quality\n(core/metrics.py)"]
+    
+    API -> Variations [label="POST /variations"]
+    API -> Generator [label="Async Video Gen"]
+    API -> Metrics [label="Async Analysis"]
+  }
+
+  subgraph cluster_gcp {
+    label="Google Cloud Platform"
+    color="#e2e8f0"
+    fontcolor="#334155"
+    style="rounded,dashed"
+
+    Vertex [label="Vertex AI\n(Veo & Gemini Models)", color="#0284c7", fillcolor="#ffffff"]
+    GCS [label="Cloud Storage (FUSE)\n(Video Assets)", color="#16a34a", fillcolor="#ffffff"]
+  }
+
+  User [label="User", shape="ellipse", color="#0284c7", fillcolor="#ffffff"]
+
+  User -> UI [label="Interacts"]
+  UI -> API [label="REST API"]
+  Variations -> Vertex [label="Gemini Prompt Gen"]
+  Generator -> Vertex [label="Veo Video Gen"]
+  Vertex -> GCS [label="Output Video"]
+  Generator -> GCS [label="Download MP4"]
+  Metrics -> GCS [label="Analyze Video"]
+}
