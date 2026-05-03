@@ -68,7 +68,7 @@ pydantic-core==2.44.0
 pyjwt==2.12.0
 pyparsing==3.2.5
 python-dateutil==2.9.0.post0
-python-dotenv==1.1.1
+python-dotenv==1.2.2
 pytz==2025.2
 requests==2.33.0
 rsa==4.9.1
