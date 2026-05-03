@@ -150,7 +150,7 @@ pygments==2.20.0
     # via rich
 python-dateutil==2.9.0.post0
     # via pandas
-python-dotenv==1.1.1
+python-dotenv==1.2.2
     # via
     #   mesop
     #   uvicorn
