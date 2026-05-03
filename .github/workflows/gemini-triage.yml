@@ -135,7 +135,7 @@ jobs:
         id: 'mint_identity_token'
         if: |-
           ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349' # v2
+        uses: 'actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3' # v3
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
