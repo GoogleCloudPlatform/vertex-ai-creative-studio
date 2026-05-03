@@ -237,7 +237,7 @@ pyparsing==3.2.5
     # via httplib2
 python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
-python-dotenv==1.1.1
+python-dotenv==1.2.2
     # via
     #   dotenv
     #   google-adk
