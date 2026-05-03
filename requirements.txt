@@ -360,7 +360,7 @@ pyjwt==2.12.0
     # via firebase-admin
 pyparsing==3.2.5
     # via matplotlib
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   c2pa-python
