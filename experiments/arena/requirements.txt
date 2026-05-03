@@ -50,7 +50,7 @@ idna==3.13
 itsdangerous==2.2.0
 jinja2==3.1.6
 markupsafe==3.0.3
-mesop==1.2.3
+mesop==1.2.5
 msgpack==1.1.2
 numpy==2.4.4
 ordered-set==4.1.0
