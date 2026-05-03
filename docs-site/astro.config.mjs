@@ -29,6 +29,7 @@ export default defineConfig({
 						},
 						{ label: 'Developers Guide', slug: 'core/developers_guide' },
 						{ label: 'FAQ', slug: 'core/faq' },
+						{ label: 'Changelog & Notices', slug: 'core/changelog' },
 					],
 				},
 				{

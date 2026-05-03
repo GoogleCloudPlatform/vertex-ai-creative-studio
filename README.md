@@ -42,6 +42,8 @@ This is built using [Mesop](https://mesop-dev.github.io/mesop/), an open source 
 
 **For comprehensive guides, deployment instructions, architecture details, and developer workflows, please visit our [Documentation Hub](https://googlecloudplatform.github.io/vertex-ai-creative-studio/).**
 
+Stay up-to-date with upcoming breaking changes and releases on our **[Changelog & Notices](https://googlecloudplatform.github.io/vertex-ai-creative-studio/core/changelog/)** page.
+
 ---
 
 ### Quick Start
