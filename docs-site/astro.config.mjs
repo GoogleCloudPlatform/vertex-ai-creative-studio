@@ -34,6 +34,7 @@ export default defineConfig({
 				{
 					label: 'AI Workflows & Demos',
 					items: [
+						{ label: 'Overview', slug: 'experiments/overview' },
 						{
 							label: 'Video Generation',
 							items: [
