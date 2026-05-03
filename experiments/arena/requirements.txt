@@ -56,7 +56,7 @@ numpy==2.3.3
 ordered-set==4.1.0
 packaging==25.0
 pandas==2.3.3
-pillow==12.1.1
+pillow==12.2.0
 proto-plus==1.26.1
 protobuf==7.34.0rc1
 pyarrow==21.0.0
