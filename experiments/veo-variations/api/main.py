@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import os
+
+# Disable mTLS client certificate fetching which can cause segfaults (status code -11) in some local environments
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+
 import uuid
 import glob
 import asyncio
@@ -118,8 +122,8 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
                         item["file_size_mb"] = file_size_mb
                 
                 # 3. Quick analysis (NIQE + C2PA)
-                metrics = evaluate_technical_quality(full_path, "niqe")
-                c2pa = summarize_c2pa(full_path)
+                metrics = await asyncio.to_thread(evaluate_technical_quality, full_path, "niqe")
+                c2pa = await asyncio.to_thread(summarize_c2pa, full_path)
                 
                 print(f"Variation {idx}: Analysis complete.")
                 for item in jobs[job_id]["results"]["variations"]:

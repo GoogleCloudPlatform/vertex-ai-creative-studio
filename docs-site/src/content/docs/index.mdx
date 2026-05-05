@@ -1,0 +1,44 @@
+---
+title: GenMedia Creative Studio
+description: A central hub for the core creative studio application and its AI-driven experiments.
+template: splash
+hero:
+  tagline: A unified platform for building AI-driven creative workflows using Google Cloud and Gemini.
+  image:
+    file: ../../assets/hero.webp
+  actions:
+    - text: Core Application
+      link: ./core/
+      icon: right-arrow
+    - text: Browse Experiments
+      link: ./experiments/promptlandia/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Discover the Studio
+
+<CardGrid stagger>
+	<Card title="Core Application" icon="rocket">
+		Dive into the **GenMedia Creative Studio**, the main web application that orchestrates image, video, and audio generation via Google Cloud models like Gemini Image (Nano Banana) and Veo.
+		
+		[**View Core Docs &rarr;**](./core/)
+	</Card>
+	<Card title="Promptlandia" icon="magnifier">
+		An interactive experiment for refining and analyzing prompts using Gemini, complete with an evaluator and a trimmer.
+		
+		[**Explore Promptlandia &rarr;**](./experiments/promptlandia/)
+	</Card>
+	<Card title="MCP Servers for GenMedia" icon="puzzle">
+		Tools leveraging the Model Context Protocol (MCP) to seamlessly interact with media generation models.
+		
+		[**Explore MCP GenMedia &rarr;**](./experiments/mcp-genmedia/)
+	</Card>
+	<Card title="Veo Variations" icon="video">
+		An experiment showcasing advanced video generation workflows using Veo 3, demonstrating variations and prompt tweaking.
+		
+		[**Explore Veo Variations &rarr;**](./experiments/veo-variations/)
+	</Card>
+</CardGrid>

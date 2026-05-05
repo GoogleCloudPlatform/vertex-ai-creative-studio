@@ -4,6 +4,7 @@ This directory contains a set of expert **Agent Skills** designed to provide AI 
 
 ## Available Skills
 
+- **`build-mcp-genmedia`**: Builds the mcp-genmedia Go MCP servers from source and configures them. Use this to compile missing or broken MCP tools in restricted environments.
 - **`genmedia-producer`**: The high-level orchestrator. Use this for storyboarding, podcast creation, and managing complex production pipelines.
 - **`genmedia-video-editor`**: Specialized in post-production. Use this for FFmpeg composition, image-on-video overlays, and creating high-quality GIFs.
 - **`genmedia-audio-engineer`**: Specialized in sound design. Use this for high-fidelity speech synthesis, music generation, and multi-track audio mixing.

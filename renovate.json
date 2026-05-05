@@ -1,13 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "group:allNonMajor"
   ],
   "packageRules": [
     {
       "matchPackageNames": ["hashicorp/google", "hashicorp/google-beta"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
     }
   ]
 }

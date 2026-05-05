@@ -1,13 +1,35 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 
+const PRESETS = [
+  {
+    id: 'cola',
+    label: 'Cola',
+    image: '/samples/brit_cola.webp',
+    prompt: 'changes to whimsical fairy like environment, a vibrant, whimsical explosion of sparkling bubbles, floating lime slices, and ethereal botanical shapes erupts around the can. The soda begins to levitate and spin slowly in a weightless, dreamlike space filled with glowing particles and soft-focus garden greenery'
+  },
+  {
+    id: 'chair',
+    label: 'Chair',
+    image: '/samples/velvet_chair.webp',
+    prompt: 'The environment rapidly dissolves into a surreal, neon-drenched cyberpunk lounge. Holographic rain begins to fall around the chair, illuminating it with pulsing magenta and cyan light. The velvet fabric seems to breathe and shift slightly as glowing digital data streams swirl in the air, transforming the room into a high-tech, atmospheric sanctuary.'
+  },
+  {
+    id: 'sneaker',
+    label: 'Sneaker',
+    image: '/samples/neon_sneaker.webp',
+    prompt: 'The puddle beneath the sneaker suddenly bursts into a dynamic portal of swirling liquid gold. The shoe is propelled upward as ribbons of molten, glowing metal wrap around the sole, solidifying into an intricate, gravity-defying sculpture. The asphalt shatters into floating, zero-gravity debris, backlit by intense, dramatic rim lighting in a void-like space.'
+  }
+];
+
 @customElement('concept-sidebar')
 export class ConceptSidebar extends LitElement {
-  @state() private prompt: string = 'changes to whimsical fairy like environment, a vibrant, whimsical explosion of sparkling bubbles, floating lime slices, and ethereal botanical shapes erupts around the can. The soda begins to levitate and spin slowly in a weightless, dreamlike space filled with glowing particles and soft-focus garden greenery'
+  @state() private prompt: string = ''
   @state() private variations: number = 4
   @state() private aspectRatio: string = '16:9'
   @state() private imagePreview: string | null = null
   @state() private selectedFile: File | null = null
+  @state() private activePresetIndex: number | null = null
 
   static styles = css`
     :host {
@@ -19,6 +41,7 @@ export class ConceptSidebar extends LitElement {
       border-right: 1px solid #333;
       height: 100vh;
       box-sizing: border-box;
+      overflow-y: auto;
     }
 
     .section-title {
@@ -30,7 +53,26 @@ export class ConceptSidebar extends LitElement {
       letter-spacing: 0.05em;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
+    }
+
+    .section-title-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .clear-btn {
+      color: #666;
+      font-size: 0.75rem;
+      text-transform: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .clear-btn:hover {
+      color: #ea4335;
     }
 
     .upload-zone {
@@ -64,6 +106,53 @@ export class ConceptSidebar extends LitElement {
       font-size: 0.95rem;
       resize: none;
       box-sizing: border-box;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .preset-card {
+      background: #1e1e1e;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 0.4rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .preset-card:hover {
+      transform: scale(1.05);
+      border-color: #333;
+    }
+
+    .preset-card.active {
+      border-color: #4285F4;
+    }
+
+    .preset-card img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .preset-card span {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      color: #aaa;
+      font-weight: 600;
+    }
+
+    .preset-card.active span {
+      color: #4285F4;
     }
 
     .slider-row { display: flex; justify-content: space-between; align-items: center; }
@@ -116,9 +205,41 @@ export class ConceptSidebar extends LitElement {
     .generate-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
   `
 
+  firstUpdated() {
+    // Load the first preset by default
+    this.applyPreset(0);
+  }
+
+  async applyPreset(index: number) {
+    this.activePresetIndex = index;
+    const preset = PRESETS[index];
+    
+    // Set prompt
+    this.prompt = preset.prompt;
+    
+    // Fetch image and convert to File object to mimic upload behavior
+    try {
+      const response = await fetch(preset.image);
+      const blob = await response.blob();
+      const file = new File([blob], `preset_${preset.id}.webp`, { type: 'image/webp' });
+      this.selectedFile = file;
+      this.imagePreview = URL.createObjectURL(file);
+    } catch (e) {
+      console.error("Failed to load preset image", e);
+    }
+  }
+
+  clearInputs() {
+    this.prompt = '';
+    this.imagePreview = null;
+    this.selectedFile = null;
+    this.activePresetIndex = null;
+  }
+
   handleFile(e: any) {
     const file = e.target.files[0]
     if (file) {
+      this.activePresetIndex = null; // Clear preset selection on manual upload
       this.selectedFile = file
       this.imagePreview = URL.createObjectURL(file)
     }
@@ -139,12 +260,15 @@ export class ConceptSidebar extends LitElement {
     return html`
       <div class="input-group">
         <div class="section-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: -2px;">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-          Product Image
+          <div class="section-title-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: -2px;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            Product Image
+          </div>
+          ${this.imagePreview || this.prompt ? html`<span class="clear-btn" @click=${this.clearInputs}>Clear</span>` : ''}
         </div>
         <label class="upload-zone">
           <input type="file" hidden @change=${this.handleFile} accept="image/*" />
@@ -153,8 +277,26 @@ export class ConceptSidebar extends LitElement {
       </div>
 
       <div class="input-group">
+        <div class="section-title">Quick Presets</div>
+        <div class="preset-grid">
+          ${PRESETS.map((preset, index) => html`
+            <div 
+              class="preset-card ${this.activePresetIndex === index ? 'active' : ''}"
+              @click=${() => this.applyPreset(index)}
+            >
+              <img src=${preset.image} alt=${preset.label} />
+              <span>${preset.label}</span>
+            </div>
+          `)}
+        </div>
+      </div>
+
+      <div class="input-group">
         <div class="section-title">Base Concept</div>
-        <textarea .value=${this.prompt} @input=${(e: any) => this.prompt = e.target.value}></textarea>
+        <textarea .value=${this.prompt} @input=${(e: any) => {
+          this.prompt = e.target.value;
+          this.activePresetIndex = null; // Typing breaks the strict preset definition
+        }}></textarea>
       </div>
 
       <div class="input-group">

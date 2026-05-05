@@ -13,7 +13,7 @@ RUN if [ -f ../CHANGELOG.md ]; then cp ../CHANGELOG.md public/; fi
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM golang:1.25-alpine AS backend-builder
+FROM golang:1.26-alpine AS backend-builder
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download

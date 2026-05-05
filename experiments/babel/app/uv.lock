@@ -61,7 +61,7 @@ requires-dist = [
     { name = "google-auth", specifier = ">=2.38.0" },
     { name = "google-cloud-logging", specifier = ">=3.11.4" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "mesop", specifier = ">=0.14.1" },
+    { name = "mesop", specifier = ">=1.2.5" },
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "uvicorn", specifier = ">=0.34.0" },
@@ -520,7 +520,7 @@ wheels = [
 
 [[package]]
 name = "mesop"
-version = "1.2.3"
+version = "1.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -534,7 +534,7 @@ dependencies = [
     { name = "werkzeug" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/3d/50f2dcbb32670b240a21109f0879d2dddff858568110a87767957bbc76c8/mesop-1.2.3-py3-none-any.whl", hash = "sha256:9bf9258bde06e7fa3bffc59b08a8e0e2d673afccdfbd19985cf275ed84f8ea76", size = 7448076, upload-time = "2026-03-16T18:01:44.905Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/87/7ccd633203ad435a0680c28037c6206f6c575458da26a07f4cef68e8f0ad/mesop-1.2.7-py3-none-any.whl", hash = "sha256:21a12670a42bd260e511c102602b360ca863dec1ef64b703f36666d9c0cbf2e3", size = 7449890, upload-time = "2026-04-07T17:27:32.737Z" },
 ]
 
 [[package]]
