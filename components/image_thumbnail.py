@@ -22,7 +22,23 @@ def image_thumbnail(image_uri: str, index: int, on_remove: Callable, icon_size: 
     box_dimension = icon_size + 8
     
     with me.box(style=me.Style(position="relative", width=100, height=100)):
-        me.image(src=image_uri, style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
+        
+        if image_uri.lower().endswith(".pdf"):
+            with me.box(
+                style=me.Style(
+                    width="100%",
+                    height="100%",
+                    border=me.Border.all(me.BorderSide(style="dashed", color=me.theme_var("outline"))),
+                    border_radius=8,
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                )
+            ):
+                me.icon("article")
+        else:
+            me.image(src=image_uri, style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
+
         with me.box(
             on_click=on_remove,
             key=str(index),

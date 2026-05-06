@@ -290,10 +290,10 @@ def gemini_image_gen_page_content():
                     ),
                 ):
                     me.uploader(
-                        label="Upload Images",
+                        label="Upload Media",
                         on_upload=on_upload,
                         multiple=True,
-                        accepted_file_types=["image/jpeg", "image/png", "image/webp"],
+                        accepted_file_types=["image/jpeg", "image/png", "image/webp", "application/pdf"],
                         style=me.Style(width="100%"),
                         disabled=upload_disabled,
                     )

@@ -114,7 +114,25 @@ def generate_image_from_prompt_and_images(
 
     parts = [types.Part.from_text(text=prompt)]
     for image_uri in images:
-        parts.append(types.Part.from_uri(file_uri=image_uri, mime_type="image/png"))
+        # More robust mime type detection
+        if any(
+            image_uri.lower().endswith(ext)
+            for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]
+        ):
+            mime_type = "video/mp4"  # General video type
+        elif any(image_uri.lower().endswith(ext) for ext in [".wav", ".mp3", ".flac"]):
+            mime_type = "audio/wav"  # General audio type
+        elif any(
+            image_uri.lower().endswith(ext)
+            for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+        ):
+            mime_type = "image/png"  # General image type
+        elif image_uri.lower().endswith(".pdf"):
+            mime_type = "application/pdf"
+        else:
+            # Fallback for unknown types
+            mime_type = "image/png"
+        parts.append(types.Part.from_uri(file_uri=image_uri, mime_type=mime_type))
 
     contents = [types.Content(role="user", parts=parts)]
 
@@ -983,12 +1001,19 @@ def generate_transformation_prompts(image_uris: list[str]) -> list[Transformatio
     reraise=True,
 )
 def describe_image(image_uri: str) -> str:
-    """Generates a two-sentence description for a given image."""
+    """Generates a two-sentence description for a given media file."""
     model_name = cfg.MODEL_ID
     config = types.GenerateContentConfig(temperature=0.2)
+    
+    mime_type = "image/png"
+    if image_uri.lower().endswith(".pdf"):
+        mime_type = "application/pdf"
+    elif any(image_uri.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]):
+        mime_type = "video/mp4"
+
     prompt_parts = [
-        "Describe this image in two sentences.",
-        types.Part.from_uri(file_uri=image_uri, mime_type="image/png"),
+        "Describe this media file in two sentences.",
+        types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
     ]
     with track_model_call(model_name=model_name, task="describe_image"):
         response = client.models.generate_content(
