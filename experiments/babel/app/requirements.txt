@@ -10,7 +10,7 @@ anyio==4.13.0
     #   watchfiles
 blinker==1.9.0
     # via flask
-cachetools==6.2.6
+cachetools==7.1.1
     # via google-auth
 certifi==2025.11.12
     # via requests
