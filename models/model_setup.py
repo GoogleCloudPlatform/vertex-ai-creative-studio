@@ -108,13 +108,13 @@ class VeoModelSetup:
 
 class GeminiModelSetup:
     """Gemini model setup"""
+    _clients = {}
 
     @staticmethod
     def init(
         project_id: Optional[str] = None,
         location: Optional[str] = None,
         http_options: Optional[dict] = None,
-        # model_id is no longer used by init, client is configured generally
     ):
         """Init method for Gemini client. Model is specified at call time."""
         config = Default()
@@ -123,14 +123,22 @@ class GeminiModelSetup:
 
         if not effective_project_id or not effective_location:
             raise ValueError("Project ID and Location must be set for Gemini client.")
+            
+        # Create a cache key. Convert http_options dict to a sorted tuple of items for hashability.
+        http_options_key = tuple(sorted(http_options.items())) if http_options else None
+        cache_key = (effective_project_id, effective_location, http_options_key)
+        
+        if cache_key in GeminiModelSetup._clients:
+            return GeminiModelSetup._clients[cache_key]
 
         print(
             f"Initiating Gemini client for project {effective_project_id} in {effective_location}"
         )
         client = genai.Client(
-            vertexai=config.INIT_VERTEX,  # This assumes vertexai backend is desired.
+            vertexai=config.INIT_VERTEX,
             project=effective_project_id,
             location=effective_location,
             http_options=http_options,
         )
+        GeminiModelSetup._clients[cache_key] = client
         return client

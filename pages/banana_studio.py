@@ -134,11 +134,11 @@ class PageState:
     aspect_ratio: str = "1:1"
     image_size: str = "1K"
     num_images_to_generate: int = 1
-    suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    suggested_transformations_json: str = "[]"
     is_suggesting_transformations: bool = False
     critique_questions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating_questions: bool = False
-    prompt_templates: list[dict] = field(default_factory=list) # pylint: disable=invalid-field-call
+    prompt_templates_json: str = "[]"
 
     use_search: bool = False
     use_image_search: bool = False
@@ -147,10 +147,10 @@ class PageState:
     thoughts: str = ""
     grounding_info: str = ""
 
-    evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    evaluations_json: str = "{}"
     is_evaluating: bool = False
     description_queue: list[int] = field(default_factory=list)  # pylint: disable=invalid-field-call
-    accordion_panels: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    accordion_panels_json: str = "{}"
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
@@ -229,12 +229,12 @@ def on_accordion_toggle(e: me.ExpansionPanelToggleEvent):
 
     # If the panel is being closed, this will result in all panels being closed.
     if not e.opened:
-        state.accordion_panels = {}
+        state.accordion_panels_json = "{}"
         return
 
     # If a panel is being opened, create a new state dict with only that panel open.
     # This implicitly closes all other panels.
-    state.accordion_panels = {e.key: True}
+    state.accordion_panels_json = json.dumps({e.key: True})
 
 
 @me.component
@@ -309,7 +309,7 @@ def _prompt_templates_ui():
     # Group templates by category
     categories = {}
     if is_visible:
-        for t in state.prompt_templates:
+        for t in json.loads(state.prompt_templates_json):
             if t["category"] not in categories:
                 categories[t["category"]] = []
             categories[t["category"]].append(t)
@@ -358,7 +358,7 @@ def _suggest_transformations_ui():
     # Suggest transformations button
     if (
         state.generation_complete
-        and not state.suggested_transformations
+        and not json.loads(state.suggested_transformations_json)
         and state.generated_image_urls
     ):
         with me.box(style=me.Style(margin=me.Margin(top=16))):
@@ -382,7 +382,7 @@ def _suggest_transformations_ui():
                 )
 
     # Suggested transformations
-    if state.suggested_transformations:
+    if json.loads(state.suggested_transformations_json):
         with me.box(
             style=me.Style(
                 display="flex",
@@ -399,7 +399,7 @@ def _suggest_transformations_ui():
                     gap=8,
                 ),
             ):
-                for transformation in state.suggested_transformations:
+                for transformation in json.loads(state.suggested_transformations_json):
                     with me.content_button(
                         on_click=on_transformation_click,
                         key=json.dumps(transformation),
@@ -504,7 +504,7 @@ def gemini_image_gen_page_content():
                         description_accordion(
                             image_descriptions=state.image_descriptions,
                             critique_questions=state.critique_questions,
-                            expanded_panels=state.accordion_panels,
+                            expanded_panels=json.loads(state.accordion_panels_json),
                             on_toggle=on_accordion_toggle,
                         )
 
@@ -641,8 +641,8 @@ def gemini_image_gen_page_content():
 
                                         me.text("Evaluating generation...")
 
-                                elif image_url in state.evaluations:
-                                    evaluation = state.evaluations[image_url]
+                                elif image_url in json.loads(state.evaluations_json):
+                                    evaluation = json.loads(state.evaluations_json)[image_url]
 
                                     score = (
                                         evaluation["score"]
@@ -731,8 +731,8 @@ def gemini_image_gen_page_content():
 
                                             me.text("Evaluating generation...")
 
-                                    elif state.selected_image_url in state.evaluations:
-                                        evaluation = state.evaluations[
+                                    elif state.selected_image_url in json.loads(state.evaluations_json):
+                                        evaluation = json.loads(state.evaluations_json)[
                                             state.selected_image_url
                                         ]
 
@@ -999,9 +999,9 @@ def on_clear_click(e: me.ClickEvent):
     state.generation_complete = False
     state.previous_media_item_id = None  # Reset the chain
     state.num_images_to_generate = 1
-    state.suggested_transformations = []
+    state.suggested_transformations_json = "[]"
     state.critique_questions = []
-    state.evaluations = {}
+    state.evaluations_json = "{}"
 
     yield
 
@@ -1077,10 +1077,10 @@ def on_suggest_transformations_click(e: me.ClickEvent):
         gcs_uri = https_url_to_gcs_uri(state.generated_image_urls[0])
         raw_transformations = generate_transformation_prompts(image_uris=[gcs_uri])
         # Convert Pydantic objects to dicts for state
-        state.suggested_transformations = [t.model_dump() for t in raw_transformations]
+        state.suggested_transformations_json = json.dumps([t.model_dump() for t in raw_transformations])
     except Exception as ex:
         print(f"Could not generate transformation prompts: {ex}")
-        state.suggested_transformations = []
+        state.suggested_transformations_json = "[]"
         yield from show_snackbar(state, f"Failed to get suggestions: {ex}")
     finally:
         state.is_suggesting_transformations = False
@@ -1093,7 +1093,7 @@ def on_image_action_click(e: me.ClickEvent):
     app_state = me.state(AppState)
 
     # Find the template that was clicked
-    template = next((t for t in state.prompt_templates if t["key"] == e.key), None)
+    template = next((t for t in json.loads(state.prompt_templates_json) if t["key"] == e.key), None)
 
     if not template:
         yield from show_snackbar(state, f"Unknown action: {e.key}")
@@ -1198,7 +1198,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     # --- FIX: Clear previous results to prevent duplication on re-generation ---
     state.generated_image_urls = []
     state.selected_image_url = ""
-    state.suggested_transformations = []
+    state.suggested_transformations_json = "[]"
     state.generation_complete = False
     state.is_generating = True
     yield
@@ -1303,12 +1303,9 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                             # Fallback in case the URI isn't found, though it should be.
                             https_url = create_display_url(uri)
 
-                        state.evaluations[https_url] = Evaluation(
-                            score=score_str,
-                            details=[
-                                ans.model_dump() for ans in evaluation_result.answers
-                            ],
-                        )
+                        evals = json.loads(state.evaluations_json)
+                        evals[https_url] = {"score": score_str, "details": [ans.model_dump() for ans in evaluation_result.answers]}
+                        state.evaluations_json = json.dumps(evals)
 
                     except Exception as eval_ex:
                         print(
@@ -1356,12 +1353,12 @@ def on_load(e: me.LoadEvent):
     state = me.state(PageState)
 
     # Load templates once on initial load.
-    if not state.prompt_templates:
+    if not json.loads(state.prompt_templates_json):
         templates = prompt_template_service.load_templates(
             config_path="config/image_prompt_templates.json", template_type="image"
         )
-        state.prompt_templates = [t.model_dump() for t in templates]
-        print(f"Loaded {len(state.prompt_templates)} image prompt templates.")
+        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates])
+        print(f"Loaded {len(json.loads(state.prompt_templates_json))} image prompt templates.")
 
     if not state.initial_load_complete:
         image_uri = me.query_params.get("image_uri")
