@@ -8,7 +8,7 @@ anyio==4.13.0
 blinker==1.9.0
 cachecontrol==0.14.4
 cachetools==7.1.1
-certifi==2025.11.12
+certifi==2026.4.22
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.7
 click==8.3.3

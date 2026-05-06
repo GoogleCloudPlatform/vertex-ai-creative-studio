@@ -13,7 +13,7 @@ authlib==1.7.0
     # via google-adk
 cachetools==7.1.1
     # via google-auth
-certifi==2025.11.12
+certifi==2026.4.22
     # via
     #   httpcore
     #   httpx
