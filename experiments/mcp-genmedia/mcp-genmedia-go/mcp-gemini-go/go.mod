@@ -5,9 +5,9 @@ go 1.26.0
 require (
 	cloud.google.com/go/texttospeech v1.20.0
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260503231355-352887937ab2
-	github.com/mark3labs/mcp-go v0.50.0
+	github.com/mark3labs/mcp-go v0.52.0
 	go.opentelemetry.io/otel v1.43.0
-	google.golang.org/genai v1.55.0
+	google.golang.org/genai v1.56.0
 )
 
 require (

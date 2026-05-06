@@ -5,12 +5,12 @@ go 1.26.0
 require (
 	cloud.google.com/go/aiplatform v1.125.0
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260503231355-352887937ab2
-	github.com/mark3labs/mcp-go v0.50.0
+	github.com/mark3labs/mcp-go v0.52.0
 	github.com/rs/cors v1.11.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.43.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.277.0
+	google.golang.org/api v0.278.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -74,7 +74,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/genai v1.55.0 // indirect
+	google.golang.org/genai v1.56.0 // indirect
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4 // indirect
