@@ -18,7 +18,8 @@ Google Cloud allows you to automatically route specific logs from Cloud Run dire
    ```text
    jsonPayload.name = "genmedia.analytics"
    jsonPayload.event_type = "model_call"
-   ```J6. **Create Sink:** Google Cloud will automatically create the required table schema in BigQuery as new logs arrive.
+   ```
+6. **Create Sink:** Google Cloud will automatically create the required table schema in BigQuery as new logs arrive.
 
 ## 2. Understanding the Log Payload
 
