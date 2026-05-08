@@ -72,6 +72,7 @@ def log_page_view(page_name: str, session_id: str = None):
         "event_type": "page_view",
         "page_name": page_name,
         "session_id": session_id,
+        "user_email": user_email,
     }
     analytics_logger.info(f"Page view: {page_name}", extra={'extra_data': extra_data})
 
@@ -82,6 +83,7 @@ def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras
         "element_id": element_id,
         "page_name": page_name,
         "session_id": session_id,
+        "user_email": user_email,
     }
     if extras:
         extra_data.update(extras)
@@ -93,10 +95,12 @@ def log_model_call(model_name: str, status: str, duration_ms: float = 0, details
         state = me.state(AppState)
         page_name = state.current_page
         session_id = state.session_id
+        user_email = state.user_email
     except Exception:
         # Handle cases where me.state is called outside of context (e.g. threads)
         page_name = "unknown"
         session_id = "unknown"
+        user_email = "unknown"
 
     extra_data = {
         "event_type": "model_call",
@@ -105,6 +109,7 @@ def log_model_call(model_name: str, status: str, duration_ms: float = 0, details
         "duration_ms": round(duration_ms, 2),
         "page_name": page_name,
         "session_id": session_id,
+        "user_email": user_email,
         "details": details or {},
     }
     analytics_logger.info(f"Model Call: {model_name} ({status})", extra={'extra_data': extra_data})
