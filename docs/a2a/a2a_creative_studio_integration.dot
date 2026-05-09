@@ -1,0 +1,55 @@
+digraph G {
+  bgcolor="#ffffff";
+  fontname="Helvetica,Arial,sans-serif";
+  node [fontname="Helvetica,Arial,sans-serif", style="filled", fillcolor="#f8fafc", color="#e2e8f0", fontcolor="#0f1115", shape=box, style="rounded,filled"];
+  edge [fontname="Helvetica,Arial,sans-serif", color="#0284c7", fontcolor="#334155"];
+
+  rankdir=TB;
+  compound=true;
+
+  ExternalAgent [label="External Agent\n(e.g., Director Agent)", shape=ellipse, fillcolor="#0284c7", fontcolor="#ffffff", color="#0284c7"];
+  
+  subgraph cluster_gcp {
+    label="Google Cloud Platform (Creative Studio)";
+    color="#e2e8f0";
+    fontcolor="#0f1115";
+
+    subgraph cluster_lb {
+      label="Cloud Load Balancer / IAP";
+      color="#cbd5e1";
+      style="dashed";
+      
+      IAP_Rule [label="IAP Protected\n(/home, UI pages)", fillcolor="#f1f5f9", color="#dc2626"];
+      Bypass_Rule [label="IAP Bypass\n(/a2a/*)", fillcolor="#f1f5f9", color="#16a34a"];
+    }
+
+    FastAPI [label="FastAPI + Mesop Server\n(main.py)"];
+    
+    subgraph cluster_a2a {
+      label="A2A Python SDK Core";
+      color="#0ea5e9";
+      A2AAuth [label="A2A Auth Interceptor\n(Resolves Token to Human User Email)"];
+      A2AExecutor [label="CreativeStudioAgentExecutor\n(Task Routing & Streaming)"];
+    }
+    
+    subgraph cluster_services {
+      label="Services Layer (Phase 0)";
+      color="#e2e8f0";
+      Services [label="ImageService, VideoService, PixieService\n(Handles Logic, Analytics & Persistence)"];
+    }
+
+    Models [label="Creative Studio Models\n(Gemini, Veo, Lyria)", shape=component, fillcolor="#f1f5f9", color="#0284c7"];
+    Firestore [label="Firestore\n(MediaItem Library)", shape=cylinder, fillcolor="#f8fafc", color="#64748b"];
+  }
+
+  ExternalAgent -> Bypass_Rule [label="A2A Request\n(A2A_AGENT_TOKEN)"];
+  Bypass_Rule -> FastAPI [label="Route to /a2a/*"];
+  FastAPI -> A2AAuth [label="Authenticate"];
+  A2AAuth -> A2AExecutor [label="Context: user_email, agent_id"];
+  
+  A2AExecutor -> Services [label="Execute Skill (e.g., pixie_editor)"];
+  Services -> Models [label="Invoke Model"];
+  Services -> Firestore [label="Save to Humans Library\nwith agent_id tracking"];
+  
+  A2AExecutor -> ExternalAgent [label="Stream Status Updates & Artifacts\nvia TaskUpdater", style="dashed"];
+}
