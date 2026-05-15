@@ -57,7 +57,7 @@ decorator==5.2.1
     #   ipython
     #   librosa
     #   moviepy
-deepdiff==8.6.2
+deepdiff==9.1.0
     # via mesop
 distro==1.9.0
     # via google-genai
