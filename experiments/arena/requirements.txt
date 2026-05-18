@@ -41,7 +41,7 @@ grpc-google-iam-v1==0.14.4
 grpc-interceptor==0.15.4
 grpcio-status==1.80.0
 grpcio==1.80.0
-gunicorn==23.0.0
+gunicorn==26.0.0
 h11==0.16.0
 httpcore==1.0.9
 httplib2==0.31.2
