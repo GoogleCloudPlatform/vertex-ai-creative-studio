@@ -3,12 +3,12 @@ module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-
 go 1.26.0
 
 require (
-	cloud.google.com/go/texttospeech v1.20.0
+	cloud.google.com/go/texttospeech v1.21.0
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260511161218-a8549f88a422
-	github.com/mark3labs/mcp-go v0.52.0
+	github.com/mark3labs/mcp-go v0.54.0
 	github.com/rs/cors v1.11.1
-	golang.org/x/text v0.36.0
-	google.golang.org/api v0.278.0
+	golang.org/x/text v0.37.0
+	google.golang.org/api v0.279.0
 )
 
 require (

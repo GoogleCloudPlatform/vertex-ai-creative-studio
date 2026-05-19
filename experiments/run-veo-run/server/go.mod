@@ -3,11 +3,11 @@ module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-
 go 1.25.2
 
 require (
-	cloud.google.com/go/storage v1.62.1
+	cloud.google.com/go/storage v1.62.2
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	google.golang.org/genai v1.56.0
+	google.golang.org/genai v1.57.0
 )
 
 require (
