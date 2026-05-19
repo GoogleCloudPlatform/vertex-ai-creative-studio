@@ -25,6 +25,7 @@ export default defineConfig({
 								{ label: 'Deployment Guide', slug: 'core/installation/deploy' },
 								{ label: 'Terraform', slug: 'core/installation/terraform' },
 								{ label: 'Environment Variables', slug: 'core/installation/environment_variables' },
+                                                                { label: 'Cost Tracking Analytics', slug: 'core/installation/cost_tracking' },
 							]
 						},
 						{ label: 'Developers Guide', slug: 'core/developers_guide' },

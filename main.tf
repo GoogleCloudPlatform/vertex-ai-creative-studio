@@ -110,6 +110,7 @@ module "lb-http" {
   backends = {
     default = {
       description = "Creative Studio backend"
+      protocol    = "HTTPS"
       enable_cdn  = false
       groups = [
         {

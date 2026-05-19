@@ -23,7 +23,7 @@ The above diagram depicts the components that make up the Creative Studio soluti
 
 ### Runtime Components
 
-- [Load Balancer](https://cloud.google.com/load-balancing) - Provides the HTTP access to the Cloud Run hosted application
+- [Load Balancer](https://cloud.google.com/load-balancing) - Provides the HTTPS access to the Cloud Run hosted application, ensuring end-to-end encryption.
 
 - [Identity Aware Proxy](https://cloud.google.com/security/products/iap) - Limits access to web application for only authenticated users or groups
 - [Cloud Run](https://cloud.google.com/run) - Serverless container runtime used to host Mesop application
