@@ -458,7 +458,7 @@ typing-inspection==0.4.2
     # via pydantic
 tzdata==2025.3
     # via pandas
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 uvicorn==0.46.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
