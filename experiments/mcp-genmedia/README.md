@@ -23,6 +23,7 @@ We provide a set of expert **Agent Skills** that provide AI agents (like Gemini 
 *   `genmedia-audio-engineer`: Specialist in high-fidelity TTS synthesis and multi-track mixing.
 *   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
 *   `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
+*   `story-generator`: Expert in generating full multi-scene multimedia storybooks (image, video, voice, and music) using direct, native MCP tool calls and parallel subagent orchestration, and packaging them into premium Material 3 interactive making-of reports.
 
 See the [Agent Skills](./skills/README.md) directory for more information on how to link or install these skills.
 
