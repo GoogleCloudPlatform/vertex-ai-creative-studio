@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Gemini methods"""
+"""Gemini methods."""
 
 import json
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from google.cloud.aiplatform import telemetry
@@ -106,7 +106,7 @@ def generate_image_from_prompt_and_images(
     thinking_level: Optional[str] = None,
     include_thoughts: bool = False,
     model_name: Optional[str] = None,
-) -> tuple[list[str], float, list[str], Optional[Dict[str, Any]], list[str]]:
+) -> tuple[list[str], float, list[str], Optional[dict[str, Any]], list[str]]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
     if not model_name:
@@ -336,7 +336,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
 def analyze_audio_with_gemini(
     audio_uri: str,
     music_generation_prompt: str,
-) -> Optional[Dict[str, any]]:
+) -> Optional[dict[str, any]]:
     """Analyzes a given audio file URI against an original music generation prompt using Gemini.
 
     Args:
@@ -494,7 +494,7 @@ Output this as JSON.
     reraise=True,
 )
 def image_critique(original_prompt: str, img_uris: list[str]) -> str:
-    """Image critic
+    """Image critic.
 
     Args:
         img_uris (list[str]): a list of GCS URIs of images to critique
@@ -962,18 +962,18 @@ def generate_transformation_prompts(image_uris: list[str]) -> list[Transformatio
     )
 
     prompt_text = """Analyze these images and come up with 3 interesting transformations.
-    
+
     For each transformation, provide a short title (max 3 words) and a detailed prompt for the image generation model.
-    
+
     Some example prompts might be
     * paper portrait: transform this image as if it were created with 3d paper overlays, with a modern color pallete
     * hologram: identify the main object in the scene and transform it into a hologram.
-    * steampunk: Draw an ornate, glowing copper-colored outline with subtle gear motifs around the object 
+    * steampunk: Draw an ornate, glowing copper-colored outline with subtle gear motifs around the object
     * enamel pinL turn the primary subject into an enamel pin
     * felt ornament: turn the primary subject into a felt ornament suitable for a holiday tree
     * mini snack food: Create a high-resolution image of a minimalist, realistic-looking miniature snack food. The snack should be held between a person's thumb and index finger. The style should be on a clean and white background with studio lighting, soft shadows, and shallow depth of field. The snack should appear extremely small but hyper-detailed and appear to be a professional-grade product image.
     * linkedin pop-out: A photorealistic portrait is presented within a #FFFFFF white circular frame. The image inside the circle captures the subject from the chest up. The subject is leaning his chin on his crossed arms, in a casual, relaxed style, as if looking out of a window. The subject's arms extend out of the circular boundary, overlapping the boundary. These arms, complete with hands, breach the edge of the white circle creating a compelling 3D pop-out effect. The arm MUST cross the boundary of the crop. The lighting is soft and even.
-    
+
     """
 
     prompt_parts = [prompt_text]
@@ -1004,11 +1004,14 @@ def describe_image(image_uri: str) -> str:
     """Generates a two-sentence description for a given media file."""
     model_name = cfg.MODEL_ID
     config = types.GenerateContentConfig(temperature=0.2)
-    
+
     mime_type = "image/png"
     if image_uri.lower().endswith(".pdf"):
         mime_type = "application/pdf"
-    elif any(image_uri.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]):
+    elif any(
+        image_uri.lower().endswith(ext)
+        for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]
+    ):
         mime_type = "video/mp4"
 
     prompt_parts = [
@@ -1304,3 +1307,69 @@ def evaluate_tts_audio(
         )
 
     return TTSEvaluation.model_validate_json(response.text)
+
+
+class StoryboardScene(BaseModel):
+    scene_number: int = Field(
+        ..., description="The sequence number of this scene, 1 to 4.",
+    )
+    narrative: str = Field(
+        ..., description="The detailed narrative story event for this scene.",
+    )
+    image_prompt: str = Field(
+        ...,
+        description="A highly detailed image generation prompt based on this scene's narrative.",
+    )
+    video_prompt: str = Field(
+        ...,
+        description="An enhanced prompt to animate this scene's image into a video using Veo.",
+    )
+
+
+class StoryboardNarrative(BaseModel):
+    overall_story: str = Field(
+        ..., description="The overall coherent story narrative combining all scenes.",
+    )
+    scenes: list[StoryboardScene] = Field(
+        ...,
+        description="A list of exactly 4 sequential storyboard scenes.",
+        min_length=4,
+        max_length=4,
+    )
+
+
+def generate_storyboard_narrative(
+    user_prompt: str,
+    model_name: str = "gemini-2.5-flash",
+) -> StoryboardNarrative:
+    """Generates a coherent 4-scene storyboard narrative from a user idea."""
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=StoryboardNarrative.model_json_schema(),
+        temperature=0.7,
+    )
+
+    prompt = f"""
+    You are an expert creative writer and director.
+    Your task is to take the user's creative concept/prompt and generate a highly coherent, engaging 4-scene storyboard story narrative.
+
+    User's Creative Concept:
+    "{user_prompt}"
+
+    Instructions:
+    1. Create a complete narrative story arc across exactly 4 sequential scenes (scenes 1 to 4).
+    2. For each scene:
+       - Write a detailed narrative/story sentence.
+       - Craft a highly descriptive image prompt that visualizes the action, characters, environment, camera angles, lighting, and styles. Make sure the prompt focuses on creating a consistent, high-quality visual.
+       - Craft a video animation prompt that describes the movement, camera panning, or subtle action that will be animated in the video.
+    3. Ensure the overall narrative is seamless, logical, and highly compelling from scene 1 to 4.
+    """
+
+    with track_model_call(model_name=model_name, task="generate_storyboard_narrative"):
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[prompt],
+            config=config,
+        )
+
+    return StoryboardNarrative.model_validate_json(response.text)
