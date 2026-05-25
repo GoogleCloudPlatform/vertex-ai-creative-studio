@@ -36,11 +36,7 @@ def page():
             "description": "Create a retro game video from an image.",
             "route": "/retro_games",
         },
-        {
-            "title": "Storyboarder",
-            "description": "Create a video storyboard from a prompt.",
-            "route": "/storyboarder",
-        },
+
         {
             "title": "Character Asset Sheet",
             "description": "Generate consistent character sheets and scenarios.",
