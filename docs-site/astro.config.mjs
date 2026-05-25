@@ -88,11 +88,11 @@ export default defineConfig({
 								},
 								{
 									label: 'Skills',
-									autogenerate: { directory: 'experiments/mcp-genmedia/skills' }
+									items: [{ autogenerate: { directory: 'experiments/mcp-genmedia/skills' } }]
 								},
 								{
 									label: 'Sample Agents',
-									autogenerate: { directory: 'experiments/mcp-genmedia/agents' }
+									items: [{ autogenerate: { directory: 'experiments/mcp-genmedia/agents' } }]
 								}
 							]
 						}
