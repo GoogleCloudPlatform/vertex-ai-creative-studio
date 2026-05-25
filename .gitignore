@@ -74,3 +74,5 @@ update_*.py
 
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
+.antigravitycli/
+.jetskicli/

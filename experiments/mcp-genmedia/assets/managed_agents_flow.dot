@@ -1,0 +1,63 @@
+digraph G {
+    fontname="Inter,Helvetica,Arial,sans-serif";
+    bgcolor="#ffffff";
+    rankdir=LR;
+    nodesep=0.4;
+    ranksep=0.6;
+    pad=0.3;
+    
+    // Node styles
+    node [
+        fontname="Inter,Helvetica,Arial,sans-serif",
+        fontsize=10,
+        color="#e2e8f0",
+        fontcolor="#0f1115",
+        style="filled,rounded",
+        fillcolor="#f8fafc",
+        shape=box,
+        height=0.35
+    ];
+    
+    // Edge styles
+    edge [
+        fontname="Inter,Helvetica,Arial,sans-serif",
+        fontsize=8,
+        color="#cbd5e1",
+        fontcolor="#64748b",
+        arrowsize=0.6
+    ];
+
+    // Nodes
+    User [label="User CLI\n(agentsapi)", fillcolor="#e0f2fe", color="#0284c7", fontcolor="#0369a1", style="filled,rounded,bold"];
+    API [label="Vertex AI\nInteractions API", fillcolor="#faf5ff", color="#9333ea", fontcolor="#7e22ce", style="filled,rounded,bold"];
+    
+    subgraph cluster_sandbox {
+        label="STAGE 3: SECURE VM SANDBOX (VERTEX AI)";
+        fontcolor="#16a34a";
+        color="#16a34a";
+        style="dashed,rounded";
+        
+        Sandbox [label="Antigravity Sandbox VM\n(antigravity-preview-05-2026)", fillcolor="#ecfdf5", color="#10b981", fontcolor="#047857", style="filled,rounded,bold"];
+        GCS_Skill [label="Skill Mounting\n/workspace/agent/story-generator", fillcolor="#f1f5f9", color="#cbd5e1", fontcolor="#334155"];
+        GCS_Media [label="Media Streaming\ngs://genai-blackbelt-fishfooding-assets", fillcolor="#f1f5f9", color="#cbd5e1", fontcolor="#334155"];
+        LocalExec [label="Python Script Runner\n(generate_scene.py)", fillcolor="#ecfeff", color="#0891b2", fontcolor="#0e7490"];
+        FFmpegMix [label="FFmpeg Compositing Engine\n(-stream_loop / -t clamping)", fillcolor="#fdf2f8", color="#db2777", fontcolor="#be185d"];
+        QC_Audit [label="Editor's QC Audit\n(editors_quality_room.py)", fillcolor="#fff1f2", color="#e11d48", fontcolor="#be123c"];
+        
+        Sandbox -> GCS_Skill [label="Clones skill", color="#16a34a", fontcolor="#16a34a"];
+        Sandbox -> GCS_Media [label="Binds bucket", color="#16a34a", fontcolor="#16a34a"];
+        GCS_Skill -> LocalExec [label="Runs scripts", color="#64748b", fontcolor="#64748b"];
+        LocalExec -> FFmpegMix [label="Muxes scene", color="#64748b", fontcolor="#64748b"];
+        FFmpegMix -> QC_Audit [label="Checks quality", color="#64748b", fontcolor="#64748b"];
+    }
+
+    RemoteMCP [label="Secure Remote MCP Gateway\n(Google Cloud Run over SSE/HTTPS)", fillcolor="#fff7ed", color="#ea580c", fontcolor="#c2410c", style="filled,rounded,bold"];
+
+    // Connections
+    User -> API [label="Initiates Interaction\n(--agent showrunner-agent)", color="#0284c7", fontcolor="#0284c7"];
+    API -> Sandbox [label="Spins up Sandbox", color="#0284c7", fontcolor="#0284c7"];
+    Sandbox -> RemoteMCP [label="BYOMCP Calls\n(OIDC Authenticated)", color="#ea580c", fontcolor="#ea580c"];
+    RemoteMCP -> Sandbox [label="veo_i2v / lyria_generate\n(Media assets saved)", color="#ea580c", fontcolor="#ea580c"];
+    QC_Audit -> API [label="Publishes final report", color="#e11d48", fontcolor="#e11d48"];
+    API -> User [label="Streams response &\nfinal_story.mp4 link", color="#0284c7", fontcolor="#0284c7"];
+}
