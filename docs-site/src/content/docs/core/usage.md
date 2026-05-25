@@ -36,6 +36,7 @@ Workflows are opinionated pipelines that chain multiple generative models togeth
 *   **Interior Design:** Re-imagine interior spaces by generating 3D views from basic floor plans.
 *   **Motion Portraits:** Create animated, breathing portraits from a single still image.
 *   **Object Rotation:** Create 360-degree product videos from a single image.
+*   **Storyboarder:** Create coherent multi-scene narrative storyboards using Gemini 3.5 Flash to write the narrative, Gemini to generate scene frames, and Veo to animate the sequence inline.
 
 ## 4. Advanced Tools
 
