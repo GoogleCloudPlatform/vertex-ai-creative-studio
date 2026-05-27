@@ -44,3 +44,17 @@ Once installed, the Antigravity agent will automatically discover the skills bas
 - `genmedia-image-artist`: Expert in high-fidelity visual generation and prompt optimization.
 
 The agent will seamlessly read the instructions and orchestrate the GenMedia tools like a pro!
+
+## 3. Synchronize Plugins in Antigravity CLI (agy)
+
+If you are using the command-line client **Antigravity CLI (agy)** and want to load these expert skills and registered MCP servers into your active chat session, run the following import command:
+
+```bash
+antigravity plugin import gemini
+```
+
+This synchronizes all your configured Gemini CLI plugins, MCP tools, and expert skills into your Antigravity configuration directory (`~/.gemini/config/`), registering them for the agent.
+
+> [!IMPORTANT]
+> To apply these changes and make the tools available in your chat, you must exit your current interactive chat session and restart it (e.g., running `antigravity --continue`). This forces the client to renegotiate and lock the active tool schema definitions.
+

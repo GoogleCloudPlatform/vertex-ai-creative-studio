@@ -33,6 +33,18 @@ When importing, copying, or adding a new Agent Skill to the repository:
 ### Component Styling Gotchas
 *   **Button Types:** The `me.content_button` component strictly enforces the `type` argument as a literal: `'raised'`, `'flat'`, `'stroked'`, or `'icon'`. Using invalid MD3 concepts like `'tonal'` will cause a Pydantic `ValidationError` and crash the UI block.
 *   **Interactive Toggles:** When changing the background of a button dynamically (e.g., to indicate selection), ensure you also dynamically update the `color` property of its children (e.g., `me.theme_var("on-primary") if is_selected else me.theme_var("on-surface")`) so icons and text don't become invisible.
+*   **Consistent Workflow Page Layouts:** When designing multi-step generative workflows (like Storyboarder, Veo, or Interior Design), prefer a balanced two-column top row: placing the main story concept or text prompter in a wider left column (e.g., 60% width) and optional reference media uploaders/character setups in a narrower right column (e.g., 40% width). Nested configuration/settings selectors should reside below them inside a collapsible panel.
+*   **Divider Styling Constraint:** The `me.divider` component strictly rejects the `style` argument. To apply margins, padding, or custom alignment around a line divider, wrap `me.divider()` inside a styled `me.box`.
+*   **Auto-dismissing Snackbars:** Do not leave `state.show_snackbar = True` active indefinitely. Always implement a generator helper function to auto-dismiss snackbars:
+    ```python
+    def show_snackbar(state: PageState, message: str):
+        state.snackbar_message = message
+        state.show_snackbar = True
+        yield
+        time.sleep(3)
+        state.show_snackbar = False
+        yield
+    ```
 
 ### SDK Integration Nuances
 *   **Model Parameter Probing:** The `google-genai` SDK and Vertex AI backend can be incredibly strict. For example, `types.ImageConfig(image_size="512PX")` will fail validation; it must be `"512"`. `types.ThinkingConfig` expects `thinking_budget` (not `thinking_level`), and setting `include_thoughts=True` without a budget throws a `400 INVALID_ARGUMENT`. Always write a short `test_probe.py` script to verify exact SDK payload shapes before wiring them into the Mesop UI state.

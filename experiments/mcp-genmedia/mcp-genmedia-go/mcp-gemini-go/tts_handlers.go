@@ -315,10 +315,10 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 
 func callGeminiTTSAPI(ctx context.Context, text, stylePrompt, voiceName, modelName, audioEncoding, languageCode string) ([]byte, error) {
 	// Detach from parent context to avoid inherited short timeouts from the server/client
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ttsCtx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	client, err := texttospeech.NewClient(ctx)
+	client, err := texttospeech.NewClient(ttsCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create texttospeech client: %w", err)
 	}

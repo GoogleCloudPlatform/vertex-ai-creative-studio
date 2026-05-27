@@ -70,7 +70,7 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 	if err != nil {
 		return nil, "", fmt.Errorf("HTTP request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var sherlogLink string
 	if appConfig.EnableOptionalHeaderCapture {

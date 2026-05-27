@@ -30,6 +30,10 @@ def main():
         shutil.copy(f"{src_dir}/report/index.css", f"{stage_dir}/index.css")
     if os.path.exists(f"{src_dir}/report/fonts"):
         shutil.copytree(f"{src_dir}/report/fonts", f"{stage_dir}/fonts", dirs_exist_ok=True)
+    if os.path.exists(f"{src_dir}/report/pipeline_diagram.webp"):
+        shutil.copy(f"{src_dir}/report/pipeline_diagram.webp", f"{stage_dir}/pipeline_diagram.webp")
+    if os.path.exists(f"{src_dir}/report/pipeline_diagram.dot"):
+        shutil.copy(f"{src_dir}/report/pipeline_diagram.dot", f"{stage_dir}/pipeline_diagram.dot")
     if os.path.exists(f"{src_dir}/walkthrough.md"):
         shutil.copy(f"{src_dir}/walkthrough.md", f"{stage_dir}/walkthrough.md")
     if os.path.exists(f"{src_dir}/storyline.md"):

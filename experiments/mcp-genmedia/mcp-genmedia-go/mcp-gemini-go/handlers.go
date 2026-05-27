@@ -120,7 +120,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	// Check for optional Sherlog header
 	if resp.SDKHTTPResponse != nil && resp.SDKHTTPResponse.Headers != nil {
 		if link := resp.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {
-			responseText.WriteString(fmt.Sprintf("Optional header capture: %s\n\n", link))
+			fmt.Fprintf(&responseText, "Optional header capture: %s\n\n", link)
 		}
 	}
 	gentime := time.Now().Format("20060102150405")

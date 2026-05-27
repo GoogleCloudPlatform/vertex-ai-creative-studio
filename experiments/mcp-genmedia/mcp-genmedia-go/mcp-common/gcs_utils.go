@@ -76,12 +76,14 @@ func DownloadFromGCSAsBytes(ctx context.Context, gcsURI string) ([]byte, error) 
 	// Retry loop to handle eventual consistency of GCS.
 	for i := 0; i < 5; i++ {
 		var gcsOpCtx context.Context
-		gcsOpCtx, cancel = context.WithTimeout(ctx, timeout)
+		var loopCancel context.CancelFunc
+		gcsOpCtx, loopCancel = context.WithTimeout(ctx, timeout)
 		rc, lastErr = client.Bucket(bucketName).Object(objectName).NewReader(gcsOpCtx)
 		if lastErr == nil {
+			cancel = loopCancel
 			break // Success — don't cancel yet, rc needs the context to stream data
 		}
-		cancel()
+		loopCancel()
 		if !errors.Is(lastErr, storage.ErrObjectNotExist) {
 			return nil, fmt.Errorf("Object(%q).NewReader: %w", objectName, lastErr) // Return non-transient errors immediately
 		}

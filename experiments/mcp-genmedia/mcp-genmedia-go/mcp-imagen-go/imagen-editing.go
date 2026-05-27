@@ -229,14 +229,7 @@ func imagenEditHandler(ctx context.Context, request mcp.CallToolRequest, client 
 	}
 
 	// Process the response
-	var resultText string
-
-	// Check for optional Sherlog header
-	if response != nil && response.SDKHTTPResponse != nil && response.SDKHTTPResponse.Headers != nil {
-		if link := response.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {
-			resultText += fmt.Sprintf("Optional header capture: %s\n\n", link)
-		}
-	}
+	var statusText string
 
 	if len(response.GeneratedImages) > 0 {
 		genImg := response.GeneratedImages[0]
@@ -249,16 +242,25 @@ func imagenEditHandler(ctx context.Context, request mcp.CallToolRequest, client 
 				return mcp.NewToolResultError(fmt.Sprintf("error uploading edited image to GCS: %v", err)), nil
 			}
 			gcsURI := fmt.Sprintf("gs://%s/%s", appConfig.GenmediaBucket, filename)
-			resultText = fmt.Sprintf("Image edited successfully. Edited image URI: %s", gcsURI)
+			statusText = fmt.Sprintf("Image edited successfully. Edited image URI: %s", gcsURI)
 		} else if genImg.Image != nil && genImg.Image.GCSURI != "" {
 			// The image is already in GCS.
-			resultText = fmt.Sprintf("Image edited successfully. Edited image URI: %s", genImg.Image.GCSURI)
+			statusText = fmt.Sprintf("Image edited successfully. Edited image URI: %s", genImg.Image.GCSURI)
 		} else {
-			resultText = "Image editing did not produce any images."
+			statusText = "Image editing did not produce any images."
 		}
 	} else {
-		resultText = "Image editing did not produce any images."
+		statusText = "Image editing did not produce any images."
 	}
+
+	var resultText string
+	// Check for optional Sherlog header
+	if response != nil && response.SDKHTTPResponse != nil && response.SDKHTTPResponse.Headers != nil {
+		if link := response.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {
+			resultText = fmt.Sprintf("Optional header capture: %s\n\n", link)
+		}
+	}
+	resultText += statusText
 
 	return mcp.NewToolResultText(resultText), nil
 }

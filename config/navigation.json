@@ -157,6 +157,18 @@
       "description": "Generate 3D views from floor plans."
     },
     {
+      "id": 58,
+      "display": "Storyboarder",
+      "icon": "movie_filter",
+      "route": "/storyboarder",
+      "group": "workflows",
+      "mode": [
+        "image",
+        "video"
+      ],
+      "description": "Create multi-scene narrative video storyboards."
+    },
+    {
       "id": 60,
       "display": "Object Rotation",
       "icon": "360",

@@ -113,12 +113,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetGCSDownloadTimeout(t *testing.T) {
 	// Save original env var to restore it later
-	originalValue, wasSet := os.LookupEnv("GCS_DOWNLOAD_TIMEOUT")
+		originalValue, wasSet := os.LookupEnv("GCS_DOWNLOAD_TIMEOUT")
 	defer func() {
 		if wasSet {
-			os.Setenv("GCS_DOWNLOAD_TIMEOUT", originalValue)
+			_ = os.Setenv("GCS_DOWNLOAD_TIMEOUT", originalValue)
 		} else {
-			os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
+			_ = os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
 		}
 	}()
 
@@ -137,9 +137,9 @@ func TestGetGCSDownloadTimeout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.envValue == "" {
-				os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
+				_ = os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
 			} else {
-				os.Setenv("GCS_DOWNLOAD_TIMEOUT", tt.envValue)
+				_ = os.Setenv("GCS_DOWNLOAD_TIMEOUT", tt.envValue)
 			}
 			got := GetGCSDownloadTimeout()
 			if got != tt.expected {

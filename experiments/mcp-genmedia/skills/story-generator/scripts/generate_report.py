@@ -37,6 +37,15 @@ html_template = """<!DOCTYPE html>
         </div>
       </div>
     </section>
+    <section id="pipeline-architecture">
+      <h2>Double-Engine Production Pipeline Architecture</h2>
+      <p class="section-desc">
+        Visual flowchart mapping of the automated Writers Room co-creation, dynamic scene composition, multi-track audio mixing, and Editors Quality Control Room audit.
+      </p>
+      <div class="card architecture-card" style="text-align: center; padding: 24px; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.08);">
+        <img src="pipeline_diagram.webp" alt="Double-Engine Pipeline Flowchart" style="max-width: 100%; height: auto; border-radius: var(--border-radius-md); box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+      </div>
+    </section>
     <section id="dailys">
       <h2>The Dailys (Scene-by-Scene)</h2>
       <p class="section-desc">

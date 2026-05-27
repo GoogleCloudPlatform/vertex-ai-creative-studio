@@ -1,3 +1,5 @@
+version: "2"
+
 linters-settings:
   govet:
     enable-all: true
@@ -8,12 +10,10 @@ linters:
   disable-all: true
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - typecheck
     - bodyclose
     - copyloopvar
 
