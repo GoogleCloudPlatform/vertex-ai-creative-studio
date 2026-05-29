@@ -175,7 +175,7 @@ httpx==0.28.1
     #   google-genai
 hyperframe==6.1.0
     # via h2
-idna==3.16
+idna==3.17
     # via
     #   anyio
     #   httpx
@@ -293,7 +293,7 @@ pillow==12.2.0
     #   mediapy
     #   moviepy
     #   scikit-image
-platformdirs==4.9.6
+platformdirs==4.10.0
     # via
     #   black
     #   pooch
@@ -389,7 +389,7 @@ requests==2.34.2
     #   pooch
 rsa==4.9.1
     # via google-auth
-ruff==0.15.14
+ruff==0.15.15
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
