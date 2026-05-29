@@ -281,7 +281,7 @@ pandas==2.3.3
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 parso==0.8.7
     # via jedi
-pathspec==0.12.1
+pathspec==1.1.1
     # via black
 pexpect==4.9.0
     # via ipython
