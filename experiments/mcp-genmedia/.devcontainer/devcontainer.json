@@ -1,0 +1,27 @@
+{
+  "name": "MCP Genmedia + Gemini CLI",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "containerEnv": {
+    "PROJECT_ID": "${localEnv:PROJECT_ID}",
+    "GOOGLE_CLOUD_PROJECT": "${localEnv:GOOGLE_CLOUD_PROJECT}",
+    "GENMEDIA_BUCKET": "${localEnv:GENMEDIA_BUCKET}",
+    "LOCATION": "${localEnv:LOCATION}"
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.config/gcloud,target=/home/node/.config/gcloud,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": "/usr/local/share/mcp-genmedia-devcontainer/scripts/configure-gemini.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

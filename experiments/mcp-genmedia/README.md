@@ -43,6 +43,26 @@ curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creativ
 
 *Note: Ensure `~/.local/bin` is added to your system `PATH`.*
 
+### DevContainer Setup
+
+A DevContainer is available for working on the MCP Genmedia servers with Go,
+Node.js, FFmpeg, the server binaries, and a Gemini CLI wrapper preconfigured in
+one reproducible environment.
+
+From this `experiments/mcp-genmedia` directory:
+
+```bash
+export PROJECT_ID="your-google-cloud-project-id"
+export GENMEDIA_BUCKET="gs://your-genmedia-bucket"
+devcontainer up --workspace-folder .
+```
+
+The container mounts your local `~/.config/gcloud` directory for Application
+Default Credentials and creates a Gemini CLI extension at
+`~/.gemini/extensions/google-genmedia-devcontainer/gemini-extension.json`.
+After attaching to the container, run `gemini --version` or list MCP tools with
+one of the installed server binaries, such as `mcp-gemini-go`.
+
 
 ## Running the Servers
 

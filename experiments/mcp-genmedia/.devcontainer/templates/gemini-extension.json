@@ -1,0 +1,77 @@
+{
+  "name": "google-genmedia-devcontainer",
+  "version": "1.0.0",
+  "mcpServers": {
+    "veo": {
+      "command": "mcp-veo-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000"
+      }
+    },
+    "nanobanana": {
+      "command": "mcp-nanobanana-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "imagen": {
+      "command": "mcp-imagen-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "chirp3-hd": {
+      "command": "mcp-chirp3-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "lyria": {
+      "command": "mcp-lyria-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "avtool": {
+      "command": "mcp-avtool-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "PROJECT_ID": "${PROJECT_ID}",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
+        "LOCATION": "${LOCATION}",
+        "GENMEDIA_BUCKET": "${GENMEDIA_BUCKET}",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    }
+  }
+}
