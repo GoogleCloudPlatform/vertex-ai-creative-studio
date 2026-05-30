@@ -22,6 +22,7 @@ import (
 	"log"
 	"strings"
 
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"go.opentelemetry.io/otel"
@@ -44,6 +45,10 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	seed, err := common.ParseOptionalNonNegativeInt32(request.GetArguments(), "seed")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 
 	span.SetAttributes(
 		attribute.String("prompt", prompt),
@@ -56,6 +61,9 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 		attribute.Bool("generate_audio", generateAudio),
 		attribute.String("person_generation", personGeneration),
 	)
+	if seed != nil {
+		span.SetAttributes(attribute.Int("seed", int(*seed)))
+	}
 
 	mcpServer := server.ServerFromContext(ctx)
 	var progressToken mcp.ProgressToken
@@ -76,6 +84,7 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 		AspectRatio:      finalAspectRatio,
 		OutputGCSURI:     gcsBucket,
 		DurationSeconds:  &durationSecs,
+		Seed:             seed,
 		PersonGeneration: personGeneration,
 	}
 
@@ -129,6 +138,10 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	seed, err := common.ParseOptionalNonNegativeInt32(request.GetArguments(), "seed")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 
 	span.SetAttributes(
 		attribute.String("image_uri", imageURI),
@@ -143,6 +156,9 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		attribute.Bool("generate_audio", generateAudio),
 		attribute.String("person_generation", personGeneration),
 	)
+	if seed != nil {
+		span.SetAttributes(attribute.Int("seed", int(*seed)))
+	}
 
 	mcpServer := server.ServerFromContext(ctx)
 	var progressToken mcp.ProgressToken
@@ -168,6 +184,7 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		AspectRatio:      finalAspectRatio,
 		OutputGCSURI:     gcsBucket,
 		DurationSeconds:  &durationSecs,
+		Seed:             seed,
 		PersonGeneration: personGeneration,
 	}
 

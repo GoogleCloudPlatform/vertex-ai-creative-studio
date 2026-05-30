@@ -64,6 +64,11 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		outputDir = strings.TrimSpace(dir)
 	}
 
+	seed, err := common.ParseOptionalNonNegativeInt32(request.GetArguments(), "seed")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	// --- Construct Gemini Request ---
 	var parts []*genai.Part
 	parts = append(parts, genai.NewPartFromText(prompt))
@@ -89,6 +94,9 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		attribute.String("model", model),
 		attribute.String("output_directory", outputDir),
 	)
+	if seed != nil {
+		span.SetAttributes(attribute.Int("seed", int(*seed)))
+	}
 
 	// --- API Call ---
 	log.Printf("Calling GenerateContent with Model: %s, Prompt: \"%s\"", model, prompt)
@@ -99,6 +107,7 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		ImageConfig: &genai.ImageConfig{
 			AspectRatio: aspectRatio,
 		},
+		Seed: seed,
 	}
 	contents := &genai.Content{Parts: parts, Role: "USER"}
 

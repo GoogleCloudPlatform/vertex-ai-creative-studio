@@ -15,6 +15,7 @@ Generates content (text and/or images) based on a multimodal prompt.
 - `images` (string array, optional): A list of local file paths or GCS URIs for input images.
 - `output_directory` (string, optional): Local directory to save any generated image(s) to.
 - `gcs_bucket_uri` (string, optional): GCS URI prefix to store any generated images.
+- `seed` (number, optional): Non-negative integer seed for best-effort reproducible image generation.
 
 
 

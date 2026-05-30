@@ -115,6 +115,9 @@ func main() {
 		mcp.WithNumber("duration",
 			mcp.Description("Duration of the generated video in seconds. Note: the supported duration range is model-dependent."),
 		),
+		mcp.WithNumber("seed",
+			mcp.Description("Optional. Non-negative integer seed for best-effort reproducible video generation."),
+		),
 		mcp.WithBoolean("generate_audio",
 			mcp.DefaultBool(true),
 			mcp.Description("Optional. Generate audio for the video. Only supported by Veo 3 models. Defaults to true."),
@@ -259,6 +262,9 @@ func main() {
 		mcp.WithString("aspect_ratio",
 			mcp.Description("Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent."),
 		),
+		mcp.WithNumber("seed",
+			mcp.Description("Optional. Non-negative integer seed for best-effort reproducible video generation."),
+		),
 		mcp.WithBoolean("generate_audio",
 			mcp.DefaultBool(true),
 			mcp.Description("Optional. Generate audio for the video. Only supported by Veo 3 models. Defaults to true."),
@@ -282,6 +288,7 @@ func main() {
 		mcp.WithArgument("duration", mcp.ArgumentDescription("The duration of the video in seconds.")),
 		mcp.WithArgument("aspect_ratio", mcp.ArgumentDescription("The aspect ratio of the generated video.")),
 		mcp.WithArgument("model", mcp.ArgumentDescription("The model to use for generation.")),
+		mcp.WithArgument("seed", mcp.ArgumentDescription("Optional seed for best-effort reproducible video generation.")),
 	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 		prompt, ok := request.Params.Arguments["prompt"]
 		if !ok || strings.TrimSpace(prompt) == "" {

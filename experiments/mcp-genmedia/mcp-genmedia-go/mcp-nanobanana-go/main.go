@@ -101,6 +101,7 @@ func main() {
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input media (images, videos, or PDFs)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
+		mcp.WithNumber("seed", mcp.Description("Optional. Non-negative integer seed for best-effort reproducible image generation.")),
 	)
 
 	handlerWithClient := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

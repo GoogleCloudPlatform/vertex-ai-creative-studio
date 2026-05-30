@@ -18,6 +18,7 @@ The server exposes the following tools:
     *   `num_videos` (number, optional): Number of videos to generate. Note: the maximum is model-dependent.
     *   `aspect_ratio` (string, optional): Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent.
     *   `duration` (number, optional): Duration of the generated video in seconds. Note: the supported duration range is model-dependent.
+    *   `seed` (number, optional): Non-negative integer seed for best-effort reproducible video generation.
 
 ### 2. `veo_i2v` (Image-to-Video)
 
@@ -33,6 +34,7 @@ The server exposes the following tools:
     *   `num_videos` (number, optional): Number of videos. Default: `1`. Min: `1`, Max: `4`.
     *   `aspect_ratio` (string, optional): Aspect ratio. Default: `"16:9"`.
     *   `duration` (number, optional): Duration in seconds. Default: `5`. Min: `5`, Max: `8`.
+    *   `seed` (number, optional): Non-negative integer seed for best-effort reproducible video generation.
 
 ### 3. `veo_extend_video` (Extend Video)
 
@@ -46,10 +48,12 @@ The server exposes the following tools:
     *   `output_directory` (string, optional): Local directory for download. Same logic as `veo_t2v`.
     *   `model` (string, optional): Model to use. Supported by Veo 3.1 models.
     *   `num_videos` (number, optional): Number of videos. Default: `1`. Min: `1`, Max: `4`.
+    *   `seed` (number, optional): Non-negative integer seed for best-effort reproducible video generation.
 
 ### 4. `veo_first_last_to_video` & `veo_reference_to_video` & `veo_ingredients_to_video`
 
 *   **Description**: Advanced video generation features supporting reference images and start/end frame interpolation.
+*   These tools also support the common Veo generation parameters, including `seed`.
 
 ## Environment Variable Configuration
 
