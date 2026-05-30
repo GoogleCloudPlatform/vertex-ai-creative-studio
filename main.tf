@@ -151,25 +151,26 @@ resource "google_service_account" "creative_studio" {
 locals {
   asset_bucket_name = "creative-studio-${var.project_id}-assets"
   creative_studio_env_vars = {
-    PROJECT_ID            = var.project_id
-    LOCATION              = var.region
-    GEMINI_TTS_LOCATION   = var.gemini_tts_location
-    MODEL_ID              = var.model_id
-    GEMINI_CRITIQUE_MODEL_ID = var.gemini_critique_model_id
-    GEMINI_CRITIQUE_LOCATION = var.gemini_critique_location
+    PROJECT_ID                            = var.project_id
+    LOCATION                              = var.region
+    GEMINI_TTS_LOCATION                   = var.gemini_tts_location
+    MODEL_ID                              = var.model_id
+    GEMINI_CRITIQUE_MODEL_ID              = var.gemini_critique_model_id
+    GEMINI_CRITIQUE_LOCATION              = var.gemini_critique_location
     CHARACTER_CONSISTENCY_GEMINI_LOCATION = var.character_consistency_gemini_location
-    VEO_MODEL_ID          = var.veo_model_id
-    VEO_EXP_MODEL_ID      = var.veo_exp_model_id
-    LYRIA_MODEL_VERSION   = var.lyria_model_id
-    LYRIA_PROJECT_ID      = var.project_id
-    GENMEDIA_BUCKET       = local.asset_bucket_name
-    VIDEO_BUCKET          = local.asset_bucket_name
-    MEDIA_BUCKET          = local.asset_bucket_name
-    IMAGE_BUCKET          = local.asset_bucket_name
-    GCS_ASSETS_BUCKET     = local.asset_bucket_name
-    GENMEDIA_FIREBASE_DB  = google_firestore_database.create_studio_asset_metadata.name
-    SERVICE_ACCOUNT_EMAIL = google_service_account.creative_studio.email
-    EDIT_IMAGES_ENABLED   = var.edit_images_enabled
+    VEO_LOCATION                          = var.veo_location
+    VEO_MODEL_ID                          = var.veo_model_id
+    VEO_EXP_MODEL_ID                      = var.veo_exp_model_id
+    LYRIA_MODEL_VERSION                   = var.lyria_model_id
+    LYRIA_PROJECT_ID                      = var.project_id
+    GENMEDIA_BUCKET                       = local.asset_bucket_name
+    VIDEO_BUCKET                          = local.asset_bucket_name
+    MEDIA_BUCKET                          = local.asset_bucket_name
+    IMAGE_BUCKET                          = local.asset_bucket_name
+    GCS_ASSETS_BUCKET                     = local.asset_bucket_name
+    GENMEDIA_FIREBASE_DB                  = google_firestore_database.create_studio_asset_metadata.name
+    SERVICE_ACCOUNT_EMAIL                 = google_service_account.creative_studio.email
+    EDIT_IMAGES_ENABLED                   = var.edit_images_enabled
   }
 
   deployed_domain = var.use_lb ? ["https://${var.domain}"] : google_cloud_run_v2_service.creative_studio.urls
