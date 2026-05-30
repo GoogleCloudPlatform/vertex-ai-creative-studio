@@ -51,7 +51,7 @@
     {
       "name": "Google Cloud Project ID",
       "description": "The GCP Project ID where Vertex AI is enabled.",
-      "envVar": "PROJECT_ID",
+      "envVar": "GOOGLE_CLOUD_PROJECT",
       "sensitive": false
     },
     {

@@ -16,6 +16,19 @@ To configure these servers for gemini cli, you can either add these to your ~/.g
 
 > **Existing Users:** If you have previously installed the GenMedia extension using the older JSON format, please see the [Migration Guide](migration.md) for quick instructions on upgrading to the new interactive setup.
 
+## Authentication
+
+The GenMedia MCP servers call Vertex AI from the MCP server process. Gemini CLI's own Gemini API key or login does not authenticate these Vertex AI calls.
+
+Before starting Gemini CLI, configure Google Cloud Application Default Credentials (ADC) and a Google Cloud project ID:
+
+```bash
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT="$(gcloud config get-value project)"
+```
+
+For service accounts, set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path instead. Use `GOOGLE_CLOUD_PROJECT` in the MCP server environment; `PROJECT_ID` is still accepted as a legacy fallback.
+
 ## .gemini/settings.json: Global Tool Timeout
 
 If you intend to use long-running tools like **Veo** (which takes minutes to generate video) or complex **Gemini TTS** prompts, you **MUST** increase the global tool execution timeout in your `~/.gemini/settings.json` file. 
@@ -48,7 +61,7 @@ A `sample_settings.json` is provided for your convenience.
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000",
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
     "imagen": {
@@ -56,7 +69,7 @@ A `sample_settings.json` is provided for your convenience.
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
     "chirp3-hd": {
@@ -64,28 +77,28 @@ A `sample_settings.json` is provided for your convenience.
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
     "lyria": {
       "command": "mcp-lyria-go",
       "env": {
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "avtool": {
       "command": "mcp-avtool-go",
       "env": {
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "gemini": {
       "command": "mcp-gemini-go",
       "env": {
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
@@ -112,7 +125,7 @@ Here is an example of how to configure the `veo` server to use an insecure conne
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000",
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     }
   }
@@ -145,7 +158,7 @@ Then, add to that directory a `gemini-extension.json`
     {
       "name": "Google Cloud Project ID",
       "description": "The GCP Project ID where Vertex AI is enabled.",
-      "envVar": "PROJECT_ID",
+      "envVar": "GOOGLE_CLOUD_PROJECT",
       "sensitive": false
     },
     {
@@ -200,7 +213,7 @@ Then, add to that directory a `gemini-extension.json`
 
 ### Interactive Installation
 
-With the new `settings` array in `gemini-extension.json`, Gemini CLI will interactively ask you for your `PROJECT_ID` and `GENMEDIA_BUCKET` when you install the extension. These values are automatically stored securely in the extension's `.env` file and passed to the MCP servers!
+With the new `settings` array in `gemini-extension.json`, Gemini CLI will interactively ask you for your `GOOGLE_CLOUD_PROJECT` and `GENMEDIA_BUCKET` when you install the extension. These values are automatically stored securely in the extension's `.env` file and passed to the MCP servers!
 
 ```bash
 gemini extensions install ./sample_extensions/google-genmedia
