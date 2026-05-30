@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -174,6 +175,41 @@ func ParseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
 		return "", "", fmt.Errorf("invalid GCS URI format: %s. Expected gs://bucket/object", gcsURI)
 	}
 	return parts[0], parts[1], nil
+}
+
+// ParseGCSPrefix extracts the bucket name and optional object prefix from a
+// user-provided GCS output prefix. Unlike ParseGCSPath, bucket-only paths such
+// as gs://bucket are valid because callers append generated filenames later.
+func ParseGCSPrefix(gcsURI string) (bucketName, objectPrefix string, err error) {
+	normalizedURI := EnsureGCSPathPrefix(strings.TrimSpace(gcsURI))
+	if normalizedURI == "gs://" {
+		return "", "", fmt.Errorf("invalid GCS URI format: %s. Expected gs://bucket[/prefix]", gcsURI)
+	}
+
+	trimmedURI := strings.TrimPrefix(normalizedURI, "gs://")
+	parts := strings.SplitN(trimmedURI, "/", 2)
+	if parts[0] == "" {
+		return "", "", fmt.Errorf("invalid GCS URI format: %s. Expected gs://bucket[/prefix]", gcsURI)
+	}
+	if len(parts) == 2 {
+		objectPrefix = strings.Trim(parts[1], "/")
+	}
+	return parts[0], objectPrefix, nil
+}
+
+// JoinGCSObjectName joins an optional object prefix and filename with URL path
+// semantics so GCS object names always use forward slashes.
+func JoinGCSObjectName(objectPrefix, filename string) string {
+	objectPrefix = strings.Trim(objectPrefix, "/")
+	if objectPrefix == "" {
+		return filename
+	}
+	return path.Join(objectPrefix, filename)
+}
+
+// BuildGCSURI returns a gs:// URI for an object.
+func BuildGCSURI(bucketName, objectName string) string {
+	return fmt.Sprintf("gs://%s/%s", bucketName, objectName)
 }
 
 // EnsureGCSPathPrefix ensures that a given path starts with "gs://".

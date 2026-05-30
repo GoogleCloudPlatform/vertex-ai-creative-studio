@@ -38,6 +38,59 @@ func TestParseGCSPath(t *testing.T) {
 	}
 }
 
+func TestParseGCSPrefix(t *testing.T) {
+	testCases := []struct {
+		gcsURI         string
+		expectedBucket string
+		expectedPrefix string
+		expectError    bool
+	}{
+		{"gs://bucket", "bucket", "", false},
+		{"gs://bucket/outputs", "bucket", "outputs", false},
+		{"gs://bucket/outputs/nested/", "bucket", "outputs/nested", false},
+		{"bucket/outputs", "bucket", "outputs", false},
+		{"", "", "", true},
+		{"gs://", "", "", true},
+		{"gs:///outputs", "", "", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.gcsURI, func(t *testing.T) {
+			bucket, prefix, err := ParseGCSPrefix(tc.gcsURI)
+			if (err != nil) != tc.expectError {
+				t.Errorf("expected error: %v, but got: %v", tc.expectError, err)
+			}
+			if bucket != tc.expectedBucket {
+				t.Errorf("expected bucket '%s', but got '%s'", tc.expectedBucket, bucket)
+			}
+			if prefix != tc.expectedPrefix {
+				t.Errorf("expected prefix '%s', but got '%s'", tc.expectedPrefix, prefix)
+			}
+		})
+	}
+}
+
+func TestJoinGCSObjectName(t *testing.T) {
+	testCases := []struct {
+		prefix   string
+		filename string
+		expected string
+	}{
+		{"", "image.png", "image.png"},
+		{"outputs", "image.png", "outputs/image.png"},
+		{"/outputs/nested/", "image.png", "outputs/nested/image.png"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.prefix, func(t *testing.T) {
+			actual := JoinGCSObjectName(tc.prefix, tc.filename)
+			if actual != tc.expected {
+				t.Errorf("expected '%s', but got '%s'", tc.expected, actual)
+			}
+		})
+	}
+}
+
 func TestDownloadFromGCS(t *testing.T) {
 	// This is a basic integration test that requires a running GCS emulator.
 	// You can start one with: gcloud beta emulators gcs start --project=test-project

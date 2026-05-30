@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -64,6 +65,18 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		outputDir = strings.TrimSpace(dir)
 	}
 
+	gcsOutputURI := ""
+	gcsBucketName := ""
+	gcsObjectPrefix := ""
+	if gcsURI, ok := request.GetArguments()["gcs_bucket_uri"].(string); ok && strings.TrimSpace(gcsURI) != "" {
+		gcsOutputURI = common.EnsureGCSPathPrefix(strings.TrimSpace(gcsURI))
+		var err error
+		gcsBucketName, gcsObjectPrefix, err = common.ParseGCSPrefix(gcsOutputURI)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid gcs_bucket_uri: %v", err)), nil
+		}
+	}
+
 	// --- Construct Gemini Request ---
 	var parts []*genai.Part
 	parts = append(parts, genai.NewPartFromText(prompt))
@@ -88,6 +101,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		attribute.String("prompt", prompt),
 		attribute.String("model", model),
 		attribute.String("output_directory", outputDir),
+		attribute.String("gcs_bucket_uri", gcsOutputURI),
 	)
 
 	// --- API Call ---
@@ -116,6 +130,10 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	// --- Process Response ---
 	var responseText strings.Builder
 	var savedFiles []string
+	var gcsSavedURIs []string
+	var responseImages []mcp.Content
+	generatedImages := 0
+	returnImageDataInResponse := outputDir == "" && gcsOutputURI == ""
 
 	// Check for optional Sherlog header
 	if resp.SDKHTTPResponse != nil && resp.SDKHTTPResponse.Headers != nil {
@@ -131,33 +149,62 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 				responseText.WriteString(part.Text)
 			}
 			if part.InlineData != nil {
-				log.Printf("part %d mime-type: %s", n, part.InlineData.MIMEType)
+				generatedImages++
+				mimeType := common.NormalizeImageMIMEType(part.InlineData.MIMEType)
+				fileName := fmt.Sprintf("gemini_%s_%d%s", gentime, n, common.ImageExtensionForMIMEType(mimeType))
+				log.Printf("part %d mime-type: %s", n, mimeType)
 
 				if outputDir != "" {
 					if err := os.MkdirAll(outputDir, 0755); err != nil {
 						return mcp.NewToolResultError(fmt.Sprintf("failed to create output directory: %v", err)), nil
 					}
-					fileName := fmt.Sprintf("gemini_%s_%d.png", gentime, n)
 					filePath := filepath.Join(outputDir, fileName)
 					if err := os.WriteFile(filePath, part.InlineData.Data, 0644); err != nil {
 						return mcp.NewToolResultError(fmt.Sprintf("failed to write image file: %v", err)), nil
 					}
 					savedFiles = append(savedFiles, filePath)
-				} else {
-					// If no output dir, should we return base64? For now, we just log.
-					log.Println("Received image data but no output_directory was specified. Image not saved.")
+				}
+
+				if gcsOutputURI != "" {
+					objectName := common.JoinGCSObjectName(gcsObjectPrefix, fileName)
+					if err := common.UploadToGCS(ctx, gcsBucketName, objectName, mimeType, part.InlineData.Data); err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("failed to upload image to GCS: %v", err)), nil
+					}
+					gcsSavedURIs = append(gcsSavedURIs, common.BuildGCSURI(gcsBucketName, objectName))
+				}
+
+				if returnImageDataInResponse {
+					responseImages = append(responseImages, mcp.ImageContent{
+						Type:     "image",
+						Data:     base64.StdEncoding.EncodeToString(part.InlineData.Data),
+						MIMEType: mimeType,
+					})
 				}
 			}
 		}
 	}
 
 	// --- Format Final Result ---
-	finalMessage := responseText.String()
+	finalMessage := strings.TrimSpace(responseText.String())
+	if finalMessage == "" && generatedImages > 0 {
+		finalMessage = fmt.Sprintf("Generated %d image(s).", generatedImages)
+	}
 	if len(savedFiles) > 0 {
 		finalMessage += fmt.Sprintf("\n\nGenerated and saved %d image(s): %s", len(savedFiles), strings.Join(savedFiles, ", "))
 	}
+	if len(gcsSavedURIs) > 0 {
+		finalMessage += fmt.Sprintf("\n\nGenerated and uploaded %d image(s) to GCS: %s", len(gcsSavedURIs), strings.Join(gcsSavedURIs, ", "))
+	}
+	if returnImageDataInResponse && len(responseImages) > 0 {
+		finalMessage += "\n\nImage(s) are included in this MCP response as base64 data."
+	}
 
-	return &mcp.CallToolResult{Content: []mcp.Content{mcp.TextContent{Type: "text", Text: strings.TrimSpace(finalMessage)}}}, nil
+	contentItems := []mcp.Content{mcp.TextContent{Type: "text", Text: strings.TrimSpace(finalMessage)}}
+	if returnImageDataInResponse {
+		contentItems = append(contentItems, responseImages...)
+	}
+
+	return &mcp.CallToolResult{Content: contentItems}, nil
 }
 
 func inferMimeType(path string) string {
