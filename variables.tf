@@ -54,6 +54,12 @@ variable "veo_model_id" {
   default     = "veo-3.1-fast-generate-001"
 }
 
+variable "veo_location" {
+  description = "Location for Veo model API calls. Defaults to the deployment region when unset."
+  type        = string
+  default     = null
+}
+
 variable "veo_exp_model_id" {
   description = "Experimental Veo model ID to use for video generation"
   type        = string

@@ -159,6 +159,7 @@ locals {
     GEMINI_CRITIQUE_LOCATION = var.gemini_critique_location
     CHARACTER_CONSISTENCY_GEMINI_LOCATION = var.character_consistency_gemini_location
     VEO_MODEL_ID          = var.veo_model_id
+    VEO_LOCATION          = coalesce(var.veo_location, var.region)
     VEO_EXP_MODEL_ID      = var.veo_exp_model_id
     LYRIA_MODEL_VERSION   = var.lyria_model_id
     LYRIA_PROJECT_ID      = var.project_id

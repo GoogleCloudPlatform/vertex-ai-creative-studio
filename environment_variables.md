@@ -145,6 +145,7 @@ These variables are exposed in `variables.tf` and directly map to environment va
 | `gemini_critique_location` | `GEMINI_CRITIQUE_LOCATION` | `global` |
 | `character_consistency_gemini_location` | `CHARACTER_CONSISTENCY_GEMINI_LOCATION` | `global` |
 | `veo_model_id` | `VEO_MODEL_ID` | `veo-3.1-fast-generate-001` |
+| `veo_location` | `VEO_LOCATION` | `region` |
 | `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.1-generate-001` |
 | `lyria_model_id` | `LYRIA_MODEL_VERSION` | `lyria-002` |
 | `edit_images_enabled` | `EDIT_IMAGES_ENABLED` | `true` |
@@ -167,7 +168,7 @@ These variables are computed within `main.tf` based on the resources Terraform c
 The following variables are **not** explicitly set in the `main.tf` configuration. This means the application will use the **default values defined in `config/default.py`** when deployed via Terraform.
 
 *   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL`, `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
-*   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `VEO_LOCATION`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
+*   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
 *   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
 *   **Interior Design:** `INTERIOR_DESIGN_VIDEO_MODEL`, `INTERIOR_DESIGN_IMAGE_MODEL`, `INTERIOR_DESIGN_VIDEO_DURATION`
