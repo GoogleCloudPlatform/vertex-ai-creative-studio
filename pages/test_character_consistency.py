@@ -30,6 +30,9 @@ from components.dialog import dialog
 
 logger = logging.getLogger(__name__)
 
+SELECT_IMAGE_STEP = 2
+CREATE_VIDEO_STEP = 3
+
 
 @me.stateclass
 class PageState:
@@ -128,7 +131,7 @@ This page allows you to test the character consistency workflow step-by-step.
                     )
                     me.button("Generate Alternatives", on_click=generate_alternatives, type="raised")
 
-                if state.current_step == 2:
+                if state.current_step == SELECT_IMAGE_STEP:
                     me.text("Step 2: Select the Best Image", style=me.Style(margin=me.Margin(bottom=16)))
                     if state.character_description:
                         with me.expansion_panel(title="Character Description"):
@@ -180,7 +183,7 @@ This page allows you to test the character consistency workflow step-by-step.
                                         )
                         me.button("Continue", on_click=next_step, type="raised")
 
-                if state.current_step == 3:
+                if state.current_step == CREATE_VIDEO_STEP:
                     me.text("Step 3: Create Video", style=me.Style(margin=me.Margin(bottom=16)))
                     with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, margin=me.Margin(bottom=16))):
                         with me.box(style=me.Style(flex_grow=1)):
@@ -260,14 +263,27 @@ def on_modify_prompt_click(modifier: str):
     yield
 
 
+def _default_selected_image_url(state: PageState) -> str:
+    """Return the current selection, falling back to generated candidates."""
+    if state.user_selected_image_url:
+        return state.user_selected_image_url
+    if state.best_image_url:
+        return state.best_image_url
+    if state.candidate_image_urls:
+        return state.candidate_image_urls[0]
+    return ""
+
+
 def next_step(e: me.ClickEvent):
     """Move to the next step."""
     state = me.state(PageState)
+    if state.current_step == SELECT_IMAGE_STEP and not state.user_selected_image_url:
+        state.user_selected_image_url = _default_selected_image_url(state)
     state.current_step += 1
     if state.current_step > state.max_completed_step:
         state.max_completed_step = state.current_step
     state.status_message = f"Moved to step {state.current_step}"
-    if state.current_step == 3:
+    if state.current_step == CREATE_VIDEO_STEP:
         state.video_prompt = state.scene_prompt
     yield
 
@@ -312,6 +328,7 @@ def generate_alternatives(e: me.ClickEvent):
                 gcs_uri = step_result.data["best_image_gcs_uri"]
                 state.best_image_gcs_uri = gcs_uri
                 state.best_image_url = create_display_url(gcs_uri)
+                state.user_selected_image_url = _default_selected_image_url(state)
                 break
     except Exception as e:
         logger.error("Error during character consistency generation", exc_info=True)
@@ -322,7 +339,7 @@ def generate_alternatives(e: me.ClickEvent):
 
     state.is_generating = False
     state.status_message = "Generated alternatives."
-    state.current_step = 2
+    state.current_step = SELECT_IMAGE_STEP
     if state.current_step > state.max_completed_step:
         state.max_completed_step = state.current_step
     yield
@@ -336,7 +353,14 @@ def generate_video(e: me.ClickEvent):
     yield
 
     # Convert the display URL back to a GCS URI before passing it to the model.
-    gcs_uri = https_url_to_gcs_uri(state.user_selected_image_url)
+    selected_image_url = _default_selected_image_url(state)
+    if not selected_image_url:
+        state.status_message = "Select an image before generating video."
+        state.is_generating = False
+        yield
+        return
+    state.user_selected_image_url = selected_image_url
+    gcs_uri = https_url_to_gcs_uri(selected_image_url)
 
     for step_result in generate_character_video(
         user_email=app_state.user_email,
