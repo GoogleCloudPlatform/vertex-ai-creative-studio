@@ -59,7 +59,7 @@ pandas==2.3.3
 pillow==12.2.0
 proto-plus==1.28.0
 protobuf==7.35.0
-pyarrow==21.0.0
+pyarrow==23.0.1
 pyasn1==0.6.3
 pyasn1-modules==0.4.2
 pycparser==2.23 ; platform_python_implementation != 'PyPy'
