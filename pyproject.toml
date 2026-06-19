@@ -29,8 +29,16 @@ dependencies = [
     "librosa>=0.11.0",
     "praat-parselmouth>=0.4.6",
     "c2pa-python>=0.27.1",
-    "pillow>=11.3.0",
+    "pillow>=12.2.0",
     "pyOpenSSL",
+]
+
+[tool.uv]
+# MoviePy 2.2.1 caps Pillow below 12, but the local audit requires the
+# vulnerability-fixed Pillow 12.2.0 release line. Remove this once MoviePy
+# publishes compatible dependency metadata.
+override-dependencies = [
+    "pillow>=12.2.0",
 ]
 
 [[tool.uv.index]]
