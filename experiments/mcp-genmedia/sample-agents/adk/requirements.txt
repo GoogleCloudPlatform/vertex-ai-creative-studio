@@ -231,7 +231,7 @@ pydantic==2.13.4
     #   pydantic-settings
 pydantic-core==2.47.0
     # via pydantic
-pydantic-settings==2.14.1
+pydantic-settings==2.14.2
     # via mcp
 pyparsing==3.3.2
     # via httplib2
