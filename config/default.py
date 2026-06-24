@@ -15,7 +15,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -35,18 +35,18 @@ class NavItem(BaseModel):
     id: int
     display: str
     icon: str
-    route: Optional[str] = None
-    group: Optional[str] = None
-    align: Optional[str] = None
-    feature_flag: Optional[str] = None
-    feature_flag_not: Optional[str] = None
-    description: Optional[str] = None
-    video_url: Optional[str] = None
-    video_object_position: Optional[str] = None
+    route: str | None = None
+    group: str | None = None
+    align: str | None = None
+    feature_flag: str | None = None
+    feature_flag_not: str | None = None
+    description: str | None = None
+    video_url: str | None = None
+    video_object_position: str | None = None
 
 
 class NavConfig(BaseModel):
-    pages: List[NavItem]
+    pages: list[NavItem]
 
 
 @dataclass
@@ -69,7 +69,7 @@ class Default:
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
     GEMINI_TTS_LOCATION: str = os.environ.get("GEMINI_TTS_LOCATION", "global")
     GA_MEASUREMENT_ID: str = os.environ.get("GA_MEASUREMENT_ID")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.5-flash")
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
         "GEMINI_IMAGE_GEN_MODEL",
@@ -79,13 +79,13 @@ class Default:
         "GEMINI_IMAGE_GEN_LOCATION",
         "global",
     )
-    GEMINI_IMAGE_GEN_API_BASE_URL: Optional[str] = os.environ.get(
+    GEMINI_IMAGE_GEN_API_BASE_URL: str | None = os.environ.get(
         "GEMINI_IMAGE_GEN_API_BASE_URL",
     )
 
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID",
-        "gemini-2.5-flash",
+        "gemini-3.1-flash-lite",
     )
     GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
         "GEMINI_WRITERS_WORKSHOP_MODEL_ID",

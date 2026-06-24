@@ -26,10 +26,10 @@ Controls which versions of the Gemini models are used for various tasks.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`MODEL_ID`** | `gemini-2.5-flash` | The primary Gemini model used for general text and reasoning tasks throughout the app. |
+| **`MODEL_ID`** | `gemini-3.5-flash` | The primary Gemini model used for general text and reasoning tasks throughout the app. |
 | **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-2.5-flash-image` | The specific model used for image generation features. |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
-| **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-2.5-flash` | The model used specifically for analyzing audio content. |
+| **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-3.1-flash-lite` | The model used specifically for analyzing audio content. |
 | **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
 | **`GEMINI_CRITIQUE_MODEL_ID`** | `gemini-3-flash-preview` | The specific model used for the Imagen critique functionality. |
 | **`GEMINI_CRITIQUE_LOCATION`** | `global` | The region for the Gemini image critique model. |
@@ -140,7 +140,8 @@ These variables are exposed in `variables.tf` and directly map to environment va
 | :--- | :--- | :--- |
 | `project_id` | `PROJECT_ID` | *(Required)* |
 | `region` | `LOCATION` | `us-central1` |
-| `model_id` | `MODEL_ID` | `gemini-2.5-flash` |
+| `model_id` | `MODEL_ID` | `gemini-3.5-flash` |
+| `gemini_audio_analysis_model_id` | `GEMINI_AUDIO_ANALYSIS_MODEL_ID` | `gemini-3.1-flash-lite` |
 | `gemini_critique_model_id` | `GEMINI_CRITIQUE_MODEL_ID` | `gemini-3-flash-preview` |
 | `gemini_critique_location` | `GEMINI_CRITIQUE_LOCATION` | `global` |
 | `character_consistency_gemini_location` | `CHARACTER_CONSISTENCY_GEMINI_LOCATION` | `global` |

@@ -42,8 +42,8 @@ PROJECT_ID=
 # ==============================================================================
 
 # [OPTIONAL] The primary Gemini model used for general text and reasoning tasks.
-# Default: gemini-2.5-flash
-# MODEL_ID=gemini-2.5-flash
+# Default: gemini-3.5-flash
+# MODEL_ID=gemini-3.5-flash
 
 # [OPTIONAL] The specific model used for image generation features.
 # Default: gemini-2.5-flash-image
@@ -57,8 +57,8 @@ PROJECT_ID=
 # GEMINI_IMAGE_GEN_API_BASE_URL=
 
 # [OPTIONAL] The model used specifically for analyzing audio content.
-# Default: gemini-2.5-flash
-# GEMINI_AUDIO_ANALYSIS_MODEL_ID=gemini-2.5-flash
+# Default: gemini-3.1-flash-lite
+# GEMINI_AUDIO_ANALYSIS_MODEL_ID=gemini-3.1-flash-lite
 
 # [OPTIONAL] The model used for the Gemini Writers Workshop page.
 # Default: Same as MODEL_ID

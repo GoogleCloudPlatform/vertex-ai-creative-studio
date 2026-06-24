@@ -51,7 +51,7 @@ itsdangerous==2.2.0
 jinja2==3.1.6
 markupsafe==3.0.3
 mesop==1.3.0
-msgpack==1.1.2
+msgpack==1.2.1
 numpy==2.4.6
 ordered-set==4.1.0
 packaging==25.0

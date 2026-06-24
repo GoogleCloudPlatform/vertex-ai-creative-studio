@@ -43,9 +43,15 @@ variable "initial_container_image" {
 }
 
 variable "model_id" {
-  description = "Veo model ID to use for video generation"
+  description = "Primary Gemini model ID to use for text and multimodal reasoning tasks"
   type        = string
-  default     = "gemini-2.5-flash"
+  default     = "gemini-3.5-flash"
+}
+
+variable "gemini_audio_analysis_model_id" {
+  description = "Gemini model ID to use for audio analysis features"
+  type        = string
+  default     = "gemini-3.1-flash-lite"
 }
 
 variable "veo_model_id" {
