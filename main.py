@@ -93,6 +93,16 @@ async def favicon():
     return FileResponse("assets/favicon.ico")
 
 
+@app.get("/healthz", include_in_schema=False)
+async def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/readyz", include_in_schema=False)
+async def readyz():
+    return {"status": "ok"}
+
+
 # Define allowed origins for CORS
 
 
