@@ -184,7 +184,7 @@ opentelemetry-sdk==1.43.0
     #   opentelemetry-resourcedetector-gcp
 opentelemetry-semantic-conventions==0.55b1
     # via opentelemetry-sdk
-packaging==25.0
+packaging==26.2
     # via
     #   google-cloud-aiplatform
     #   google-cloud-bigquery

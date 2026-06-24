@@ -112,7 +112,7 @@ opentelemetry-api==1.43.0
     # via google-cloud-logging
 ordered-set==4.1.0
     # via deepdiff
-packaging==25.0
+packaging==26.2
     # via
     #   gunicorn
     #   marshmallow
