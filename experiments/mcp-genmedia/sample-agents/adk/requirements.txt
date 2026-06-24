@@ -156,7 +156,7 @@ idna==3.18
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.9.0
+importlib-metadata==9.0.0
     # via opentelemetry-api
 mcp==1.28.0
     # via google-adk

@@ -82,7 +82,7 @@ idna==3.18
     # via
     #   anyio
     #   requests
-importlib-metadata==8.9.0
+importlib-metadata==9.0.0
     # via opentelemetry-api
 itsdangerous==2.2.0
     # via flask
