@@ -16,7 +16,7 @@ jobs:
         server: [mcp-chirp3-go, mcp-gemini-go, mcp-imagen-go, mcp-lyria-go, mcp-veo-go]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Go
         uses: actions/setup-go@v6
