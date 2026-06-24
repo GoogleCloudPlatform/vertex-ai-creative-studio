@@ -17,7 +17,7 @@ WORKDIR /app/${SERVER_NAME}
 RUN CGO_ENABLED=0 GOOS=linux GOWORK=off go build -v -o /app/server-bin
 
 # Use a minimal alpine image for the runtime.
-FROM alpine:3.18
+FROM alpine:3.24
 
 ARG SERVER_NAME
 RUN apk --no-cache add ca-certificates \
