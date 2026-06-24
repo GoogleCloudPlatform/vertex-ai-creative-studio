@@ -2,6 +2,7 @@ __pycache__
 venv
 venv
 .venv
+.security-audit-venv
 __pycache__
 .ruff_cache
 .env
