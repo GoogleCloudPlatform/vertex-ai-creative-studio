@@ -37,6 +37,15 @@ PROJECT_ID=
 # [OPTIONAL] Google Analytics Measurement ID for tracking user interactions.
 # GA_MEASUREMENT_ID=
 
+# [OPTIONAL] Require every non-health request to contain a trusted upstream user header.
+# Default: true outside local/dev/test APP_ENV values, false for local/dev/test.
+# REQUIRE_AUTHENTICATED_USER=true
+
+# [OPTIONAL] Comma-separated trusted headers to read authenticated user email from.
+# Defaults support Google IAP plus oauth2-proxy/Netskope style headers:
+# X-Goog-Authenticated-User-Email,X-Auth-Request-Email,X-Forwarded-Email,X-Email,X-Authenticated-User
+# AUTH_EMAIL_HEADERS=
+
 # ==============================================================================
 # 🧠 Gemini Models (Text & Multimodal)
 # ==============================================================================

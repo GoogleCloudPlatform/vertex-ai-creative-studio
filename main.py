@@ -24,7 +24,12 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from google.auth import impersonated_credentials
 from google.cloud import storage
@@ -32,6 +37,10 @@ from pydantic import BaseModel
 
 import pages.shop_the_look
 from app_factory import app
+from common.identity import (
+    ANONYMOUS_USER_EMAIL,
+    get_authenticated_user_email,
+)
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
 from routers import veo_router
@@ -83,6 +92,9 @@ class UserInfo(BaseModel):
     agent: str | None
 
 
+PUBLIC_PATH_PREFIXES = ("/healthz", "/readyz", "/favicon.ico")
+
+
 # FastAPI server with Mesop
 router = APIRouter()
 app.include_router(router)
@@ -98,6 +110,7 @@ async def favicon():
 
 from starlette.middleware.base import BaseHTTPMiddleware
 
+
 class ForwardedHostMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         forwarded_host = request.headers.get("X-Forwarded-Host")
@@ -109,14 +122,15 @@ class ForwardedHostMiddleware(BaseHTTPMiddleware):
             ]
         return await call_next(request)
 
+
 app.add_middleware(ForwardedHostMiddleware)
 
-app.add_middleware(
-    TrustedHostMiddleware, allowed_hosts=["*"]
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=os.environ.get("CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080"),
+    allow_origin_regex=os.environ.get(
+        "CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080"
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -191,11 +205,19 @@ async def add_global_csp(request: Request, call_next):
 
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):
-    user_email = request.headers.get("X-Goog-Authenticated-User-Email")
+    user_email = get_authenticated_user_email(request.headers)
     if not user_email:
-        user_email = "anonymous@google.com"
-    if user_email.startswith("accounts.google.com:"):
-        user_email = user_email.split(":")[-1]
+        user_email = ANONYMOUS_USER_EMAIL
+
+    if (
+        config.Default.REQUIRE_AUTHENTICATED_USER
+        and user_email == ANONYMOUS_USER_EMAIL
+        and not request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+    ):
+        return JSONResponse(
+            {"detail": "Authentication required"},
+            status_code=401,
+        )
 
     session_id = request.cookies.get("session_id")
     if not session_id:
@@ -233,9 +255,6 @@ me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
 me.page(path="/test_svg", title="Test SVG")(test_svg_page)
 me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_chooser_page)
 me.page(path="/test_async_veo", title="Test Async Veo")(test_async_veo_page)
-
-
-
 
 
 # Add a new endpoint to proxy GCS media for better caching.

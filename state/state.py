@@ -15,6 +15,11 @@
 import mesop as me
 from flask import request
 
+from common.identity import (
+    ANONYMOUS_USER_EMAIL,
+    get_authenticated_user_email,
+)
+
 
 @me.stateclass
 class AppState:
@@ -28,10 +33,11 @@ class AppState:
 
     def __init__(self):
         """Initializes the AppState, reading user info from the request context."""
-        if "HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL" in request.environ:
-            user_email = request.environ["HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL"]
-            if user_email.startswith("accounts.google.com:"):
-                user_email = user_email.split(":")[-1]
+        user_email = get_authenticated_user_email(
+            headers=request.headers,
+            environ=request.environ,
+        )
+        if user_email:
             self.user_email = user_email
             self.session_id = request.environ.get("MESOP_SESSION_ID", "")
         elif "MESOP_USER_EMAIL" in request.environ:
@@ -81,11 +87,13 @@ def toggle_theme(event: me.ClickEvent):
 
     yield
 
+
 def get_app_state() -> AppState:
     """-
     Returns the current application state.
     """
     return me.state(AppState)
+
 
 def get_user_email() -> str:
     """
@@ -93,11 +101,13 @@ def get_user_email() -> str:
     """
     return me.state(AppState).user_email
 
+
 def get_session_id() -> str:
     """
     Returns the current session ID.
     """
     return me.state(AppState).session_id
+
 
 def is_sidenav_open() -> bool:
     """
@@ -105,11 +115,13 @@ def is_sidenav_open() -> bool:
     """
     return me.state(AppState).sidenav_open
 
+
 def set_sidenav_open(is_open: bool):
     """
     Sets the sidenav open state.
     """
     me.state(AppState).sidenav_open = is_open
+
 
 def toggle_sidenav():
     """
@@ -118,11 +130,13 @@ def toggle_sidenav():
     me.state(AppState).sidenav_open = not me.state(AppState).sidenav_open
     yield
 
+
 def get_theme_mode() -> str:
     """
     Returns the current theme mode.
     """
     return me.state(AppState).theme_mode
+
 
 def set_theme_mode(mode: str):
     """
@@ -131,12 +145,14 @@ def set_theme_mode(mode: str):
     me.state(AppState).theme_mode = mode
     yield
 
+
 def get_user_and_session_info() -> tuple[str, str]:
     """
     Returns the current user's email and session ID.
     """
     app_state = me.state(AppState)
     return app_state.user_email, app_state.session_id
+
 
 def update_user_and_session_info(user_email: str, session_id: str):
     """
@@ -147,11 +163,13 @@ def update_user_and_session_info(user_email: str, session_id: str):
     app_state.session_id = session_id
     yield
 
+
 def is_logged_in() -> bool:
     """
     Returns whether the user is logged in.
     """
     return me.state(AppState).user_email != "anonymous@google.com"
+
 
 def get_current_user_id() -> str:
     """
@@ -159,11 +177,13 @@ def get_current_user_id() -> str:
     """
     return me.state(AppState).user_email
 
+
 def get_current_session_id() -> str:
     """
     Returns the current session ID.
     """
     return me.state(AppState).session_id
+
 
 def set_current_user_id(user_id: str):
     """
@@ -172,12 +192,14 @@ def set_current_user_id(user_id: str):
     me.state(AppState).user_email = user_id
     yield
 
+
 def set_current_session_id(session_id: str):
     """
     Sets the current session ID.
     """
     me.state(AppState).session_id = session_id
     yield
+
 
 def reset_app_state():
     """
@@ -186,9 +208,10 @@ def reset_app_state():
     app_state = me.state(AppState)
     app_state.sidenav_open = False
     app_state.theme_mode = "light"
-    app_state.user_email = "anonymous@google.com"
+    app_state.user_email = ANONYMOUS_USER_EMAIL
     app_state.session_id = ""
     yield
+
 
 def initialize_app_state():
     """
@@ -197,11 +220,13 @@ def initialize_app_state():
     reset_app_state()
     yield
 
+
 def get_state():
     """
     Returns the current application state.
     """
     return me.state(AppState)
+
 
 def update_state(new_state: AppState):
     """

@@ -11,20 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""FastAPI middleware for request identity and session state."""
 
 import uuid
-from fastapi import Request, Response
+from collections.abc import Awaitable, Callable
+
+from fastapi import Request
+from starlette.responses import Response
+
+from common.identity import ANONYMOUS_USER_EMAIL, get_authenticated_user_email
 from common.storage import get_or_create_session
 
-async def set_user_identity_and_session(request: Request, call_next):
-    """
-    FastAPI middleware to set user identity and session information.
-    """
-    # Get user email from header - assuming IAP
-    user_email = request.headers.get("X-Goog-Authenticated-User-Email")
+
+async def set_user_identity_and_session(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    """Set user identity and session information."""
+    user_email = get_authenticated_user_email(request.headers)
     if not user_email:
-        # Fallback for local development or unauthenticated access
-        user_email = "anonymous@google.com"
+        user_email = ANONYMOUS_USER_EMAIL
 
     # Get or create session ID from cookie
     session_id = request.cookies.get("session_id")
@@ -41,7 +47,11 @@ async def set_user_identity_and_session(request: Request, call_next):
     response = await call_next(request)
 
     # Set session ID cookie on the response
-    response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
+    response.set_cookie(
+        key="session_id",
+        value=session_id,
+        httponly=True,
+        samesite="Lax",
+    )
 
     return response
-

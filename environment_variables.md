@@ -20,6 +20,8 @@ These variables define the fundamental operating context of the application.
 | **`PORT`** | `8080` | The port the application server listens on. |
 | **`SERVICE_ACCOUNT_EMAIL`** | *None* | The email of the service account used for authentication, if applicable. |
 | **`GA_MEASUREMENT_ID`** | *None* | Google Analytics Measurement ID for tracking user interactions. |
+| **`REQUIRE_AUTHENTICATED_USER`** | `true` outside local/dev/test, otherwise `false` | Reject non-health requests that do not include a trusted upstream identity header. Set this to `true` behind Netskope NPA/oauth2-proxy or IAP. |
+| **`AUTH_EMAIL_HEADERS`** | IAP + oauth2-proxy/Netskope defaults | Comma-separated trusted request headers to inspect for the authenticated user email. Defaults: `X-Goog-Authenticated-User-Email`, `X-Auth-Request-Email`, `X-Forwarded-Email`, `X-Email`, `X-Authenticated-User`. |
 
 ## 🧠 Gemini Models (Text & Multimodal)
 Controls which versions of the Gemini models are used for various tasks.
@@ -175,6 +177,7 @@ The following variables are **not** explicitly set in the `main.tf` configuratio
 *   **Interior Design:** `INTERIOR_DESIGN_VIDEO_MODEL`, `INTERIOR_DESIGN_IMAGE_MODEL`, `INTERIOR_DESIGN_VIDEO_DURATION`
 *   **Object Rotation:** `OBJECT_ROTATION_VIDEO_MODEL`, `OBJECT_ROTATION_IMAGE_MODEL`
 *   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`
+*   **Auth:** `REQUIRE_AUTHENTICATED_USER`, `AUTH_EMAIL_HEADERS`
 *   **Collections:** `GENMEDIA_COLLECTION_NAME`, `SESSIONS_COLLECTION_NAME`
 
 ### 🛠️ How to Deploy with Custom Values

@@ -20,6 +20,8 @@ from typing import TypedDict
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
+from common.identity import require_authenticated_user
+
 load_dotenv(override=True)
 
 
@@ -58,6 +60,7 @@ class Default:
     BUILD_DATE: str = ""
 
     APP_ENV: str = os.environ.get("APP_ENV", "")
+    REQUIRE_AUTHENTICATED_USER: bool = require_authenticated_user(APP_ENV)
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL",
         f"http://localhost:{os.environ.get('PORT', '8080')}",
