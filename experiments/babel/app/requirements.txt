@@ -100,7 +100,7 @@ mdurl==0.1.2
     # via markdown-it-py
 mesop==1.3.0
     # via babel-web (pyproject.toml)
-msgpack==1.1.2
+msgpack==1.2.1
     # via mesop
 mypy-extensions==1.1.0
     # via typing-inspect
