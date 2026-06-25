@@ -46,7 +46,7 @@ The application is configured using environment variables, which can be set in a
 | Variable | Description | Default |
 | :--- | :--- | :--- |
 | `PROJECT_ID` | Your Google Cloud Project ID. | (Required) |
-| `LOCATION` | The Google Cloud region for Vertex AI. | `us-central1` |
+| `LOCATION` | The Google Cloud region for Google Cloud AI. | `us-central1` |
 | `MODEL_ID` | The primary Gemini model ID used for generation and improvement. | `gemini-3.1-pro-preview` |
 | `PLANNING_MODEL_ID` | The model ID used specifically for the "thinking thoughts" (planning) step of prompt improvement. | Defaults to `MODEL_ID` |
 

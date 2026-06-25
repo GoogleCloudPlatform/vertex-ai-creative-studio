@@ -68,7 +68,7 @@ ORDER BY
   estimated_cost_usd DESC;
 ```
 
-> **Note:** Pricing changes over time. Always refer to the official [Vertex AI Pricing Page](https://cloud.google.com/vertex-ai/pricing) to update your correlation multipliers.
+> **Note:** Pricing changes over time. Always refer to the official [Google Cloud AI Pricing Page](https://cloud.google.com/vertex-ai/pricing) to update your correlation multipliers.
 
 ## 4. A Note on Historical Logs
 

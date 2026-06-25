@@ -1,5 +1,5 @@
 ---
-title: "GenMedia Creative Studio | Vertex AI"
+title: "GenMedia Creative Studio | Google Cloud AI"
 ---
 
 > ###### _This is not an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security). This project is intended for demonstration purposes only. It is not intended for use in a production environment._
@@ -10,7 +10,7 @@ title: "GenMedia Creative Studio | Vertex AI"
 
 ## Table of Contents
 
-- [GenMedia Creative Studio | Vertex AI](#genmedia-creative-studio--vertex-ai)
+- [GenMedia Creative Studio | Google Cloud AI](#genmedia-creative-studio--google-cloud-ai)
 - [Table of Contents](#table-of-contents)
 - [GenMedia Creative Studio](#genmedia-creative-studio)
   - [Experiments](#experiments)

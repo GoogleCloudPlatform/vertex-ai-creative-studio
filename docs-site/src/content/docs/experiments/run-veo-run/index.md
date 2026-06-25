@@ -30,7 +30,7 @@ To preventing stylistic drift during extensions, the app employs a closed-loop f
 ![Run, Veo, Run Architecture](docs/architecture_infographic.webp)
 
 *   **Frontend:** Lit WebComponents + Tailwind CSS (Techno-Brutalist Theme).
-*   **Backend:** Go (1.25+) acting as a secure proxy for Vertex AI and GCS.
+*   **Backend:** Go (1.25+) acting as a secure proxy for Google Cloud AI and GCS.
 *   **AI Models:**
     *   **Generation:** Veo 3.1 (`veo-3.1-fast-generate-preview`)
     *   **Analysis:** Gemini 3 (`gemini-3-flash-preview`)

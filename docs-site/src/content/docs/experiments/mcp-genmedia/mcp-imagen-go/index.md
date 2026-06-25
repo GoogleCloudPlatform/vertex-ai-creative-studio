@@ -2,7 +2,7 @@
 title: "MCP Imagen Server"
 ---
 
-This tool provides image generation capabilities using Google's Imagen models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate images from text prompts.
+This tool provides image generation capabilities using Google's Imagen models (via Google Cloud AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate images from text prompts.
 
 ## MCP Tool Definition
 
@@ -37,7 +37,7 @@ The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
     *   **Override**: You can override this globally for this specific server by setting `IMAGEN_PROJECT_ID`.
-*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services.
+*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Google Cloud AI services.
     *   Default: `"us-central1"`
     *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
     *   **Override**: You can override this globally for this specific server by setting `IMAGEN_LOCATION`.

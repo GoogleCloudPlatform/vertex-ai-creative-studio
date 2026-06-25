@@ -15,7 +15,7 @@ The solution leverages **Google Cloud Vertex AI Prediction API** and a pre-train
 
 - Upload and preprocess a person image.
 - Load and encode multiple product images.
-- Make predictions using a hosted Google Vertex AI model.
+- Make predictions using a hosted Google Cloud AI model.
 - Display all try-on results in a side-by-side comparison layout.
 - Time and display each try-on result using concurrent processing for faster inference.
 
@@ -34,7 +34,7 @@ The solution leverages **Google Cloud Vertex AI Prediction API** and a pre-train
 - Python
 - Jupyter Notebook
 - PIL (Python Imaging Library)
-- Google Cloud Vertex AI
+- Google Cloud AI
 - Base64 encoding
 - `concurrent.futures` for parallel inference
 
