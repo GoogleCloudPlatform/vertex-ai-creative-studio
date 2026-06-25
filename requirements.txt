@@ -73,7 +73,7 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.138.0
+fastapi==0.138.1
     # via vertex-ai-genmedia-creative-studio
 firebase-admin==7.4.0
     # via vertex-ai-genmedia-creative-studio
@@ -407,7 +407,7 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.15.19
+ruff==0.15.20
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
