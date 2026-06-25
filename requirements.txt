@@ -6,7 +6,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.14.0
+anyio==4.14.1
     # via
     #   google-genai
     #   httpx
@@ -23,7 +23,7 @@ black==26.5.1
     # via vertex-ai-genmedia-creative-studio
 blinker==1.9.0
     # via flask
-c2pa-python==0.35.1
+c2pa-python==0.36.0
     # via vertex-ai-genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
@@ -39,7 +39,7 @@ cffi==2.0.0
     #   soundfile
 charset-normalizer==3.4.7
     # via requests
-click==8.4.1
+click==8.4.2
     # via
     #   black
     #   flask
@@ -73,7 +73,7 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.137.2
+fastapi==0.138.0
     # via vertex-ai-genmedia-creative-studio
 firebase-admin==7.4.0
     # via vertex-ai-genmedia-creative-studio
@@ -112,7 +112,7 @@ google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.0
     # via google-cloud-logging
-google-cloud-bigquery==3.42.0
+google-cloud-bigquery==3.42.1
     # via google-cloud-aiplatform
 google-cloud-core==2.6.0
     # via
@@ -124,19 +124,19 @@ google-cloud-firestore==2.27.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-logging==3.16.0
     # via vertex-ai-genmedia-creative-studio
-google-cloud-resource-manager==1.17.0
+google-cloud-resource-manager==1.18.0
     # via google-cloud-aiplatform
 google-cloud-storage==3.12.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
-google-cloud-texttospeech==2.36.0
+google-cloud-texttospeech==2.37.0
     # via vertex-ai-genmedia-creative-studio
 google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.9.0
+google-genai==2.10.0
     # via
     #   google-cloud-aiplatform
     #   vertex-ai-genmedia-creative-studio
@@ -175,7 +175,7 @@ h11==0.16.0
     #   uvicorn
 h2==4.3.0
     # via httpx
-hpack==4.1.0
+hpack==4.2.0
     # via h2
 httpcore==1.0.9
     # via httpx
@@ -250,7 +250,7 @@ networkx==3.6.1
     # via scikit-image
 numba==0.65.1
     # via librosa
-numpy==2.4.6
+numpy==2.5.0
     # via
     #   contourpy
     #   imageio
@@ -271,7 +271,7 @@ numpy==2.4.6
     #   vertex-ai-genmedia-creative-studio
 opencv-python==4.13.0.92
     # via vertex-ai-genmedia-creative-studio
-opentelemetry-api==1.42.1
+opentelemetry-api==1.43.0
     # via google-cloud-logging
 orderly-set==5.5.0
     # via deepdiff
@@ -359,7 +359,7 @@ pydantic==2.13.4
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.46.4
+pydantic-core==2.47.0
     # via pydantic
 pygments==2.20.0
     # via
@@ -374,7 +374,7 @@ pyopenssl==26.3.0
     #   vertex-ai-genmedia-creative-studio
 pyparsing==3.3.2
     # via matplotlib
-pytest==9.1.0
+pytest==9.1.1
     # via
     #   c2pa-python
     #   vertex-ai-genmedia-creative-studio
@@ -399,13 +399,13 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.15.18
+ruff==0.15.19
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
 scikit-learn==1.9.0
     # via librosa
-scipy==1.17.1
+scipy==1.18.0
     # via
     #   librosa
     #   scikit-image

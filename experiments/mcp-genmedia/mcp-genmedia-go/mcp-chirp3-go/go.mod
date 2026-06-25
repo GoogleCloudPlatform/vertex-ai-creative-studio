@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	cloud.google.com/go/texttospeech v1.21.0
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260625030853-af4401bdcdf8
-	github.com/mark3labs/mcp-go v0.55.0
+	github.com/mark3labs/mcp-go v0.55.1
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.38.0
 	google.golang.org/api v0.286.0

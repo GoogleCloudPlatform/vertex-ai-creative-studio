@@ -4,14 +4,14 @@ about-time==4.2.2
 absl-py==2.4.0
 alive-progress==3.3.0
 annotated-types==0.7.0
-anyio==4.14.0
+anyio==4.14.1
 blinker==1.9.0
 cachecontrol==0.14.4
 cachetools==7.1.4
 certifi==2026.6.17
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.7
-click==8.4.1
+click==8.4.2
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
 cryptography==49.0.0
@@ -22,7 +22,7 @@ firebase-admin==7.4.0
 flask==3.1.3
 fsspec==2026.6.0
 google-api-core==2.31.0
-google-api-python-client==2.197.0
+google-api-python-client==2.198.0
 google-auth==2.55.0
 google-auth-httplib2==0.4.0
 google-cloud-aiplatform==1.158.0
