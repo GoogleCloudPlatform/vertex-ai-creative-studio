@@ -163,3 +163,25 @@ def https_url_to_gcs_uri(url: str | None) -> str:
 
     # If it's not a recognized GCS URL, return the original input as a fallback.
     return url
+
+
+def get_media_type(mime_type: str | None = None, url: str | None = None) -> str:
+    """Determines the media type (image, video, audio) based on mime_type or URL."""
+    if mime_type:
+        if mime_type.startswith("video/"):
+            return "video"
+        if mime_type.startswith("image/"):
+            return "image"
+        if mime_type.startswith("audio/"):
+            return "audio"
+
+    if url:
+        url_lower = url.lower()
+        if any(ext in url_lower for ext in [".mp4", ".webm", ".mov"]):
+            return "video"
+        if any(ext in url_lower for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]):
+            return "image"
+        if any(ext in url_lower for ext in [".wav", ".mp3", ".ogg"]):
+            return "audio"
+
+    return "image"  # Default fallback

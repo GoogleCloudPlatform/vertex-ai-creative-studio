@@ -17,15 +17,18 @@ import datetime  # Required for timestamp
 import json
 import time
 
-import requests
-
 import mesop as me
 
 from common.analytics import log_ui_click, track_click, track_model_call
 from common.error_handling import AsyncVeoPollingFailedError, GenerationError
-from common.metadata import MediaItem, add_media_item_to_firestore
+from common.metadata import (
+    MediaItem,
+    add_media_item_to_firestore,
+    get_media_item_by_id,
+)
 from common.storage import store_to_gcs
 from common.utils import create_display_url, get_image_dimensions_from_base64
+from common.veo_utils import start_async_veo_job
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -42,7 +45,6 @@ from models.model_setup import VeoModelSetup
 from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video
 from state.state import AppState
 from state.veo_state import PageState
-from config.veo_models import get_veo_model_config, DEFAULT_VEO_VERSION_ID
 
 config = Default()
 
@@ -60,7 +62,7 @@ def on_veo_load(e: me.LoadEvent):
 
     if image_path:
         # When an image is passed, default to the i2v mode and Veo 3.1 Fast model.
-        _update_state_for_new_model(DEFAULT_VEO_VERSION_ID)
+        _update_state_for_new_model("3.1-fast")
 
         image_uri = ""
         if image_path.startswith("https://"):
@@ -368,7 +370,7 @@ def on_click_extend_video(e: me.ClickEvent):
         model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
-        duration_seconds=state.video_extend_length if state.video_extend_length != 0 else (model_config.supported_extension_durations[0] if model_config.supported_extension_durations else 7), # Use extension length or default
+        duration_seconds=state.video_extend_length, # Use extension length
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
         generate_audio=state.generate_audio,
@@ -379,21 +381,7 @@ def on_click_extend_video(e: me.ClickEvent):
 
     # --- 1. Initiate Async Job ---
     try:
-        api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
-        headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
-        
-        # Log analytics
-        with track_model_call(
-            model_name=model_config.model_name,
-            prompt_length=len(request.prompt) if request.prompt else 0,
-            duration_seconds=request.duration_seconds,
-            aspect_ratio=request.aspect_ratio,
-            video_count=request.video_count,
-            mode="extension", 
-        ):
-            response = requests.post(api_url, json=request.model_dump(), headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        data = start_async_veo_job(request, app_state.user_email, mode="extension")
             
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
@@ -409,17 +397,17 @@ def on_click_extend_video(e: me.ClickEvent):
     while state.job_status in ["pending", "processing", "created"]:
         time.sleep(2) 
         try:
-            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.current_job_id}"
-            resp = requests.get(status_url)
-            resp.raise_for_status()
-            status_data = resp.json()
-            state.job_status = status_data["status"]
+            item = get_media_item_by_id(state.current_job_id)
+            if not item:
+                raise AsyncVeoPollingFailedError(f"Job {state.current_job_id} not found in Firestore.")
+            
+            state.job_status = item.status
 
             if state.job_status == "complete":
                 # Success! Update state with results.
-                state.result_gcs_uris = status_data.get("video_uris", [])
-                if not state.result_gcs_uris and status_data.get("video_uri"):
-                     state.result_gcs_uris = [status_data["video_uri"]]
+                state.result_gcs_uris = item.gcs_uris or []
+                if not state.result_gcs_uris and item.gcsuri:
+                     state.result_gcs_uris = [item.gcsuri]
                 
                 state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
                 if state.result_display_urls:
@@ -433,7 +421,7 @@ def on_click_extend_video(e: me.ClickEvent):
                 break
 
             elif state.job_status == "failed":
-                state.error_message = status_data.get("error_message", "Unknown error during extension.")
+                state.error_message = item.error_message or "Unknown error during extension."
                 state.show_error_dialog = True
                 state.is_loading = False
                 yield
@@ -474,7 +462,7 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
-    state.veo_model = DEFAULT_VEO_VERSION_ID
+    state.veo_model = "3.1-fast"
     # Get default duration for the reset model
     model_config = get_veo_model_config(state.veo_model)
     state.video_length = model_config.default_duration if model_config else 8
@@ -582,23 +570,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     # --- 1. Initiate Async Job ---
     try:
-        api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
-        headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
-        
-        # Log the initial click/attempt
-        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
-        
-        with track_model_call(
-            model_name=model_name_for_analytics,
-            prompt_length=len(request.prompt) if request.prompt else 0,
-            duration_seconds=request.duration_seconds,
-            aspect_ratio=request.aspect_ratio,
-            video_count=request.video_count,
-            mode=state.veo_mode,
-        ):
-            response = requests.post(api_url, json=request.model_dump(), headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        data = start_async_veo_job(request, app_state.user_email, mode=state.veo_mode)
             
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
@@ -617,18 +589,18 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     while state.job_status in ["pending", "processing", "created"]:
         time.sleep(2) 
         try:
-            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.current_job_id}"
-            resp = requests.get(status_url)
-            resp.raise_for_status()
-            status_data = resp.json()
-            state.job_status = status_data["status"]
+            item = get_media_item_by_id(state.current_job_id)
+            if not item:
+                raise AsyncVeoPollingFailedError(f"Job {state.current_job_id} not found in Firestore.")
+            
+            state.job_status = item.status
 
             if state.job_status == "complete":
                 # Success! Update state with results.
-                state.result_gcs_uris = status_data.get("video_uris", [])
+                state.result_gcs_uris = item.gcs_uris or []
                 # If only one URI is returned but we expected a list, handle it.
-                if not state.result_gcs_uris and status_data.get("video_uri"):
-                     state.result_gcs_uris = [status_data["video_uri"]]
+                if not state.result_gcs_uris and item.gcsuri:
+                     state.result_gcs_uris = [item.gcsuri]
                 
                 state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
                 if state.result_display_urls:
@@ -643,7 +615,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
             elif state.job_status == "failed":
                 # Failure. Show error.
-                state.error_message = status_data.get("error_message", "Unknown error during generation.")
+                state.error_message = item.error_message or "Unknown error during generation."
                 state.show_error_dialog = True
                 state.is_loading = False
                 yield

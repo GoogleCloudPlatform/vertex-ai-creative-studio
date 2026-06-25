@@ -2,7 +2,7 @@
 title: "MCP Lyria Server"
 ---
 
-This tool provides music generation capabilities using Google's Lyria models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate music from text prompts.
+This tool provides music generation capabilities using Google's Lyria models (via Google Cloud AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate music from text prompts.
 
 ## MCP Tool Definition
 
@@ -23,7 +23,7 @@ The following tool is exposed by this server:
     *   `output_gcs_bucket` (string, optional): Google Cloud Storage bucket name (without `gs://` prefix). If provided, audio is saved to GCS. If this parameter is empty but the `GENMEDIA_BUCKET` environment variable is set, `GENMEDIA_BUCKET` will be used.
     *   `file_name` (string, optional): Desired file name (e.g., "my_song.wav"). Used for GCS object and local file. If omitted, a unique name like "lyria_output_&lt;uid&gt;.wav" is generated.
     *   `local_path` (string, optional): Local directory path. If provided, audio is saved locally.
-    *   `model_id` (string, optional): Specific Lyria model ID to use for the Vertex AI endpoint.
+    *   `model_id` (string, optional): Specific Lyria model ID to use for the Google Cloud AI endpoint.
         *   Defaults to the value of the `DEFAULT_LYRIA_MODEL_ID (Deprecated)` environment variable, or `"lyria-3-clip-preview"` if the variable is not set.
 
 ## Environment Variable Configuration
@@ -32,13 +32,13 @@ The tool utilizes the following environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
     *   **Override**: You can override this globally for this specific server by setting `LYRIA_PROJECT_ID`.
-*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services.
+*   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Google Cloud AI services.
     *   Default: `"us-central1"`
     *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
     *   **Override**: You can override this globally for this specific server by setting `LYRIA_LOCATION`. (Note: This is now the preferred way to set the location for this server, replacing the deprecated `LYRIA_LOCATION (Deprecated for V3)` variable).
 *   `LYRIA_LOCATION (Deprecated for V3)` (string): The specific Google Cloud location for the Lyria model endpoint.
     *   Default: Value of `GOOGLE_CLOUD_LOCATION` or `LOCATION` environment variable (e.g., `"us-central1"`).
-*   `LYRIA_MODEL_PUBLISHER (Deprecated)` (string): The publisher of the Lyria model in Vertex AI.
+*   `LYRIA_MODEL_PUBLISHER (Deprecated)` (string): The publisher of the Lyria model in Google Cloud AI.
     *   Default: `"google"`
 *   `DEFAULT_LYRIA_MODEL_ID (Deprecated)` (string): The default Lyria model ID to be used if not specified in the request.
     *   Default: `"lyria-3-clip-preview"` (fallback if the environment variable is not set).

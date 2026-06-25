@@ -14,8 +14,8 @@ These variables define the fundamental operating context of the application.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`PROJECT_ID`** | *None* (Required) | The Google Cloud Project ID where resources (Vertex AI, Firestore, Storage) are located. |
-| **`LOCATION`** | `us-central1` | The default GCP region for most services (Vertex AI, etc.). |
+| **`PROJECT_ID`** | *None* (Required) | The Google Cloud Project ID where resources (Google Cloud AI, Firestore, Storage) are located. |
+| **`LOCATION`** | `us-central1` | The default GCP region for most services (Google Cloud AI, etc.). |
 | **`APP_ENV`** | `""` (Empty) | Defines the environment name (e.g., `dev`, `godemos`). This is used as a metadata tag on the Config page. |
 | **`GMCS_OVERRIDE_PATH`** | *None* | **(Development Only)** An absolute path to a directory containing configuration overrides. If a file exists in this path (e.g., `config/about_content.json`), the app will prioritize it over the local version. |
 | **`API_BASE_URL`** | `http://localhost:{PORT}` | The base URL for the application's backend APIs. |

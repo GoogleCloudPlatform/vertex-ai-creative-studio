@@ -17,9 +17,9 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 import mesop as me
-import requests
 
 from common.analytics import log_ui_click
+from common.metadata import get_media_item_by_id
 from common.utils import create_display_url
 from common.veo_utils import start_async_veo_job
 from components.dialog import dialog, dialog_actions
@@ -292,26 +292,25 @@ def on_extend_click(e: me.ClickEvent):
     while state.job_status in ["pending", "processing", "created"]:
         time.sleep(2)
         try:
-            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.job_id}"
-            resp = requests.get(status_url)
-            resp.raise_for_status()
-            status_data = resp.json()
-            state.job_status = status_data["status"]
+            item = get_media_item_by_id(state.job_id)
+            if not item:
+                state.is_loading = False
+                state.error_message = f"Job {state.job_id} not found."
+                yield
+                break
+            
+            state.job_status = item.status
 
             if state.job_status == "complete":
                 state.generated_video_uri = (
-                    status_data.get("video_uri") or status_data.get("video_uris")[0]
+                    item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else "")
                 )
                 state.is_loading = False
                 yield
-                # Trigger a library refresh?
-                # We can't easily trigger the parent's refresh from here without a callback mechanism
-                # that Mesop doesn't fully support across modules easily.
-                # The user will see the success screen and click close.
                 break
             elif state.job_status == "failed":
                 state.is_loading = False
-                state.error_message = status_data.get("error_message", "Unknown error")
+                state.error_message = item.error_message or "Unknown error"
                 yield
                 break
 

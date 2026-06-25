@@ -2,7 +2,7 @@
 title: "ADK sample"
 ---
 
-This directory contains a Google Cloud Vertex AI Agent Development Kit sample agent that uses the MCP genmedia tools.
+This directory contains a Google Cloud AI Agent Development Kit sample agent that uses the MCP genmedia tools.
 
 ## Prerequisites
 

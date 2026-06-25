@@ -1,5 +1,5 @@
 ---
-title: "Brand Consistency with Gemini & Vertex AI"
+title: "Brand Consistency with Gemini & Google Cloud AI"
 ---
 
 This repository contains two case study notebooks demonstrating how to build automated brand compliance pipelines for generative AI content. As detailed in the accompanying blog post, these examples tackle the challenge of "hallucinated styles" by using Gemini's multimodal capabilities to act as an automated creative director.
@@ -28,7 +28,7 @@ This notebook demonstrates:
 
 ### 2. [Video Generation Case Study]([Blogpost]_Case_Study_2_Cymber_Coffee_Video_Generation_py.ipynb)
 **Focus:** Temporal Consistency
-**Model:** Veo (via Vertex AI)
+**Model:** Veo (via Google Cloud AI)
 
 This notebook extends the concept to video generation:
 *   **Frame Sampling:** Extracting keyframes across the video's duration.
@@ -40,4 +40,4 @@ This notebook extends the concept to video generation:
 *   **SDK:** `google-genai`
 *   **Authentication:** 
     *   Image Generation: Google AI Studio API Key
-    *   Video Generation: Google Cloud Project (Vertex AI) authentication
+    *   Video Generation: Google Cloud Project (Google Cloud AI) authentication

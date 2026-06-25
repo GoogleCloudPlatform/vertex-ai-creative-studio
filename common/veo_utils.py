@@ -11,25 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Utilities for interacting with Veo services from Mesop pages."""
 
 import logging
-import requests
+import threading
+
 from common.analytics import track_model_call
 from config.default import Default
 from config.veo_models import get_veo_model_config
 from models.requests import VideoGenerationRequest
+from services.veo_service import create_initial_job, process_veo_generation_task
 
 logger = logging.getLogger(__name__)
 config = Default()
 
+
 def start_async_veo_job(
-    request: VideoGenerationRequest,
-    user_email: str,
-    mode: str = "t2v"
+    request: VideoGenerationRequest, user_email: str, mode: str = "t2v"
 ) -> dict:
-    """
-    Initiates an asynchronous Veo generation job via the API.
-    Handles analytics logging and API error checking.
+    """Initiates an asynchronous Veo generation job by calling the service directly.
 
     Args:
         request: The generation request object.
@@ -37,17 +37,13 @@ def start_async_veo_job(
         mode: The operation mode (e.g., 't2v', 'i2v', 'extension').
 
     Returns:
-        A dictionary containing the job response (e.g., {'job_id': '...', 'status': '...'}).
-
-    Raises:
-        Exception: If the API call fails.
+        A dictionary containing the job response: {'job_id': '...', 'status': '...'}.
     """
-    api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
-    headers = {"X-Goog-Authenticated-User-Email": user_email}
-    
     # Determine model name for analytics
     model_config = get_veo_model_config(request.model_version_id)
-    model_name_for_analytics = model_config.model_name if model_config else request.model_version_id
+    model_name_for_analytics = (
+        model_config.model_name if model_config else request.model_version_id
+    )
 
     try:
         with track_model_call(
@@ -58,12 +54,20 @@ def start_async_veo_job(
             video_count=request.video_count,
             mode=mode,
         ):
-            request_json = request.model_dump()
-            logger.info(f"Starting Veo Job. Request: {request_json}")
-            response = requests.post(api_url, json=request_json, headers=headers)
-            response.raise_for_status()
-            return response.json()
-            
-    except Exception as e:
-        logger.error(f"Failed to start Veo job: {e}")
-        raise e
+            # 1. Create the job record in Firestore immediately
+            job_id = create_initial_job(request, user_email)
+
+            # 2. Start the background generation task in a separate thread.
+            # This mimics the behavior of FastAPI's BackgroundTasks but works
+            # directly within the Mesop process without an HTTP call.
+            threading.Thread(
+                target=process_veo_generation_task,
+                args=(job_id, request, user_email),
+                daemon=True,
+            ).start()
+
+            return {"job_id": job_id, "status": "pending"}
+
+    except Exception:
+        logger.exception(f"Failed to start Veo job for user {user_email}")
+        raise

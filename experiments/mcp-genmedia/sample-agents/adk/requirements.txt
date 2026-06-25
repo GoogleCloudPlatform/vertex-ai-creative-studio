@@ -2,7 +2,7 @@
 #    uv export --no-hashes --format requirements-txt
 annotated-types==0.7.0
     # via pydantic
-anyio==4.14.0
+anyio==4.14.1
     # via
     #   google-genai
     #   httpx
@@ -22,7 +22,7 @@ cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.7
     # via requests
-click==8.4.1
+click==8.4.2
     # via
     #   google-adk
     #   uvicorn
@@ -30,7 +30,7 @@ cloudpickle==3.1.2
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==48.0.1
+cryptography==49.0.0
     # via authlib
 docstring-parser==0.18.0
     # via google-cloud-aiplatform
@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.138.0
     # via google-adk
-google-adk==1.36.0
+google-adk==2.3.0
     # via adk-genmedia-agent
 google-api-core==2.31.0
     # via
@@ -53,7 +53,7 @@ google-api-core==2.31.0
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.197.0
+google-api-python-client==2.198.0
     # via google-adk
 google-auth==2.55.0
     # via
@@ -156,7 +156,7 @@ idna==3.18
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.9.0
+importlib-metadata==9.0.0
     # via opentelemetry-api
 mcp==1.28.0
     # via google-adk
@@ -184,7 +184,7 @@ opentelemetry-sdk==1.43.0
     #   opentelemetry-resourcedetector-gcp
 opentelemetry-semantic-conventions==0.55b1
     # via opentelemetry-sdk
-packaging==25.0
+packaging==26.2
     # via
     #   google-cloud-aiplatform
     #   google-cloud-bigquery

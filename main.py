@@ -267,9 +267,20 @@ me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_choos
 me.page(path="/test_async_veo", title="Test Async Veo")(test_async_veo_page)
 
 
+# Global storage client instance to reuse connections
+_proxy_storage_client = None
+
+
+def get_proxy_storage_client():
+    global _proxy_storage_client
+    if _proxy_storage_client is None:
+        _proxy_storage_client = storage.Client()
+    return _proxy_storage_client
+
+
 # Add a new endpoint to proxy GCS media for better caching.
 @app.get("/media/{bucket_name}/{object_path:path}")
-async def get_media_proxy(request: Request, bucket_name: str, object_path: str):
+def get_media_proxy(request: Request, bucket_name: str, object_path: str):
     """Securely proxies a GCS object, checking for IAP authentication."""
     user_email = request.scope.get("MESOP_USER_EMAIL")
     app_env = config.Default().APP_ENV
@@ -282,7 +293,7 @@ async def get_media_proxy(request: Request, bucket_name: str, object_path: str):
         raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-        storage_client = storage.Client()
+        storage_client = get_proxy_storage_client()
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(object_path)
 
@@ -299,6 +310,8 @@ async def get_media_proxy(request: Request, bucket_name: str, object_path: str):
         stream = blob.open("rb")
         return StreamingResponse(stream, media_type=content_type, headers=headers)
 
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error proxying GCS object: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

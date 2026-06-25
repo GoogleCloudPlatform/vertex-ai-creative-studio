@@ -100,7 +100,7 @@ This Dockerfile uses multi-stage builds to produce light-weight production image
 
 ### Option A: Using the Automated Deployment Script (Preferred / Convenience Method)
 
-For the quickest and most convenient deployment experience, use the interactive helper script. This automates the entire flow—verifying/creating the registry repository, executing the container build, deploying to Cloud Run, injecting required project environment variables, and configuring the necessary Vertex AI and GCS IAM role bindings in one command.
+For the quickest and most convenient deployment experience, use the interactive helper script. This automates the entire flow—verifying/creating the registry repository, executing the container build, deploying to Cloud Run, injecting required project environment variables, and configuring the necessary Google Cloud AI and GCS IAM role bindings in one command.
 
 Run the script from the root of the Go MCP workspace (`experiments/mcp-genmedia/mcp-genmedia-go/`) and follow the prompts:
 ```bash
@@ -141,7 +141,7 @@ gcloud builds submit . \
 ```
 
 ##### Step 3: Deploy the Custom Image to Cloud Run
-Deploy the newly built container image to a Cloud Run service. You **must** set the `GOOGLE_CLOUD_PROJECT` environment variable on the container so it can locate Vertex AI resources:
+Deploy the newly built container image to a Cloud Run service. You **must** set the `GOOGLE_CLOUD_PROJECT` environment variable on the container so it can locate Google Cloud AI resources:
 
 ```bash
 gcloud run deploy ${SERVER_NAME} \

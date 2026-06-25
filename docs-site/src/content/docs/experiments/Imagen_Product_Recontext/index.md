@@ -32,7 +32,7 @@ This repository contains Jupyter notebooks and tools to perform large-scale prod
 
 - Python 3.8+
 - Jupyter or VSCode
-- Google Cloud Vertex AI and access to Imagen Product Recontext API
+- Google Cloud AI and access to Imagen Product Recontext API
 - Required Python libraries are listed in `requirements.txt`.
 
 ### Installation
