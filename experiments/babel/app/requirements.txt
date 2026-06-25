@@ -154,7 +154,7 @@ python-dotenv==1.2.2
     # via
     #   mesop
     #   uvicorn
-pytz==2025.2
+pytz==2026.2
     # via pandas
 pyyaml==6.0.3
     # via uvicorn
