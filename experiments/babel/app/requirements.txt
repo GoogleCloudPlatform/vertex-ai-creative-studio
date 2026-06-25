@@ -160,7 +160,7 @@ pyyaml==6.0.3
     # via uvicorn
 requests==2.34.2
     # via google-api-core
-rich==14.3.4
+rich==15.0.0
     # via
     #   rich-toolkit
     #   typer
