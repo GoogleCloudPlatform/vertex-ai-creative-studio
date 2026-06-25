@@ -13,11 +13,32 @@
 # limitations under the License.
 
 from fastapi import APIRouter, BackgroundTasks, Request
-from models.requests import VideoGenerationRequest
-from services.veo_service import create_initial_job, process_veo_generation_task
+from pydantic import BaseModel
+
 from common.metadata import get_media_item_by_id
+from models.requests import VideoGenerationRequest
+from services.veo_service import (
+    create_initial_job,
+    process_veo_generation_task,
+    run_thumbnail_job,
+)
 
 router = APIRouter(prefix="/api/veo", tags=["veo"])
+
+
+class ThumbnailRequest(BaseModel):
+    """Request schema for thumbnail generation."""
+
+    job_id: str
+    video_uri: str
+
+
+@router.post("/thumbnail")
+async def generate_thumbnail(request: ThumbnailRequest):
+    """FastAPI endpoint triggered by Cloud Tasks to extract a thumbnail."""
+    run_thumbnail_job(request.job_id, request.video_uri)
+    return {"status": "ok"}
+
 
 @router.post("/generate_async")
 async def generate_veo_async(

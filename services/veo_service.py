@@ -14,14 +14,38 @@
 
 import datetime
 import logging
+import threading
 
 from common.metadata import MediaItem, add_media_item_to_firestore, get_media_item_by_id
+from common.tasks import enqueue_thumbnail_task
+from models.gemini import get_best_video_frame_timestamp
 from models.requests import VideoGenerationRequest
 from models.veo import generate_video
 from config.veo_models import get_veo_model_config
-from models.video_processing import get_video_duration
+from models.video_processing import extract_and_upload_thumbnail, get_video_duration
 
 logger = logging.getLogger(__name__)
+
+
+def run_thumbnail_job(job_id: str, video_uri: str) -> None:
+    """Extracts a thumbnail and updates Firestore.
+
+    Synchronous function called by Cloud Tasks or a background thread.
+    """
+    logger.info(f"Starting thumbnail extraction for job {job_id}")
+    try:
+        timestamp_s = get_best_video_frame_timestamp(video_uri)
+        thumbnail_uri = extract_and_upload_thumbnail(video_uri, timestamp_s)
+
+        if thumbnail_uri:
+            item = get_media_item_by_id(job_id)
+            if item:
+                item.thumbnail_uri = thumbnail_uri
+                add_media_item_to_firestore(item)
+                logger.info(f"Successfully added thumbnail URI to job {job_id}")
+    except Exception:
+        logger.exception(f"Thumbnail extraction failed for job {job_id}")
+
 
 def process_veo_generation_task(
     job_id: str, request_data: VideoGenerationRequest, user_email: str
@@ -53,6 +77,19 @@ def process_veo_generation_task(
 
         _complete_job(job_id, video_uris, resolution, duration=actual_duration)
         logger.info(f"Background task for job {job_id} completed successfully.")
+
+        # 4. Trigger thumbnail generation (Cloud Tasks with thread fallback)
+        if video_uris:
+            enqueued = enqueue_thumbnail_task(job_id, video_uris[0])
+            if not enqueued:
+                logger.info(
+                    f"Falling back to background thread for thumbnail job {job_id}"
+                )
+                threading.Thread(
+                    target=run_thumbnail_job,
+                    args=(job_id, video_uris[0]),
+                    daemon=True,
+                ).start()
 
     except Exception as e:
         logger.error(f"Background task for job {job_id} failed: {e}")

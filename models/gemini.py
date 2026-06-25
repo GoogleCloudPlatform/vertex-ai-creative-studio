@@ -1373,3 +1373,49 @@ def generate_storyboard_narrative(
         )
 
     return StoryboardNarrative.model_validate_json(response.text)
+
+
+class BestFrameTimestamp(BaseModel):
+    timestamp_seconds: float = Field(
+        ...,
+        description="The exact timestamp (in seconds) of the frame that best represents the entire video.",
+    )
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def get_best_video_frame_timestamp(video_uri: str) -> float:
+    """Analyzes a video using Gemini to find the best representative frame's timestamp."""
+    model_name = cfg.MODEL_ID  # Use default Gemini model
+    analytics_logger.info(f"Finding best frame for video URI: {video_uri}")
+
+    try:
+        video_part = types.Part.from_uri(file_uri=video_uri, mime_type="video/mp4")
+    except Exception as e:
+        analytics_logger.error(f"Failed to create video Part from URI '{video_uri}': {e}")
+        return 0.0
+
+    prompt_text = "Analyze this video and identify the single frame that best represents the overall content, action, or most interesting visual moment. Return the exact timestamp in seconds."
+
+    frame_config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=BestFrameTimestamp.model_json_schema(),
+        temperature=0.2,
+    )
+
+    try:
+        with track_model_call(model_name=model_name, task="get_best_video_frame"):
+            response = client.models.generate_content(
+                model=model_name, contents=[prompt_text, video_part], config=frame_config
+            )
+
+        result = BestFrameTimestamp.model_validate_json(response.text)
+        analytics_logger.info(f"Gemini selected best frame at {result.timestamp_seconds}s")
+        return result.timestamp_seconds
+    except Exception as e:
+        analytics_logger.error(f"Error during Gemini best frame analysis: {e}")
+        return 0.0

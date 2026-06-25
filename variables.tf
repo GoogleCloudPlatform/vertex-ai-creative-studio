@@ -18,6 +18,12 @@ variable "project_id" {
   type = string
 }
 
+variable "api_base_url" {
+  description = "Base URL for the application. If not provided, it will be inferred from the domain/LB config."
+  type        = string
+  default     = ""
+}
+
 variable "region" {
   description = "Location for load balancer and Cloud Run resources"
   type        = string

@@ -60,6 +60,7 @@ module "project-services" {
     "storage.googleapis.com",
     "aiplatform.googleapis.com",
     "firestore.googleapis.com",
+    "cloudtasks.googleapis.com",
     "serviceusage.googleapis.com",
     "cloudresourcemanager.googleapis.com",
   ]
@@ -147,6 +148,19 @@ resource "google_service_account" "creative_studio" {
   account_id = "service-creative-studio"
 }
 
+resource "google_cloud_tasks_queue" "thumbnail_queue" {
+  name       = "thumbnail-extraction"
+  location   = var.region
+  project    = var.project_id
+  depends_on = [null_resource.sleep]
+}
+
+resource "google_project_iam_member" "creative_studio_tasks_enqueuer" {
+  project = var.project_id
+  role    = "roles/cloudtasks.enqueuer"
+  member  = google_service_account.creative_studio.member
+}
+
 # Centralizing environment variables here and using for each in service declaration for simplicity
 locals {
   asset_bucket_name = "creative-studio-${var.project_id}-assets"
@@ -172,6 +186,8 @@ locals {
     GENMEDIA_FIREBASE_DB  = google_firestore_database.create_studio_asset_metadata.name
     SERVICE_ACCOUNT_EMAIL = google_service_account.creative_studio.email
     EDIT_IMAGES_ENABLED   = var.edit_images_enabled
+    THUMBNAIL_QUEUE_ID    = google_cloud_tasks_queue.thumbnail_queue.name
+    API_BASE_URL          = var.api_base_url != "" ? var.api_base_url : (var.use_lb ? "https://${var.domain}" : "")
   }
 
   deployed_domain = var.use_lb ? ["https://${var.domain}"] : google_cloud_run_v2_service.creative_studio.urls

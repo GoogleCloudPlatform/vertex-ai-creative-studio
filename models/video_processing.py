@@ -508,3 +508,35 @@ def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, target_mb: in
         )
 
         return gif_uri
+
+
+def extract_and_upload_thumbnail(video_gcs_uri: str, timestamp_s: float) -> str:
+    """Extracts a frame from a video at the given timestamp and uploads it to GCS."""
+    logging.info(f"Extracting thumbnail for {video_gcs_uri} at {timestamp_s}s")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            local_path = _download_videos_to_temp([video_gcs_uri], tmpdir)[0]
+            output_filename = f"thumbnail_{uuid.uuid4()}.png"
+            output_path = os.path.join(tmpdir, output_filename)
+
+            with VideoFileClip(local_path) as clip:
+                # Ensure the timestamp doesn't exceed clip duration
+                safe_timestamp = min(max(0.0, timestamp_s), clip.duration - 0.1)
+
+                # Get the frame
+                frame = clip.get_frame(safe_timestamp)
+
+                # Save as PNG
+                # Convert from RGB (MoviePy default) to BGR for OpenCV
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(output_path, frame_bgr)
+
+            # Upload to GCS
+            thumbnail_uri = _upload_to_gcs(output_path, "thumbnails", "image/png")
+            logging.info(f"Successfully uploaded thumbnail to {thumbnail_uri}")
+            return thumbnail_uri
+
+        except Exception as e:
+            logging.error(f"Failed to extract and upload thumbnail: {e}")
+            return ""
