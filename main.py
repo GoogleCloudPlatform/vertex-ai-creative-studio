@@ -70,6 +70,7 @@ from pages import vto as vto_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
 from pages.library_v2 import page as library_v2_page
+from pages.library_v3 import page as library_v3_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page

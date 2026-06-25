@@ -181,7 +181,7 @@
       "id": 70,
       "display": "Library",
       "icon": "perm_media",
-      "route": "/library_v2",
+      "route": "/library_v3",
       "group": "studio",
       "description": "Browse your generated media."
     },
