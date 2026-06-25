@@ -333,7 +333,7 @@ proto-plus==1.28.0
     #   google-cloud-resource-manager
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-protobuf==6.33.6
+protobuf==7.35.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
