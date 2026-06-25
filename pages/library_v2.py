@@ -13,16 +13,14 @@
 # limitations under the License.
 """A test library page using the new media_tile component."""
 
-import datetime
 import json
-from dataclasses import asdict, dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass, field
 
 import mesop as me
 
 from common.analytics import log_ui_click
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import create_display_url, https_url_to_gcs_uri
+from common.utils import create_display_url, get_media_type, https_url_to_gcs_uri
 from components.header import header
 from components.interior_design.storyboard_video_tile import storyboard_video_tile
 from components.library.image_details import CarouselState
@@ -42,9 +40,9 @@ class PageState:
     """State for the library page."""
 
     is_loading: bool = True
-    media_items_json: str = ""
+    media_items: list[MediaItem] = field(default_factory=list)
     show_details_dialog: bool = False
-    selected_media_item_id: Optional[str] = None
+    selected_media_item_id: str | None = None
     initial_load_complete: bool = False
     current_page: int = 1
     all_items_loaded: bool = False
@@ -87,7 +85,7 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if is_filter_change:
         pagestate.current_page = 1
-        pagestate.media_items_json = "[]"
+        pagestate.media_items = []
         pagestate.all_items_loaded = False
 
     pagestate.is_loading = True
@@ -104,22 +102,10 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if not new_items:
         pagestate.all_items_loaded = True
+    elif is_filter_change:
+        pagestate.media_items = new_items
     else:
-        import json
-        from dataclasses import asdict
-
-        existing_items = []
-        if pagestate.media_items_json:
-            existing_items = json.loads(pagestate.media_items_json)
-
-        new_items_dicts = [asdict(item) for item in new_items]
-
-        if is_filter_change:
-            combined = new_items_dicts
-        else:
-            combined = existing_items + new_items_dicts
-
-        pagestate.media_items_json = json.dumps(combined, default=str)
+        pagestate.media_items.extend(new_items)
 
     pagestate.is_loading = False
     yield
@@ -225,73 +211,37 @@ def library_content():
                 width="100%",
             ),
         ):
-            if (
-                not pagestate.media_items_json or pagestate.media_items_json == "[]"
-            ) and not pagestate.is_loading:
+            if not pagestate.media_items and not pagestate.is_loading:
                 with me.box(
                     style=me.Style(padding=me.Padding.all(20), text_align="center"),
                 ):
                     me.text("No media items found for the selected filters.")
             else:
-                import json
-                import datetime
-                from common.metadata import MediaItem
-
-                items_dicts = (
-                    json.loads(pagestate.media_items_json)
-                    if pagestate.media_items_json
-                    else []
-                )
-                media_items = []
-                for d in items_dicts:
-                    valid_keys = MediaItem.__dataclass_fields__.keys()
-                    clean_d = {k: v for k, v in d.items() if k in valid_keys}
-                    if "timestamp" in clean_d and isinstance(clean_d["timestamp"], str):
-                        try:
-                            clean_d["timestamp"] = datetime.datetime.fromisoformat(
-                                clean_d["timestamp"]
-                            )
-                        except ValueError:
-                            pass
-                    item = MediaItem(**clean_d)
+                for item in pagestate.media_items:
                     gcs_uri = (
                         item.gcsuri
                         if item.gcsuri
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
-                    from common.utils import create_display_url
-
-                    item.signed_url = create_display_url(gcs_uri) if gcs_uri else ""
-                    media_items.append(item)
-
-                for item in media_items:
-                    gcs_uri = (
-                        item.gcsuri
-                        if item.gcsuri
-                        else (item.gcs_uris[0] if item.gcs_uris else None)
-                    )
-                    # Construct the display URL on the fly.
                     https_url = create_display_url(gcs_uri) if gcs_uri else ""
+                    render_type = get_media_type(mime_type=item.mime_type, url=https_url)
 
-                    # Determine the render type based on mime_type for reliability
-                    render_type = "image"  # Default to image
-                    if item.mime_type:
-                        if item.mime_type.startswith("video/"):
-                            render_type = "video"
-                        elif item.mime_type.startswith("audio/"):
-                            render_type = "audio"
-                    # Fallback to URL check if mime_type is missing
-                    elif https_url:
-                        if ".mp4" in https_url or ".webm" in https_url:
-                            render_type = "video"
-                        elif ".wav" in https_url or ".mp3" in https_url:
-                            render_type = "audio"
+                    # Use thumbnail as a static preview for video tiles when available
+                    thumbnail_url = ""
+                    if getattr(item, "thumbnail_uri", None):
+                        thumbnail_url = create_display_url(item.thumbnail_uri)
+
+                    display_url = https_url
+                    display_type = render_type
+                    if render_type == "video" and thumbnail_url:
+                        display_url = thumbnail_url
+                        display_type = "image"
 
                     media_tile(
                         key=item.id,
                         on_click=on_media_item_click,
-                        media_type=render_type,
-                        https_url=https_url,
+                        media_type=display_type,
+                        https_url=display_url,
                         pills_json=get_pills_for_item(item, https_url),
                     )
 
@@ -612,20 +562,10 @@ def render_default_detail_dialog(item: MediaItem):
         "Generation Time (s)": item.generation_time,
     }
 
-    # Determine the render type based on mime_type for reliability
-    render_type = "image"  # Default to image
-    if item.mime_type:
-        if item.mime_type.startswith("video/"):
-            render_type = "video"
-        elif item.mime_type.startswith("audio/"):
-            render_type = "audio"
-    # Fallback to URL check if mime_type is missing
-    elif primary_urls:
-        url = primary_urls[0]
-        if ".mp4" in url or ".webm" in url:
-            render_type = "video"
-        elif ".wav" in url or ".mp3" in url:
-            render_type = "audio"
+    render_type = get_media_type(
+        mime_type=item.mime_type,
+        url=primary_urls[0] if primary_urls else "",
+    )
 
     # The main detail viewer now only shows the primary asset and metadata
     media_detail_viewer(
@@ -695,7 +635,7 @@ def render_default_detail_dialog(item: MediaItem):
 
 
 @me.component
-def _render_source_section(title: str, uris: List[str]):
+def _render_source_section(title: str, uris: list[str]):
     """Helper to render a titled section of source asset tiles."""
     if not uris:
         return
@@ -714,12 +654,7 @@ def _render_source_section(title: str, uris: List[str]):
                 # Construct the display URL
                 https_url = create_display_url(source_uri)
 
-                # Determine media type from URL extension
-                render_type = "image"  # Default
-                if ".mp4" in https_url or ".webm" in https_url:
-                    render_type = "video"
-                elif ".wav" in https_url or ".mp3" in https_url:
-                    render_type = "audio"
+                render_type = get_media_type(url=https_url)
 
                 # Create a dummy MediaItem for pill generation if needed,
                 # though for source assets pills might be overkill.
