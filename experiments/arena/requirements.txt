@@ -79,7 +79,7 @@ sqlparse==0.5.5
 tenacity==9.1.4
 typing-extensions==4.15.0
 typing-inspection==0.4.2
-tzdata==2025.3
+tzdata==2026.2
 uritemplate==4.2.0
 urllib3==2.7.0
 watchdog==6.0.0
