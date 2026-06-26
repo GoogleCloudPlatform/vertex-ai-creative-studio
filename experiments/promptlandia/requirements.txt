@@ -209,9 +209,9 @@ Flask==3.1.3 \
     --hash=sha256:0ef0e52b8a9cd932855379197dd8f94047b359ca0a78695144304cb45f87c9eb \
     --hash=sha256:f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c
     # via mesop
-google-auth==2.55.0 \
-    --hash=sha256:a17cef9dedf98c4ebae2fb0c48c8f75952c877cbc2efe09f329ef16c2783d88a \
-    --hash=sha256:fcd3a130f575fa36403d38774af1c64a4fbfbca09215f0589d2372b5119697cb
+google-auth==2.55.1 \
+    --hash=sha256:eada68dfd52b3b81191827601e2a0c3fa12540c818534b630ddc5355769c3995 \
+    --hash=sha256:fb2d9b730f2c9b8d326ec8d7222f21aef2ead15bf0513793d6442485d87af0a1
     # via google-genai
 google-genai==1.75.0 \
     --hash=sha256:56bac3991b311c93f980c0a2abcd287b672146905df1fbd71c92ed633d5a07cf \

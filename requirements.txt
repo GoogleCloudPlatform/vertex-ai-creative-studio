@@ -94,7 +94,7 @@ google-api-core==2.31.0
     #   google-cloud-storage
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-google-auth==2.55.0
+google-auth==2.55.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -122,7 +122,7 @@ google-cloud-core==2.6.0
     #   google-cloud-firestore
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-firestore==2.27.0 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.28.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-logging==3.16.0
     # via vertex-ai-genmedia-creative-studio
