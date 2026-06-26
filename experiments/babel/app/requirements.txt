@@ -202,7 +202,7 @@ watchdog==6.0.0
     # via mesop
 watchfiles==1.2.0
     # via uvicorn
-websockets==15.0.1
+websockets==16.0
     # via uvicorn
 werkzeug==3.1.8
     # via
