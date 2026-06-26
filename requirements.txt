@@ -204,7 +204,7 @@ imageio-ffmpeg==0.6.0
     # via moviepy
 iniconfig==2.3.0
     # via pytest
-ipython==9.14.1
+ipython==9.15.0
     # via mediapy
 ipython-pygments-lexers==1.1.1
     # via ipython
