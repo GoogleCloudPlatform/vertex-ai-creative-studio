@@ -209,7 +209,7 @@ werkzeug==3.1.8
     #   babel-web (pyproject.toml)
     #   flask
     #   mesop
-wrapt==1.17.3
+wrapt==2.2.2
     # via deprecated
 zipp==3.23.1
     # via importlib-metadata
