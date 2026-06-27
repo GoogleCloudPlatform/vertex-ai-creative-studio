@@ -101,7 +101,7 @@ resource "google_cloud_run_service_iam_member" "iap_cloudrun_access" {
 module "lb-http" {
   count                           = var.use_lb ? 1 : 0
   source                          = "terraform-google-modules/lb-http/google//modules/serverless_negs"
-  version                         = "~>13.0"
+  version                         = "~> 14.0"
   name                            = "creativestudio"
   project                         = var.project_id
   load_balancing_scheme           = "EXTERNAL_MANAGED"
