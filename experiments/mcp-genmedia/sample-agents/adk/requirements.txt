@@ -104,7 +104,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.75.0
+google-genai==2.10.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
