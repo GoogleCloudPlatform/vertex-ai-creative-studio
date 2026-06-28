@@ -293,7 +293,7 @@ packaging==26.2
     #   pytest
     #   scikit-image
     #   wheel
-pandas==3.0.3
+pandas==3.0.4
     # via vertex-ai-genmedia-creative-studio
 parso==0.8.7
     # via jedi
