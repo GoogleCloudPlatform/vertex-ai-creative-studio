@@ -55,7 +55,7 @@ msgpack==1.2.1
 numpy==2.5.0
 ordered-set==4.1.0
 packaging==26.2
-pandas==2.3.3
+pandas==3.0.4
 pillow==12.2.0
 proto-plus==1.28.0
 protobuf==7.35.1

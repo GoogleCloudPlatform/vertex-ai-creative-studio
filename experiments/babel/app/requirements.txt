@@ -116,7 +116,7 @@ packaging==26.2
     # via
     #   gunicorn
     #   marshmallow
-pandas==2.3.3
+pandas==3.0.4
     # via babel-web (pyproject.toml)
 proto-plus==1.28.0
     # via
