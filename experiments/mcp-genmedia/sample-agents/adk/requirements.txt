@@ -36,7 +36,7 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.138.1
+fastapi==0.138.2
     # via google-adk
 google-adk==2.3.0
     # via adk-genmedia-agent
@@ -73,7 +73,7 @@ google-auth==2.55.1
     #   google-genai
 google-auth-httplib2==0.4.0
     # via google-api-python-client
-google-cloud-aiplatform==1.158.0
+google-cloud-aiplatform==1.159.0
     # via google-adk
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
@@ -290,7 +290,7 @@ typing-inspection==0.4.2
     #   pydantic-settings
 tzdata==2026.2 ; sys_platform == 'win32'
     # via tzlocal
-tzlocal==5.4.3
+tzlocal==5.4.4
     # via google-adk
 uritemplate==4.2.0
     # via google-api-python-client

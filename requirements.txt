@@ -73,7 +73,7 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.138.1
+fastapi==0.138.2
     # via vertex-ai-genmedia-creative-studio
 firebase-admin==7.4.0
     # via vertex-ai-genmedia-creative-studio
@@ -108,7 +108,7 @@ google-auth==2.55.1
     #   google-cloud-tasks
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.158.0
+google-cloud-aiplatform==1.159.0
     # via vertex-ai-genmedia-creative-studio
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
@@ -485,7 +485,7 @@ uvicorn==0.49.0
     # via vertex-ai-genmedia-creative-studio
 watchdog==6.0.0
     # via mesop
-wcwidth==0.8.1
+wcwidth==0.8.2
     # via prompt-toolkit
 websockets==16.0
     # via google-genai
