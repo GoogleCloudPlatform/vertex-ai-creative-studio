@@ -28,7 +28,7 @@ deepdiff==9.1.0
     # via mesop
 deprecated==1.3.1
     # via opentelemetry-api
-fastapi==0.138.2
+fastapi==0.139.0
     # via babel-web (pyproject.toml)
 fastapi-cli==0.0.27
     # via babel-web (pyproject.toml)
@@ -178,7 +178,7 @@ starlette==1.3.1
     # via fastapi
 typer==0.26.8
     # via fastapi-cli
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   fastapi
     #   pydantic

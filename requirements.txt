@@ -73,9 +73,9 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.138.2
+fastapi==0.139.0
     # via vertex-ai-genmedia-creative-studio
-firebase-admin==7.4.0
+firebase-admin==7.5.0
     # via vertex-ai-genmedia-creative-studio
 flask==3.1.3
     # via mesop
@@ -226,7 +226,7 @@ lazy-loader==0.5
     #   scikit-image
 librosa==0.11.0
     # via vertex-ai-genmedia-creative-studio
-llvmlite==0.47.0
+llvmlite==0.48.0
     # via numba
 markupsafe==3.0.3
     # via
@@ -237,7 +237,7 @@ matplotlib==3.11.0
     # via mediapy
 matplotlib-inline==0.2.2
     # via ipython
-mediapy==1.2.6
+mediapy==1.2.7
     # via vertex-ai-genmedia-creative-studio
 mesop==1.3.2
     # via vertex-ai-genmedia-creative-studio
@@ -250,11 +250,11 @@ msgpack==1.2.1
     #   mesop
 mypy-extensions==1.1.0
     # via black
-narwhals==2.22.1
+narwhals==2.23.0
     # via scikit-learn
 networkx==3.6.1
     # via scikit-image
-numba==0.65.1
+numba==0.66.0
     # via librosa
 numpy==2.5.0
     # via
@@ -301,7 +301,7 @@ pathspec==1.1.1
     # via black
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-pillow==12.2.0
+pillow==12.3.0
     # via
     #   imageio
     #   matplotlib
@@ -461,7 +461,7 @@ traitlets==5.15.1
     # via
     #   ipython
     #   matplotlib-inline
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   fastapi
     #   google-cloud-aiplatform
