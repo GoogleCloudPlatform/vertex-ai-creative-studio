@@ -419,7 +419,7 @@ scipy==1.18.0
     #   scikit-image
     #   scikit-learn
     #   vertex-ai-genmedia-creative-studio
-setuptools==82.0.1
+setuptools==83.0.0
     # via c2pa-python
 shortuuid==1.0.13
     # via vertex-ai-genmedia-creative-studio
