@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/marked": "^6.0.0",
-    "typescript": "~6.0.0",
+    "typescript": "~7.0.0",
     "vite": "^8.0.5"
   }
 }
