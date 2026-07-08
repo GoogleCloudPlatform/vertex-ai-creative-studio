@@ -75,6 +75,9 @@ Mesop allows integrating custom Lit WebComponents, but the bridge between JavaSc
    - Omit the return type annotation of the wrapper function and append `# noqa: ANN201`.
    - Add `# noqa: PLR0913` to suppress "too many arguments" warnings, as Mesop component wrappers naturally require many arguments to bind UI properties and event callbacks.
 
+### Top-Level vs. Local Imports (`PLC0415`)
+*   **Top-Level Preference:** In Mesop page files and event generators, always declare standard library and project imports (such as `json`, `uuid`, or utility functions) at the top of the file rather than locally inside event handler functions. This satisfies Ruff's `PLC0415` rule and prevents linting failures during CI/pre-commit checks.
+
 ### 🚨 The `git restore` Trap (Data Loss)
 When performing iterative, multi-step refactoring in a single session without intermediate commits, **do not use `git restore <file>` or `git checkout -- <file>`** to recover from a botched regex or Python script edit.
 *   **Why:** `git restore` resets the file to the last *commit*. This instantly wipes out *all* uncommitted progress you made earlier in the session (such as adding new variables to a `@me.stateclass`, importing new modules, or fixing specific bugs).
@@ -136,9 +139,11 @@ The project uses Starlight (Astro) for its primary documentation site, located i
 ### Modifying Starlight Documentation
 *   **Target Directory:** All Starlight markdown files reside in `docs-site/src/content/docs/`.
 *   **Mirrored Documentation Files (Crucial):** Certain key documentation files exist at both the root level and within the Starlight directory. When updating one, you MUST update its twin in tandem to prevent documentation drift:
+    *   `README.md` ↔ `docs-site/src/content/docs/core/index.md` (Primary landing page and featureset list)
     *   `environment_variables.md` ↔ `docs-site/src/content/docs/core/installation/environment_variables.md`
     *   `FAQ.md` ↔ `docs-site/src/content/docs/core/FAQ.md`
     *   `developers_guide.md` ↔ `docs-site/src/content/docs/core/developers_guide.md`
+*   **Feature Hierarchy & Usage:** When adding a new model or capability, ensure it is added to the featureset list in both `README.md`/`core/index.md` and detailed under the appropriate section in `docs-site/src/content/docs/core/usage.md`.
 *   **Frontmatter Requirement:** Every markdown file within the Starlight content directory MUST have YAML frontmatter with a `title` attribute. Example:
     ```markdown
     ---
