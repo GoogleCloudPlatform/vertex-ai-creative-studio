@@ -53,9 +53,9 @@ class NavConfig(BaseModel):
 
 @dataclass
 class Default:
-    """Defaults class"""
+    """Defaults class."""
 
-    VERSION: str = "1.11.0"  # Fallback if package metadata is missing
+    VERSION: str = "1.12.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -144,6 +144,15 @@ class Default:
     )
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 
+    # Gemini Omni
+    DEFAULT_OMNI_MODEL_NAME: str = os.environ.get(
+        "DEFAULT_OMNI_MODEL_NAME",
+        "gemini-omni-flash-preview",
+    )
+    OMNI_LOCATION: str = os.environ.get("OMNI_LOCATION", "global")
+    OMNI_MODEL_ID: str = os.environ.get("OMNI_MODEL_ID", "gemini-omni-flash-preview")
+    OMNI_PROJECT_ID: str = os.environ.get("OMNI_PROJECT_ID", PROJECT_ID)
+
     # VTO
     VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
     VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-001")
@@ -210,26 +219,27 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
-
     # Interior Design
     INTERIOR_DESIGN_VIDEO_MODEL: str = os.environ.get(
-        "INTERIOR_DESIGN_VIDEO_MODEL", "veo-3.1-lite-generate-001"
+        "INTERIOR_DESIGN_VIDEO_MODEL",
+        "veo-3.1-lite-generate-001",
     )
     INTERIOR_DESIGN_IMAGE_MODEL: str = os.environ.get(
-        "INTERIOR_DESIGN_IMAGE_MODEL", "gemini-3-pro-image"
+        "INTERIOR_DESIGN_IMAGE_MODEL",
+        "gemini-3-pro-image",
     )
-    INTERIOR_DESIGN_VIDEO_DURATION: int = int(os.environ.get(
-        "INTERIOR_DESIGN_VIDEO_DURATION", 6
-    ))
-
-
+    INTERIOR_DESIGN_VIDEO_DURATION: int = int(
+        os.environ.get("INTERIOR_DESIGN_VIDEO_DURATION", 6),
+    )
 
     # Object Rotation
     OBJECT_ROTATION_VIDEO_MODEL: str = os.environ.get(
-        "OBJECT_ROTATION_VIDEO_MODEL", "veo-3.1-generate-001"
+        "OBJECT_ROTATION_VIDEO_MODEL",
+        "veo-3.1-generate-001",
     )
     OBJECT_ROTATION_IMAGE_MODEL: str = os.environ.get(
-        "OBJECT_ROTATION_IMAGE_MODEL", "gemini-2.5-flash-image"
+        "OBJECT_ROTATION_IMAGE_MODEL",
+        "gemini-2.5-flash-image",
     )
 
     image_modifiers: list[str] = field(
@@ -256,7 +266,7 @@ def get_config_path(rel_path: str) -> str:
 import importlib.metadata
 
 
-def load_package_version():
+def load_package_version() -> None:
     try:
         Default.VERSION = importlib.metadata.version(
             "vertex-ai-genmedia-creative-studio",
@@ -265,7 +275,7 @@ def load_package_version():
         pass  # Keep default
 
 
-def load_build_info():
+def load_build_info() -> None:
     """Loads build information from config/build.json if it exists."""
     path = get_config_path("config/build.json")
     if os.path.exists(path):
@@ -274,7 +284,7 @@ def load_build_info():
                 data = json.load(f)
                 Default.BUILD_COMMIT = data.get("commit", "unknown")
                 Default.BUILD_DATE = data.get("date", "unknown")
-        except (FileNotFoundError, json.JSONDecodeError):
+        except FileNotFoundError, json.JSONDecodeError:
             pass
 
 
@@ -314,7 +324,7 @@ def load_about_page_config():
     try:
         with open(config_path) as f:
             content = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError, json.JSONDecodeError:
         return None
 
     # The rest of the function that processes GCS URLs remains the same

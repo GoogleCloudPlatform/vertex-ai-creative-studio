@@ -49,12 +49,12 @@ title: "GenMedia Creative Studio | Google Cloud AI"
 
 > **Browser Compatibility:** For the best experience, we recommend using Google Chrome. Some features may not work as expected on other browsers, such as Safari or Firefox.
 
-GenMedia Creative Studio is a web application showcasing Google Cloud's generative media - Veo, Lyria, Chirp, Gemini 2.5 Flash Image Generation (nano-banana), and Gemini TTS along with custom workflows and techniques for creative exploration and inspiration. We're looking forward to see what you create!
+GenMedia Creative Studio is a web application showcasing Google Cloud's generative media - Gemini Omni, Veo, Lyria, Chirp, Gemini 2.5 Flash Image Generation (nano-banana), and Gemini TTS along with custom workflows and techniques for creative exploration and inspiration. We're looking forward to see what you create!
 
 Current featureset
 
 - Image: Gemini 3.1 Flash Image Generation (Nano Banana 2), Gemini 3 Pro Image (Nano Banana Pro), Imagen 3, Imagen 4, Virtual Try-On
-- Video: Veo 3.1, Veo 3, Veo 2
+- Video: Gemini Omni Flash, Veo 3.1, Veo 3, Veo 2
 - Music: Lyria
 - Speech: Chirp 3 HD, Gemini Text to Speech
 - Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard, Interior Designer

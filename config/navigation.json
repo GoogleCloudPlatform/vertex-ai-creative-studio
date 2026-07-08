@@ -8,6 +8,16 @@
       "description": "The home page of the application."
     },
     {
+      "id": 11,
+      "display": "Gemini Omni",
+      "icon": "movie_filter",
+      "route": "/gemini-omni",
+      "group": "foundation",
+      "mode": "video",
+      "description": "Generate and edit videos from text, images, or base video inputs using Gemini Omni.",
+      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/FfbFqJ8qhY_ZWZyz/gemini-omni__page-cover__hero.webm"
+    },
+    {
       "id": 8,
       "display": "Gemini Image Generation",
       "icon": "spark",

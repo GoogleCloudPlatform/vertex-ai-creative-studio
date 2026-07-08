@@ -224,7 +224,9 @@ def library_content():
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
                     https_url = create_display_url(gcs_uri) if gcs_uri else ""
-                    render_type = get_media_type(mime_type=item.mime_type, url=https_url)
+                    render_type = get_media_type(
+                        mime_type=item.mime_type, url=https_url,
+                    )
 
                     # Use thumbnail as a static preview for video tiles when available
                     thumbnail_url = ""
@@ -518,7 +520,14 @@ def render_tour_detail_dialog(storyboard: dict):
                     me.text(f"Created: {storyboard.get('timestamp')}")
 
                 if pagestate.tour_dialog_active_tab == "raw":
-                    me.code(json.dumps(storyboard, indent=2), language="json")
+                    me.code(
+                        json.dumps(
+                            storyboard,
+                            indent=2,
+                            default=json_default_serializer,
+                        ),
+                        language="json",
+                    )
 
         with me.box(
             style=me.Style(

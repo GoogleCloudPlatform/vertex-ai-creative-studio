@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI onboarding welcome page for GenMedia Creative Studio."""
+
 import json
+from collections.abc import Generator
 
 import mesop as me
 
 from common.analytics import log_page_view
-from components.welcome_hero.welcome_hero import welcome_hero
 from components.page_scaffold import on_theme_load
 from components.theme_manager.theme_manager import theme_manager
+from components.welcome_hero.welcome_hero import welcome_hero
 from state.state import AppState
 
 
 @me.stateclass
 class PageState:
-    pass
+    """Page state for onboarding welcome page."""
 
 
-def on_tile_click(e: me.WebEvent):
+def on_tile_click(e: me.WebEvent) -> Generator[None, None, None]:
+    """Handle clicking on onboarding tiles to navigate routes."""
     route = e.value["route"]
     me.navigate(route)
     yield
@@ -38,7 +42,7 @@ def on_tile_click(e: me.WebEvent):
     path="/welcome",
     title="Welcome - GenMedia Creative Studio",
 )
-def page():
+def page() -> None:
     """Define the Mesop page route for the welcome page."""
     app_state = me.state(AppState)
     log_page_view(page_name="welcome", session_id=app_state.session_id)
@@ -47,6 +51,7 @@ def page():
 
     tiles_data = [
         {"icon": "home", "route": "/home"},
+        {"label": "Gemini Omni", "route": "/gemini-omni"},
         {"label": "Veo", "route": "/veo"},
         {"label": "Gemini Image Generation", "icon": "banana", "route": "/nano-banana"},
         {"label": "Lyria", "route": "/lyria"},
@@ -57,7 +62,6 @@ def page():
     welcome_hero(
         title="GenMedia Creative Studio",
         subtitle="Fuel your creativity with Google Cloud Vertex AI's generative media models and custom workflows.",
-        # video_url="https://deepmind.google/api/blob/website/media/veo__cover_s0RKXWX.mp4", # Veo 2.0 backup
         video_url="https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/veo__page-cover-1_hcTy7l3.mp4",
         tiles=json.dumps(tiles_data),
         on_tile_click=on_tile_click,

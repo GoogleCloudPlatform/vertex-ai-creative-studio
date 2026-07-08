@@ -35,7 +35,11 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
+import pages.brand_adherence
+import pages.character_sheet
+import pages.imagen_upscale
 import pages.shop_the_look
+import pages.storyboarder
 from app_factory import app
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
@@ -43,7 +47,6 @@ from common.identity import (
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
-from routers import veo_router
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
@@ -60,16 +63,18 @@ from pages import imagen as imagen_page
 from pages import interior_design_v2 as interior_design_page
 from pages import lyria as lyria_page
 from pages import object_rotation as object_rotation_page
+from pages import omni as omni_page
 from pages import pixie_compositor as pixie_compositor_page
 from pages import portraits as motion_portraits
+from pages import selfie as selfie_page
 from pages import starter_pack as starter_pack_page
 from pages import test_proxy_caching as test_proxy_caching_page
-from pages import selfie as selfie_page
 from pages import veo
 from pages import vto as vto_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
 from pages.library_v2 import page as library_v2_page
+from pages.test_async_veo import page as test_async_veo_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
@@ -78,13 +83,9 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_svg import test_svg_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
-from pages.test_async_veo import page as test_async_veo_page
-import pages.imagen_upscale
-import pages.storyboarder
-import pages.character_sheet
-import pages.brand_adherence
-from workflows.retro_games import page as retro_games
+from routers import veo_router
 from state.state import AppState
+from workflows.retro_games import page as retro_games
 
 
 class UserInfo(BaseModel):
@@ -139,7 +140,7 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=os.environ.get(
-        "CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080"
+        "CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080",
     ),
     allow_credentials=True,
     allow_methods=["*"],
@@ -192,7 +193,7 @@ def get_signed_url(gcs_uri: str):
             print(
                 "This error often occurs in a local development environment. "
                 "Please ensure you have authenticated with service account impersonation by running: "
-                "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>"
+                "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>",
             )
         return {"error": error_message}, 500
 
@@ -242,30 +243,32 @@ async def set_request_context(request: Request, call_next):
 
     response = await call_next(request)
     response.set_cookie(
-        key="session_id", value=session_id, httponly=True, samesite="Lax"
+        key="session_id",
+        value=session_id,
+        httponly=True,
+        samesite="Lax",
     )
     return response
 
 
 # Test page routes are left as is, they don't need the scaffold
 me.page(path="/test_character_consistency", title="Test Character Consistency")(
-    test_character_consistency_page
+    test_character_consistency_page,
 )
 me.page(path="/test_index", title="Test Index")(test_index_page)
 me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(
-    test_infinite_scroll_page
+    test_infinite_scroll_page,
 )
 me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(
-    test_pixie_compositor_page
+    test_pixie_compositor_page,
 )
 me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
 me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
-    test_vto_prompt_generator_page
+    test_vto_prompt_generator_page,
 )
 me.page(path="/test_svg", title="Test SVG")(test_svg_page)
 me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_chooser_page)
 me.page(path="/test_async_veo", title="Test Async Veo")(test_async_veo_page)
-
 
 # Global storage client instance to reuse connections
 _proxy_storage_client = None
@@ -338,7 +341,7 @@ app.mount(
             "app",
             "prod",
             "web_package",
-        )
+        ),
     ),
     name="static",
 )
@@ -349,7 +352,7 @@ app.include_router(veo_router.router)
 app.mount(
     "/",
     WSGIMiddleware(
-        me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")
+        me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true"),
     ),
 )
 

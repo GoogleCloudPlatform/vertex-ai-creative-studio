@@ -15,7 +15,6 @@
 
 import json
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import mesop as me
@@ -28,37 +27,30 @@ from common.metadata import (
 from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
+from components.banana_button.banana_button import banana_button
 from components.banana_studio.description_accordion import description_accordion
 from components.dialog import dialog
+from components.gemini_image.events import (
+    get_on_aspect_ratio_change,
+    get_on_image_search_change,
+    get_on_image_size_change,
+    get_on_include_thoughts_change,
+    get_on_model_select,
+    get_on_num_images_change,
+    get_on_prompt_blur,
+    get_on_search_change,
+    get_on_thinking_level_change,
+    get_on_thumbnail_click,
+)
+from components.gemini_image.upload_ui import gemini_image_upload_ui
 from components.header import header
-from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
-from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.veo_button.veo_button import veo_button
-from config.default import Default as cfg
 from config.gemini_image_models import get_gemini_image_model_config
-from components.banana_button.banana_button import banana_button
-
-from components.gemini_image.upload_ui import gemini_image_upload_ui
-from components.gemini_image.controls import gemini_image_controls
-from components.gemini_image.gallery import gemini_image_gallery
-from components.gemini_image.events import (
-    get_on_aspect_ratio_change,
-    get_on_image_size_change,
-    get_on_num_images_change,
-    get_on_search_change,
-    get_on_image_search_change,
-    get_on_include_thoughts_change,
-    get_on_thinking_level_change,
-    get_on_model_select,
-    get_on_prompt_blur,
-    get_on_thumbnail_click
-)
-
 from models.gemini import (
     describe_image,
     evaluate_image_with_questions,
@@ -77,10 +69,6 @@ CHIP_STYLE = me.Style(
 )
 
 
-
-
-
-
 @me.component
 def _generate_images_button():
     """Renders the main generate button and its loading state."""
@@ -93,7 +81,7 @@ def _generate_images_button():
                     flex_direction="row",
                     align_items="center",
                     gap=8,
-                )
+                ),
             ):
                 me.progress_spinner(diameter=20, stroke_width=3)
                 me.text("Generating Images...")
@@ -103,8 +91,6 @@ def _generate_images_button():
             on_click=generate_images,
             type="raised",
         )
-
-
 
 
 @dataclass
@@ -156,7 +142,6 @@ class PageState:
     initial_load_complete: bool = False
 
 
-from components.banana_studio.description_tabs import description_tabs
 
 
 on_aspect_ratio_change = get_on_aspect_ratio_change(PageState)
@@ -176,7 +161,7 @@ NUM_IMAGES_PROMPTS = {
     4: "Give me 4 options.",
 }
 
-with open("config/about_content.json", "r") as f:
+with open("config/about_content.json") as f:
     about_content = json.load(f)
     NANO_BANANA_INFO = next(
         (
@@ -189,8 +174,7 @@ with open("config/about_content.json", "r") as f:
 
 
 def on_media_select(e: LibrarySelectionChangeEvent):
-    """
-    Handles the selection of an image from the library dialog.
+    """Handles the selection of an image from the library dialog.
     Adds a placeholder, and queues the description generation.
     """
     state = me.state(PageState)
@@ -201,7 +185,7 @@ def on_media_select(e: LibrarySelectionChangeEvent):
     # Check if there's space for a new image
     if len(state.uploaded_image_gcs_uris) >= max_input_images:
         yield from show_snackbar(
-            state, f"You can add a maximum of {max_input_images} images."
+            state, f"You can add a maximum of {max_input_images} images.",
         )
         return
 
@@ -249,7 +233,7 @@ def _critique_questions_button():
                         flex_direction="row",
                         align_items="center",
                         gap=8,
-                    )
+                    ),
                 ):
                     me.progress_spinner(diameter=20, stroke_width=3)
                     me.text("Generating Questions...")
@@ -296,9 +280,7 @@ def _actions_row():
                 on_click=on_continue_click,
                 type="stroked",
             )
-            veo_button(
-                gcs_uri=https_url_to_gcs_uri(state.selected_image_url)
-            )
+            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
 
 
 @me.component
@@ -370,7 +352,7 @@ def _suggest_transformations_ui():
                             flex_direction="row",
                             align_items="center",
                             gap=8,
-                        )
+                        ),
                     ):
                         me.progress_spinner(diameter=20, stroke_width=3)
                         me.text("Suggesting...")
@@ -389,7 +371,7 @@ def _suggest_transformations_ui():
                 flex_direction="row",
                 gap=16,
                 margin=me.Margin(top=16),
-            )
+            ),
         ):
             with me.box(
                 style=me.Style(
@@ -412,7 +394,7 @@ def _suggest_transformations_ui():
                                 flex_direction="row",
                                 align_items="center",
                                 gap=8,
-                            )
+                            ),
                         ):
                             svg_icon(icon_name="image_edit_auto")
                             me.text(transformation["title"])
@@ -420,9 +402,8 @@ def _suggest_transformations_ui():
 
 def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
-
     state = me.state(PageState)
-    
+
     current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
 
@@ -462,6 +443,7 @@ def gemini_image_gen_page_content():
                     ),
                 )
                 from config.gemini_image_models import GEMINI_IMAGE_MODELS
+
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -469,7 +451,7 @@ def gemini_image_gen_page_content():
                         gap=16,
                         margin=me.Margin(bottom=16),
                         justify_content="center",
-                    )
+                    ),
                 ):
                     for model in GEMINI_IMAGE_MODELS:
                         is_selected = state.selected_model == model.model_name
@@ -480,7 +462,7 @@ def gemini_image_gen_page_content():
                             model_name=model.model_name,
                             on_click=on_model_select,
                         )
-                
+
                 me.textarea(
                     label="Prompt",
                     rows=3,
@@ -510,7 +492,9 @@ def gemini_image_gen_page_content():
 
                 me.box(style=me.Style(height=8))
 
-                with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+                with me.box(
+                    style=me.Style(display="flex", flex_direction="row", gap=16),
+                ):
                     me.select(
                         label="Aspect Ratio",
                         options=[
@@ -591,7 +575,7 @@ def gemini_image_gen_page_content():
                     border_radius=12,
                     padding=me.Padding.all(16),
                     min_height=400,
-                )
+                ),
             ):
                 if state.generation_complete and not state.generated_image_urls:
                     me.text("No images returned.")
@@ -605,7 +589,7 @@ def gemini_image_gen_page_content():
                             height="100%",
                             display="flex",
                             flex_direction="column",
-                        )
+                        ),
                     ):
                         if len(state.generated_image_urls) == 1:
                             # Display single, maximized image
@@ -624,25 +608,30 @@ def gemini_image_gen_page_content():
 
                             if state.generated_resolution:
                                 with me.box(style=me.Style(margin=me.Margin(top=8))):
-                                    pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
+                                    pill(
+                                        label=f"Resolution: {state.generated_resolution}",
+                                        pill_type="resolution",
+                                    )
 
                             # Evaluation display
 
                             with me.box(
-                                style=me.Style(width="100%", margin=me.Margin(top=16))
+                                style=me.Style(width="100%", margin=me.Margin(top=16)),
                             ):
                                 if state.is_evaluating:
                                     with me.box(
                                         style=me.Style(
-                                            display="flex", align_items="center", gap=8
-                                        )
+                                            display="flex", align_items="center", gap=8,
+                                        ),
                                     ):
                                         me.progress_spinner(diameter=20)
 
                                         me.text("Evaluating generation...")
 
                                 elif image_url in json.loads(state.evaluations_json):
-                                    evaluation = json.loads(state.evaluations_json)[image_url]
+                                    evaluation = json.loads(state.evaluations_json)[
+                                        image_url
+                                    ]
 
                                     score = (
                                         evaluation["score"]
@@ -657,7 +646,7 @@ def gemini_image_gen_page_content():
                                     )
 
                                     with me.expansion_panel(
-                                        title=f"Critique Score: {score}", icon="rule"
+                                        title=f"Critique Score: {score}", icon="rule",
                                     ):
                                         for item in details:
                                             with me.box(
@@ -667,15 +656,15 @@ def gemini_image_gen_page_content():
                                                     align_items="center",
                                                     gap=8,
                                                     margin=me.Margin(bottom=8),
-                                                )
+                                                ),
                                             ):
                                                 if item["answer"]:
                                                     me.icon(
                                                         "check_circle",
                                                         style=me.Style(
                                                             color=me.theme_var(
-                                                                "success"
-                                                            )
+                                                                "success",
+                                                            ),
                                                         ),
                                                     )
 
@@ -683,7 +672,7 @@ def gemini_image_gen_page_content():
                                                     me.icon(
                                                         "cancel",
                                                         style=me.Style(
-                                                            color=me.theme_var("error")
+                                                            color=me.theme_var("error"),
                                                         ),
                                                     )
 
@@ -694,8 +683,8 @@ def gemini_image_gen_page_content():
 
                             with me.box(
                                 style=me.Style(
-                                    display="flex", flex_direction="column", gap=16
-                                )
+                                    display="flex", flex_direction="column", gap=16,
+                                ),
                             ):
                                 # Main image
 
@@ -710,14 +699,19 @@ def gemini_image_gen_page_content():
                                 )
 
                                 if state.generated_resolution:
-                                    with me.box(style=me.Style(margin=me.Margin(top=8))):
-                                        pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
+                                    with me.box(
+                                        style=me.Style(margin=me.Margin(top=8)),
+                                    ):
+                                        pill(
+                                            label=f"Resolution: {state.generated_resolution}",
+                                            pill_type="resolution",
+                                        )
 
                                 # Evaluation display
                                 with me.box(
                                     style=me.Style(
-                                        width="100%", margin=me.Margin(top=16)
-                                    )
+                                        width="100%", margin=me.Margin(top=16),
+                                    ),
                                 ):
                                     if state.is_evaluating:
                                         with me.box(
@@ -725,13 +719,15 @@ def gemini_image_gen_page_content():
                                                 display="flex",
                                                 align_items="center",
                                                 gap=8,
-                                            )
+                                            ),
                                         ):
                                             me.progress_spinner(diameter=20)
 
                                             me.text("Evaluating generation...")
 
-                                    elif state.selected_image_url in json.loads(state.evaluations_json):
+                                    elif state.selected_image_url in json.loads(
+                                        state.evaluations_json,
+                                    ):
                                         evaluation = json.loads(state.evaluations_json)[
                                             state.selected_image_url
                                         ]
@@ -760,15 +756,15 @@ def gemini_image_gen_page_content():
                                                         align_items="center",
                                                         gap=8,
                                                         margin=me.Margin(bottom=8),
-                                                    )
+                                                    ),
                                                 ):
                                                     if item["answer"]:
                                                         me.icon(
                                                             "check_circle",
                                                             style=me.Style(
                                                                 color=me.theme_var(
-                                                                    "success"
-                                                                )
+                                                                    "success",
+                                                                ),
                                                             ),
                                                         )
 
@@ -777,8 +773,8 @@ def gemini_image_gen_page_content():
                                                             "cancel",
                                                             style=me.Style(
                                                                 color=me.theme_var(
-                                                                    "error"
-                                                                )
+                                                                    "error",
+                                                                ),
                                                             ),
                                                         )
 
@@ -792,7 +788,7 @@ def gemini_image_gen_page_content():
                                         flex_direction="row",
                                         gap=16,
                                         justify_content="center",
-                                    )
+                                    ),
                                 ):
                                     for url in state.generated_image_urls:
                                         is_selected = url == state.selected_image_url
@@ -811,7 +807,7 @@ def gemini_image_gen_page_content():
                                                             if is_selected
                                                             else "transparent"
                                                         ),
-                                                    )
+                                                    ),
                                                 ),
                                                 border_radius=12,
                                                 cursor="pointer",
@@ -836,7 +832,7 @@ def gemini_image_gen_page_content():
                             width=128,
                             height=128,
                             color=me.theme_var("on-surface-variant"),
-                        )
+                        ),
                     ):
                         svg_icon(icon_name="banana")
 
@@ -844,8 +840,7 @@ def gemini_image_gen_page_content():
 
 
 def on_upload(e: me.UploadEvent):
-    """
-    Handles file uploads, stores them in GCS, updates the UI with placeholders,
+    """Handles file uploads, stores them in GCS, updates the UI with placeholders,
     and then generates descriptions asynchronously.
     """
     state = me.state(PageState)
@@ -859,7 +854,7 @@ def on_upload(e: me.UploadEvent):
 
     if not files_to_upload:
         yield from show_snackbar(
-            state, f"You can upload a maximum of {max_input_images} images."
+            state, f"You can upload a maximum of {max_input_images} images.",
         )
         return
 
@@ -905,8 +900,7 @@ def on_upload(e: me.UploadEvent):
 
 
 def process_description_queue():
-    """
-    Processes one item from the description queue asynchronously.
+    """Processes one item from the description queue asynchronously.
     This is a generator function that will be called after the initial UI update.
     """
     # This initial yield is crucial. It forces the event handler to return
@@ -1015,7 +1009,7 @@ def on_generate_questions_click(e: me.ClickEvent):
 
     try:
         questions = generate_critique_questions(
-            prompt=state.prompt, image_descriptions=state.image_descriptions
+            prompt=state.prompt, image_descriptions=state.image_descriptions,
         )
         state.critique_questions = questions
     except Exception as ex:
@@ -1065,7 +1059,7 @@ def on_suggest_transformations_click(e: me.ClickEvent):
 
     if not state.generated_image_urls:
         yield from show_snackbar(
-            state, "No image available to suggest transformations for."
+            state, "No image available to suggest transformations for.",
         )
         return
 
@@ -1077,7 +1071,9 @@ def on_suggest_transformations_click(e: me.ClickEvent):
         gcs_uri = https_url_to_gcs_uri(state.generated_image_urls[0])
         raw_transformations = generate_transformation_prompts(image_uris=[gcs_uri])
         # Convert Pydantic objects to dicts for state
-        state.suggested_transformations_json = json.dumps([t.model_dump() for t in raw_transformations])
+        state.suggested_transformations_json = json.dumps(
+            [t.model_dump() for t in raw_transformations],
+        )
     except Exception as ex:
         print(f"Could not generate transformation prompts: {ex}")
         state.suggested_transformations_json = "[]"
@@ -1093,7 +1089,9 @@ def on_image_action_click(e: me.ClickEvent):
     app_state = me.state(AppState)
 
     # Find the template that was clicked
-    template = next((t for t in json.loads(state.prompt_templates_json) if t["key"] == e.key), None)
+    template = next(
+        (t for t in json.loads(state.prompt_templates_json) if t["key"] == e.key), None,
+    )
 
     if not template:
         yield from show_snackbar(state, f"Unknown action: {e.key}")
@@ -1131,7 +1129,7 @@ def on_image_action_click(e: me.ClickEvent):
 
     # The action now uses the combined list of images
     yield from _generate_and_save(
-        base_prompt=template["prompt"], input_gcs_uris=input_gcs_uris
+        base_prompt=template["prompt"], input_gcs_uris=input_gcs_uris,
     )
 
 
@@ -1180,8 +1178,6 @@ def _get_appended_prompt(base_prompt: str, num_images: int) -> str:
     return f"{base_prompt}. {suffix}"
 
 
-
-
 def generate_images(e: me.ClickEvent):
     """Event handler for the main 'Generate Images' button."""
     state = me.state(PageState)
@@ -1189,6 +1185,7 @@ def generate_images(e: me.ClickEvent):
         base_prompt=state.prompt,
         input_gcs_uris=state.uploaded_image_gcs_uris,
     )
+
 
 def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     """Core logic to generate images and save results to Firestore."""
@@ -1212,18 +1209,20 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             # num_input_images=len(input_gcs_uris),
             # num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time, captions, grounding_info, all_thoughts = generate_image_from_prompt_and_images(
-                prompt=final_prompt,
-                images=input_gcs_uris,
-                aspect_ratio=state.aspect_ratio,
-                gcs_folder="gemini_image_generations",
-                file_prefix="gemini_image",
-                image_size=state.image_size,
-                use_search=state.use_search,
-                use_image_search=state.use_image_search,
-                thinking_level=state.thinking_level,
-                include_thoughts=state.include_thoughts,
-                model_name=state.selected_model,
+            gcs_uris, execution_time, captions, grounding_info, all_thoughts = (
+                generate_image_from_prompt_and_images(
+                    prompt=final_prompt,
+                    images=input_gcs_uris,
+                    aspect_ratio=state.aspect_ratio,
+                    gcs_folder="gemini_image_generations",
+                    file_prefix="gemini_image",
+                    image_size=state.image_size,
+                    use_search=state.use_search,
+                    use_image_search=state.use_image_search,
+                    thinking_level=state.thinking_level,
+                    include_thoughts=state.include_thoughts,
+                    model_name=state.selected_model,
+                )
             )
 
         state.generation_time = execution_time
@@ -1284,7 +1283,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 for uri in gcs_uris:
                     try:
                         evaluation_result = evaluate_image_with_questions(
-                            image_uri=uri, questions=state.critique_questions
+                            image_uri=uri, questions=state.critique_questions,
                         )
 
                         # Process results
@@ -1304,12 +1303,17 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                             https_url = create_display_url(uri)
 
                         evals = json.loads(state.evaluations_json)
-                        evals[https_url] = {"score": score_str, "details": [ans.model_dump() for ans in evaluation_result.answers]}
+                        evals[https_url] = {
+                            "score": score_str,
+                            "details": [
+                                ans.model_dump() for ans in evaluation_result.answers
+                            ],
+                        }
                         state.evaluations_json = json.dumps(evals)
 
                     except Exception as eval_ex:
                         print(
-                            f"ERROR: Failed to evaluate image {uri}. Details: {eval_ex}"
+                            f"ERROR: Failed to evaluate image {uri}. Details: {eval_ex}",
                         )
                         # Optionally, store an error state for this evaluation
 
@@ -1329,9 +1333,6 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
     # NOTE: The final state update (is_generating=False, generation_complete=True)
     # happens inside the try/except block to ensure UI updates correctly on success or error.
-
-
-
 
 
 def open_info_dialog(e: me.ClickEvent):
@@ -1355,10 +1356,14 @@ def on_load(e: me.LoadEvent):
     # Load templates once on initial load.
     if not json.loads(state.prompt_templates_json):
         templates = prompt_template_service.load_templates(
-            config_path="config/image_prompt_templates.json", template_type="image"
+            config_path="config/image_prompt_templates.json", template_type="image",
         )
-        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates])
-        print(f"Loaded {len(json.loads(state.prompt_templates_json))} image prompt templates.")
+        state.prompt_templates_json = json.dumps(
+            [t.model_dump() for t in templates], default=str,
+        )
+        print(
+            f"Loaded {len(json.loads(state.prompt_templates_json))} image prompt templates.",
+        )
 
     if not state.initial_load_complete:
         image_uri = me.query_params.get("image_uri")

@@ -15,15 +15,11 @@
 import base64
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from functools import lru_cache
 
-from google.cloud import aiplatform
 from google.cloud import storage
-import vertexai
 
 from config.default import Default
 from config.firebase_config import FirebaseClient
-
 
 cfg = Default()
 
@@ -41,9 +37,7 @@ class Session:
 
 
 def get_or_create_session(session_id: str, user_email: str) -> Session:
-    """
-    Retrieves a session from Firestore or creates a new one if it doesn't exist.
-    """
+    """Retrieves a session from Firestore or creates a new one if it doesn't exist."""
     session_ref = db.collection(cfg.SESSIONS_COLLECTION_NAME).document(session_id)
     session_doc = session_ref.get()
 
@@ -53,10 +47,9 @@ def get_or_create_session(session_id: str, user_email: str) -> Session:
         session.last_accessed_at = datetime.utcnow()
         session_ref.update({"last_accessed_at": session.last_accessed_at})
         return session
-    else:
-        session = Session(id=session_id, user_email=user_email)
-        session_ref.set(asdict(session))
-        return session
+    session = Session(id=session_id, user_email=user_email)
+    session_ref.set(asdict(session))
+    return session
 
 
 def store_to_gcs(
@@ -67,14 +60,14 @@ def store_to_gcs(
     decode: bool = False,
     bucket_name: str | None = None,
 ):
-    """store contents to GCS"""
+    """Store contents to GCS"""
     actual_bucket_name = bucket_name if bucket_name else cfg.GENMEDIA_BUCKET
     if not actual_bucket_name:
         raise ValueError(
-            "GCS bucket name is not configured. Please set GENMEDIA_BUCKET environment variable or provide bucket_name."
+            "GCS bucket name is not configured. Please set GENMEDIA_BUCKET environment variable or provide bucket_name.",
         )
     print(
-        f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}"
+        f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}",
     )
     client = storage.Client(project=cfg.PROJECT_ID)
     bucket = client.get_bucket(actual_bucket_name)
@@ -120,3 +113,23 @@ def list_files_in_bucket(bucket_name, prefix=None):
         file_names.append(blob.name)
 
     return file_names
+
+
+def generate_upload_signed_url(
+    bucket_name: str,
+    blob_name: str,
+    content_type: str,
+) -> str:
+    """Generate a v4 signed URL for uploading a file via PUT request."""
+    from datetime import timedelta
+
+    client = storage.Client(project=cfg.PROJECT_ID)
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    return blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(minutes=15),
+        method="PUT",
+        content_type=content_type,
+    )

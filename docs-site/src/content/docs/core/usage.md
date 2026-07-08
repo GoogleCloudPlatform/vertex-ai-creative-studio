@@ -17,6 +17,7 @@ Interact directly with the raw generative models to create single-modality outpu
     *   **Gemini Image Generation:** Generate high-quality images from text prompts using Gemini (Nano Banana).
     *   **Edit Images:** Edit existing images using powerful inpainting and outpainting tools.
 *   **Video Generation:** 
+    *   **Gemini Omni:** Create, animate, reference, and iteratively edit video in a multi-turn chat workspace using Gemini Omni Flash.
     *   **Veo:** Create high-fidelity videos from text or image prompts using Veo 2, Veo 3, and Veo 3.1.
 *   **Audio & Speech Generation:** 
     *   **Lyria:** Generate complex music tracks and thematic scores from text prompts.
