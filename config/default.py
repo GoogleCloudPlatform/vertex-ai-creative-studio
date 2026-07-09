@@ -55,7 +55,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.12.0"  # Fallback if package metadata is missing
+    VERSION: str = "1.12.1"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -152,6 +152,7 @@ class Default:
     OMNI_LOCATION: str = os.environ.get("OMNI_LOCATION", "global")
     OMNI_MODEL_ID: str = os.environ.get("OMNI_MODEL_ID", "gemini-omni-flash-preview")
     OMNI_PROJECT_ID: str = os.environ.get("OMNI_PROJECT_ID", PROJECT_ID)
+    OMNI_TIMEOUT_MS: int = int(os.environ.get("OMNI_TIMEOUT_MS", "600000"))
 
     # VTO
     VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
