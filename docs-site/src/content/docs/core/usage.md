@@ -14,7 +14,7 @@ GenMedia Creative Studio provides a centralized interface for experimenting with
 Interact directly with the raw generative models to create single-modality outputs.
 
 *   **Image Generation:** 
-    *   **Gemini Image Generation:** Generate high-quality images from text prompts using Gemini (Nano Banana).
+    *   **Gemini Image Generation:** Generate high-quality images from text prompts using Gemini (Nano Banana), including Gemini 3.1 Flash-Lite for rapid creation and iteration at 1K resolution.
     *   **Edit Images:** Edit existing images using powerful inpainting and outpainting tools.
 *   **Video Generation:** 
     *   **Gemini Omni:** Create, animate, reference, and iteratively edit video in a multi-turn chat workspace using Gemini Omni Flash.
