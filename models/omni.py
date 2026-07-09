@@ -44,7 +44,7 @@ def get_omni_client(location: str) -> genai.Client:
             enterprise=True,
             project=config.OMNI_PROJECT_ID,
             location=location,
-            http_options={"timeout": config.OMNI_TIMEOUT_MS},
+            http_options={"timeout": config.OMNI_TIMEOUT_MS / 1000.0},
         )
     return _clients[location]
 

@@ -15,7 +15,7 @@
 
 import datetime
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 
 import mesop as me
 
@@ -231,7 +231,7 @@ def library_content():
             )
             media_items = []
             for d in items_dicts:
-                valid_keys = MediaItem.__dataclass_fields__.keys()
+                valid_keys = {f.name for f in fields(MediaItem)}
                 clean_d = {k: v for k, v in d.items() if k in valid_keys}
                 if "timestamp" in clean_d and isinstance(clean_d["timestamp"], str):
                     try:
