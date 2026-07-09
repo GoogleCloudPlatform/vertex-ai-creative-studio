@@ -31,7 +31,7 @@ Controls which versions of the Gemini models are used for various tasks.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`MODEL_ID`** | `gemini-3.5-flash` | The primary Gemini model used for general text and reasoning tasks throughout the app. |
-| **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-2.5-flash-image` | The specific model used for image generation features. |
+| **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-2.5-flash-image` | The default model used for image generation features (supports `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`, or `gemini-2.5-flash-image`). |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-3.1-flash-lite` | The model used specifically for analyzing audio content. |
 | **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
@@ -39,6 +39,17 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_CRITIQUE_LOCATION`** | `global` | The region for the Gemini image critique model. |
 | **`CHARACTER_CONSISTENCY_GEMINI_MODEL`** | `MODEL_ID` | The model used for Character Consistency tasks. |
 | **`CHARACTER_CONSISTENCY_GEMINI_LOCATION`** | `global` | The region for the Character Consistency Gemini model. |
+
+## 🎞️ Gemini Omni (Video Generation & Editing)
+Configuration for the Gemini Omni Flash multimodal video interaction model.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| **`DEFAULT_OMNI_MODEL_NAME`** | `gemini-omni-flash-preview` | The fallback model identifier for Gemini Omni when starting a session. |
+| **`OMNI_LOCATION`** | `global` | Region for the Gemini Omni API endpoint. |
+| **`OMNI_MODEL_ID`** | `gemini-omni-flash-preview` | The standard Gemini Omni model ID. |
+| **`OMNI_PROJECT_ID`** | `PROJECT_ID` | Allows using a different GCP project for Gemini Omni quota if needed. |
+| **`OMNI_TIMEOUT_MS`** | `600000` | Client-side HTTP timeout in milliseconds (default 10 minutes) for long-running video generation and editing requests. |
 
 ## 🎥 Veo (Video Generation)
 Configuration for the Veo video generation models.
@@ -153,7 +164,8 @@ These variables are computed within `main.tf` based on the resources Terraform c
 ### 3. Variables NOT Set by Terraform (Using Python Defaults)
 The following variables are **not** explicitly set in the `main.tf` configuration. This means the application will use the **default values defined in `config/default.py`** when deployed via Terraform.
 
-*   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL`, `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
+*   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL` (supports Nano Banana 2 Lite `gemini-3.1-flash-lite-image`), `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
+*   **Gemini Omni:** `DEFAULT_OMNI_MODEL_NAME`, `OMNI_LOCATION`, `OMNI_MODEL_ID`, `OMNI_PROJECT_ID`, `OMNI_TIMEOUT_MS`
 *   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
 *   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
