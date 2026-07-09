@@ -13,8 +13,9 @@
 # limitations under the License.
 """A test library page using the new media_tile component."""
 
+import datetime
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 import mesop as me
 
@@ -40,7 +41,7 @@ class PageState:
     """State for the library page."""
 
     is_loading: bool = True
-    media_items: list[MediaItem] = field(default_factory=list)
+    media_items_json: str = ""
     show_details_dialog: bool = False
     selected_media_item_id: str | None = None
     initial_load_complete: bool = False
@@ -85,7 +86,7 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if is_filter_change:
         pagestate.current_page = 1
-        pagestate.media_items = []
+        pagestate.media_items_json = "[]"
         pagestate.all_items_loaded = False
 
     pagestate.is_loading = True
@@ -102,10 +103,22 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if not new_items:
         pagestate.all_items_loaded = True
-    elif is_filter_change:
-        pagestate.media_items = new_items
     else:
-        pagestate.media_items.extend(new_items)
+        existing_items = []
+        if pagestate.media_items_json and pagestate.media_items_json != "[]":
+            try:
+                existing_items = json.loads(pagestate.media_items_json)
+            except json.JSONDecodeError:
+                existing_items = []
+
+        new_items_dicts = [asdict(item) for item in new_items]
+
+        if is_filter_change:
+            combined = new_items_dicts
+        else:
+            combined = existing_items + new_items_dicts
+
+        pagestate.media_items_json = json.dumps(combined, default=str)
 
     pagestate.is_loading = False
     yield
@@ -211,13 +224,31 @@ def library_content():
                 width="100%",
             ),
         ):
-            if not pagestate.media_items and not pagestate.is_loading:
+            items_dicts = (
+                json.loads(pagestate.media_items_json)
+                if pagestate.media_items_json
+                else []
+            )
+            media_items = []
+            for d in items_dicts:
+                valid_keys = MediaItem.__dataclass_fields__.keys()
+                clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                if "timestamp" in clean_d and isinstance(clean_d["timestamp"], str):
+                    try:
+                        clean_d["timestamp"] = datetime.datetime.fromisoformat(
+                            clean_d["timestamp"],
+                        )
+                    except ValueError:
+                        pass
+                media_items.append(MediaItem(**clean_d))
+
+            if not media_items and not pagestate.is_loading:
                 with me.box(
                     style=me.Style(padding=me.Padding.all(20), text_align="center"),
                 ):
                     me.text("No media items found for the selected filters.")
             else:
-                for item in pagestate.media_items:
+                for item in media_items:
                     gcs_uri = (
                         item.gcsuri
                         if item.gcsuri
@@ -225,7 +256,8 @@ def library_content():
                     )
                     https_url = create_display_url(gcs_uri) if gcs_uri else ""
                     render_type = get_media_type(
-                        mime_type=item.mime_type, url=https_url,
+                        mime_type=item.mime_type,
+                        url=https_url,
                     )
 
                     # Use thumbnail as a static preview for video tiles when available
