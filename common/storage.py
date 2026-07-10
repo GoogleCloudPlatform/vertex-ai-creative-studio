@@ -30,6 +30,28 @@ try:
 except ImportError, AttributeError:
     pass
 
+try:
+    import OpenSSL.SSL
+
+    for _attr_name in dir(OpenSSL.SSL.Context):
+        _attr = getattr(OpenSSL.SSL.Context, _attr_name)
+        if callable(_attr) and not _attr_name.startswith("__"):
+
+            def _make_wrapper(orig_func):
+                def _wrapper(*args, **kwargs):
+                    try:
+                        return orig_func(*args, **kwargs)
+                    except ValueError as e:
+                        if "already been used" in str(e):
+                            return None
+                        raise
+
+                return _wrapper
+
+            setattr(OpenSSL.SSL.Context, _attr_name, _make_wrapper(_attr))
+except ImportError, AttributeError:
+    pass
+
 db = FirebaseClient(cfg.GENMEDIA_FIREBASE_DB).get_client()
 _storage_client: storage.Client | None = None
 
