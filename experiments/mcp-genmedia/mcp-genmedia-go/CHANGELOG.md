@@ -2,6 +2,7 @@
 
 ## 2026-07-10 (v3.9.1)
 
+*   **Feat:** Added `mcp-omni-go` server implementing Gemini Omni video generation and editing (`omni_video_generation`) via `cloud-interactions-go`.
 *   **Feat:** Added support for `gemini-3.1-flash-lite-image` ("Nano Banana 2 Lite") with 1K resolution aspect ratios in `mcp-nanobanana-go` and `mcp-gemini-go`.
 *   **Fix:** Aligned default model fallbacks in `mcp-nanobanana-go` and `mcp-gemini-go` handlers to match `gemini-3.1-flash-image`.
 *   **Chore:** Bumped patch versions for all MCP servers to `3.9.1` to synchronize the release.

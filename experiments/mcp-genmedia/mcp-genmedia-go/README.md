@@ -57,7 +57,7 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 3.  **Install the Binaries**
     This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
     ```bash
-    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-omni-go ./mcp-veo-go
     ```
 
 4.  **Verify the Installation**
@@ -175,6 +175,11 @@ This repository provides AI application samples for:
     *   Provides a dedicated multimodal interface to Google's Nano Banana (Gemini Image) models.
     *   Tool: `nanobanana_image_generation` for generating text and images.
     *   Output can be saved to a local directory or GCS.
+
+*   **`mcp-omni-go`**:
+    *   Provides a Model Context Protocol (MCP) interface to Google's Gemini Omni video generation and editing capabilities using `cloud-interactions-go`.
+    *   Tool: `omni_video_generation` supporting Text-to-Video (`t2v`), Image-to-Video (`i2v`), Reference-to-Video (`ref2v`), and conversational video editing (`edit`).
+    *   Supports multi-turn interactions and saves video MP4 files to a local directory or GCS.
 
 *   **`mcp-lyria-go`**:
     *   Facilitates music generation using Google's Lyria models via Vertex AI.
