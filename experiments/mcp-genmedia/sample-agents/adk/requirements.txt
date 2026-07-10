@@ -18,9 +18,9 @@ certifi==2026.6.17
     #   httpcore
     #   httpx
     #   requests
-cffi==2.0.0 ; platform_python_implementation != 'PyPy'
+cffi==2.1.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
-charset-normalizer==3.4.7
+charset-normalizer==3.4.9
     # via requests
 click==8.4.2
     # via
@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.139.0
     # via google-adk
-google-adk==2.3.0
+google-adk==2.4.0
     # via adk-genmedia-agent
 google-api-core==2.31.0
     # via
@@ -55,7 +55,7 @@ google-api-core==2.31.0
     #   google-cloud-trace
 google-api-python-client==2.198.0
     # via google-adk
-google-auth==2.55.1
+google-auth==2.55.2
     # via
     #   google-api-core
     #   google-api-python-client
@@ -73,20 +73,20 @@ google-auth==2.55.1
     #   google-genai
 google-auth-httplib2==0.4.0
     # via google-api-python-client
-google-cloud-aiplatform==1.159.0
+google-cloud-aiplatform==1.160.0
     # via google-adk
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.0
     # via google-cloud-logging
-google-cloud-bigquery==3.42.1
+google-cloud-bigquery==3.42.2
     # via google-cloud-aiplatform
 google-cloud-core==2.6.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-logging==3.16.0
+google-cloud-logging==3.16.1
     # via google-cloud-aiplatform
 google-cloud-resource-manager==1.18.0
     # via google-cloud-aiplatform
@@ -94,7 +94,7 @@ google-cloud-secret-manager==2.29.0
     # via google-adk
 google-cloud-speech==2.40.0
     # via google-adk
-google-cloud-storage==3.12.0
+google-cloud-storage==3.12.1
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -104,7 +104,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.10.0
+google-genai==2.11.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -127,13 +127,13 @@ grpc-google-iam-v1==0.14.4
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.81.1
+grpcio==1.82.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.81.1
+grpcio-status==1.82.1
     # via google-api-core
 h11==0.16.0
     # via
@@ -160,7 +160,7 @@ importlib-metadata==9.0.0
     # via opentelemetry-api
 mcp==1.28.1
     # via google-adk
-numpy==2.5.0
+numpy==2.5.1
     # via shapely
 opentelemetry-api==1.43.0
     # via
@@ -188,7 +188,7 @@ packaging==26.2
     # via
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
-proto-plus==1.28.0
+proto-plus==1.28.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -213,7 +213,7 @@ protobuf==7.35.1
     #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via
     #   pyasn1-modules
     #   rsa
@@ -288,7 +288,7 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2026.2 ; sys_platform == 'win32'
+tzdata==2026.3 ; sys_platform == 'win32'
     # via tzlocal
 tzlocal==5.4.4
     # via google-adk
@@ -296,11 +296,11 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.7.0
     # via requests
-uvicorn==0.49.0
+uvicorn==0.51.0
     # via
     #   google-adk
     #   mcp
-websockets==16.0
+websockets==16.1
     # via google-genai
 wrapt==2.2.2
     # via deprecated
