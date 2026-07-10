@@ -18,6 +18,35 @@ import inspect
 import os
 import uuid
 
+try:
+    import urllib3.contrib.pyopenssl
+
+    urllib3.contrib.pyopenssl.extract_from_urllib3()
+except ImportError, AttributeError:
+    pass
+
+try:
+    import OpenSSL.SSL
+
+    for _attr_name in dir(OpenSSL.SSL.Context):
+        _attr = getattr(OpenSSL.SSL.Context, _attr_name)
+        if callable(_attr) and not _attr_name.startswith("__"):
+
+            def _make_wrapper(orig_func):
+                def _wrapper(*args, **kwargs):
+                    try:
+                        return orig_func(*args, **kwargs)
+                    except ValueError as e:
+                        if "already been used" in str(e):
+                            return None
+                        raise
+
+                return _wrapper
+
+            setattr(OpenSSL.SSL.Context, _attr_name, _make_wrapper(_attr))
+except ImportError, AttributeError:
+    pass
+
 import google.auth
 import mesop as me
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -140,7 +169,8 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=os.environ.get(
-        "CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080",
+        "CORS_ORIGIN_REGEX",
+        r"https://.*|http://localhost:8080",
     ),
     allow_credentials=True,
     allow_methods=["*"],

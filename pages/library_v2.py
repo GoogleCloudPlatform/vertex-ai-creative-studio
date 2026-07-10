@@ -268,8 +268,12 @@ def library_content():
                     display_url = https_url
                     display_type = render_type
                     if render_type == "video" and thumbnail_url:
-                        display_url = thumbnail_url
-                        display_type = "image"
+                        if not any(
+                            thumbnail_url.lower().endswith(ext)
+                            for ext in [".mp4", ".mov", ".avi", ".webm", ".mkv"]
+                        ):
+                            display_url = thumbnail_url
+                            display_type = "image"
 
                     media_tile(
                         key=item.id,

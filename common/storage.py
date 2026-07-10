@@ -14,7 +14,7 @@
 
 import base64
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from google.cloud import storage
 
@@ -23,7 +23,45 @@ from config.firebase_config import FirebaseClient
 
 cfg = Default()
 
+try:
+    import urllib3.contrib.pyopenssl
+
+    urllib3.contrib.pyopenssl.extract_from_urllib3()
+except ImportError, AttributeError:
+    pass
+
+try:
+    import OpenSSL.SSL
+
+    for _attr_name in dir(OpenSSL.SSL.Context):
+        _attr = getattr(OpenSSL.SSL.Context, _attr_name)
+        if callable(_attr) and not _attr_name.startswith("__"):
+
+            def _make_wrapper(orig_func):
+                def _wrapper(*args, **kwargs):
+                    try:
+                        return orig_func(*args, **kwargs)
+                    except ValueError as e:
+                        if "already been used" in str(e):
+                            return None
+                        raise
+
+                return _wrapper
+
+            setattr(OpenSSL.SSL.Context, _attr_name, _make_wrapper(_attr))
+except ImportError, AttributeError:
+    pass
+
 db = FirebaseClient(cfg.GENMEDIA_FIREBASE_DB).get_client()
+_storage_client: storage.Client | None = None
+
+
+def get_storage_client() -> storage.Client:
+    """Returns a cached singleton GCS storage.Client."""
+    global _storage_client
+    if _storage_client is None:
+        _storage_client = storage.Client(project=cfg.PROJECT_ID)
+    return _storage_client
 
 
 @dataclass
@@ -69,7 +107,7 @@ def store_to_gcs(
     print(
         f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}",
     )
-    client = storage.Client(project=cfg.PROJECT_ID)
+    client = get_storage_client()
     bucket = client.get_bucket(actual_bucket_name)
     destination_blob_name = f"{folder}/{file_name}"
     print(f"store_to_gcs: Destination {destination_blob_name}")
@@ -88,21 +126,21 @@ def store_to_gcs(
 
 def download_from_gcs(gcs_uri: str) -> bytes:
     """Downloads a file from a GCS URI and returns its content as bytes."""
-    client = storage.Client(project=cfg.PROJECT_ID)
+    client = get_storage_client()
     blob = storage.Blob.from_string(gcs_uri, client=client)
     return blob.download_as_bytes()
 
 
 def download_from_gcs_as_string(gcs_uri: str):
     """Downloads a file from a GCS URI and returns its content as a string."""
-    client = storage.Client(project=cfg.PROJECT_ID)
+    client = get_storage_client()
     blob = storage.Blob.from_string(gcs_uri, client=client)
     return blob.download_as_string()
 
 
 def list_files_in_bucket(bucket_name, prefix=None):
     """Lists all blobs (files) in the specified GCS bucket, optionally filtered by a prefix."""
-    client = storage.Client(project=cfg.PROJECT_ID)
+    client = get_storage_client()
     bucket = client.get_bucket(bucket_name)
 
     # List blobs, optionally with a prefix to emulate a "folder"
@@ -121,9 +159,7 @@ def generate_upload_signed_url(
     content_type: str,
 ) -> str:
     """Generate a v4 signed URL for uploading a file via PUT request."""
-    from datetime import timedelta
-
-    client = storage.Client(project=cfg.PROJECT_ID)
+    client = get_storage_client()
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
 
