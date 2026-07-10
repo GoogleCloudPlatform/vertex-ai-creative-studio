@@ -83,7 +83,10 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
         logger.info(
             f"Calling client.interactions.create with model={model_config.model_name}",
         )
-        interaction = client.interactions.create(**call_args)
+        interaction = client.interactions.create(
+            **call_args,
+            timeout=config.OMNI_TIMEOUT_MS / 1000.0,
+        )
 
         # 4. Extract outputs
         video_data, interaction_id = _extract_video_payload(interaction)
