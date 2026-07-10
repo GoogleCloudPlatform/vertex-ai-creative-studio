@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.9.0" // Fix: Removed duration param from extend schema
+	version     = "3.9.1" // Synchronize release version
 )
 
 var (

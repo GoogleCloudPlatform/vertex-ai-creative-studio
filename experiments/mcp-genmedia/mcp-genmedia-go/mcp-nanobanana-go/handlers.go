@@ -50,7 +50,7 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 	}
 
 	modelArg, _ := request.GetArguments()["model"].(string)
-	model := "gemini-3-pro-image"
+	model := "gemini-3.1-flash-image"
 	if modelArg != "" {
 		if resolvedInfo, found := common.ResolveGeminiImageModel(modelArg, appConfig.AllowUnsafeModels); found {
 			model = resolvedInfo.CanonicalName

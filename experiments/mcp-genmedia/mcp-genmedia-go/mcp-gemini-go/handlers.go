@@ -50,7 +50,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	}
 
 	modelArg, _ := request.GetArguments()["model"].(string)
-	model := "gemini-2.5-flash-image"
+	model := "gemini-3.1-flash-image"
 	if modelArg != "" {
 		if resolvedInfo, found := common.ResolveGeminiImageModel(modelArg, appConfig.AllowUnsafeModels); found {
 			model = resolvedInfo.CanonicalName

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-10 (v3.9.1)
+
+*   **Feat:** Added support for `gemini-3.1-flash-lite-image` ("Nano Banana 2 Lite") with 1K resolution aspect ratios in `mcp-nanobanana-go` and `mcp-gemini-go`.
+*   **Fix:** Aligned default model fallbacks in `mcp-nanobanana-go` and `mcp-gemini-go` handlers to match `gemini-3.1-flash-image`.
+*   **Chore:** Bumped patch versions for all MCP servers to `3.9.1` to synchronize the release.
+
 ## 2026-06-01 (v3.9.0)
 
 *   **Feat:** Promoted Gemini Image models to GA (`gemini-3.1-flash-image` and `gemini-3-pro-image`) in `mcp-gemini-go` and `mcp-nanobanana-go` defaults and model registry.

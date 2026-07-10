@@ -153,6 +153,12 @@ var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
 		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"},
 		Description:           "Gemini 3.1 Flash Image, or Nano Banana 2.",
 	},
+	"gemini-3.1-flash-lite-image": {
+		CanonicalName:         "gemini-3.1-flash-lite-image",
+		Aliases:               []string{"Nano Banana 2 Lite"},
+		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:3", "9:16", "16:9", "21:9"},
+		Description:           "Gemini 3.1 Flash Lite Image, or Nano Banana 2 Lite, is optimized for high-speed, cost-effective image generation at 1K resolution.",
+	},
 
 	"gemini-3-pro-image": {
 		CanonicalName:         "gemini-3-pro-image",
