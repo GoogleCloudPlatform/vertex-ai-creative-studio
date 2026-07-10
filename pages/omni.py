@@ -24,7 +24,7 @@ from common.analytics import track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import generate_upload_signed_url, store_to_gcs
 from common.utils import create_display_url
-from components.dialog import dialog
+from components.dialog import dialog, dialog_actions
 from components.gcs_uploader.gcs_uploader import gcs_uploader
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -63,7 +63,32 @@ def omni_page() -> None:
 
     with page_scaffold(page_name="gemini-omni"):
         with page_frame():
-            header("Gemini Omni", "spark")
+            if state.info_dialog_open:
+                with dialog(is_open=state.info_dialog_open):
+                    me.text("About Gemini Omni", type="headline-6")
+                    me.markdown(
+                        "Gemini Omni supports cutting-edge multi-modal generation and video editing capabilities:\n\n"
+                        "* **Text-to-Video (T2V)**: Generate videos from detailed prompt descriptions.\n"
+                        "* **Image-to-Video (I2V)**: Bring a still image to life using an initial starting frame.\n"
+                        "* **Reference-to-Video (Ref2V)**: Guide video character and style consistency with up to 3 reference images.\n"
+                        "* **Video Editing**: Perform multi-turn conversational video edits on an existing base video.",
+                    )
+                    me.divider()
+                    me.text("Current Settings", type="headline-6")
+                    me.text(f"Mode: {state.omni_mode}")
+                    me.text(f"Model: {state.omni_model}")
+                    me.text(
+                        f"Aspect Ratio: {state.aspect_ratio} | Duration: {state.video_length}s",
+                    )
+                    with dialog_actions():
+                        me.button("Close", on_click=close_info_dialog, type="flat")
+
+            header(
+                "Gemini Omni",
+                "spark",
+                show_info_button=True,
+                on_info_click=open_info_dialog,
+            )
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -139,22 +164,45 @@ def render_single_turn_workspace(state: PageState) -> None:
         style=me.Style(margin=me.Margin(bottom=16)),
     )
 
-    me.textarea(
-        label="Prompt Description",
-        value=state.prompt,
-        on_blur=on_prompt_blur,
-        style=me.Style(width="100%", height="140px", margin=me.Margin(bottom=16)),
-    )
-
-    # Conditionally show components based on mode
-    if state.omni_mode == "i2v":
-        render_image_uploader(state, "Upload Starting Frame Image")
-    elif state.omni_mode == "ref2v":
-        render_reference_images_gallery(state)
-    elif state.omni_mode == "edit":
-        render_image_uploader(state, "Optional: Upload Reference/Style Image")
-        me.box(style=me.Style(height=16))
-        render_video_uploader(state, "Upload Base Video to Edit")
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="row",
+            gap=16,
+            flex_wrap="wrap",
+            margin=me.Margin(bottom=16),
+        ),
+    ):
+        with me.box(
+            style=me.Style(
+                flex_basis="max(360px, calc(60% - 16px))",
+                flex_grow=1,
+            ),
+        ):
+            me.textarea(
+                label="Prompt Description",
+                value=state.prompt,
+                on_blur=on_prompt_blur,
+                style=me.Style(width="100%", height="140px"),
+            )
+        with me.box(
+            style=me.Style(
+                flex_basis="max(240px, calc(40% - 16px))",
+                flex_grow=1,
+                display="flex",
+                flex_direction="column",
+                gap=12,
+            ),
+        ):
+            # Conditionally show components based on mode
+            if state.omni_mode == "i2v":
+                render_image_uploader(state, "Upload Starting Frame Image")
+            elif state.omni_mode == "ref2v":
+                render_reference_images_gallery(state)
+            elif state.omni_mode == "edit":
+                render_image_uploader(state, "Optional: Upload Reference/Style Image")
+                me.box(style=me.Style(height=8))
+                render_video_uploader(state, "Upload Base Video to Edit")
 
     me.box(style=me.Style(flex_grow=1))
     if state.result_display_url:
@@ -358,6 +406,7 @@ def render_image_uploader(state: PageState, label: str) -> None:
             flex_direction="row",
             gap=12,
             align_items="center",
+            flex_wrap="wrap",
         ),
     ):
         me.uploader(
@@ -394,6 +443,7 @@ def render_video_uploader(state: PageState, label: str) -> None:
             flex_direction="row",
             gap=12,
             align_items="center",
+            flex_wrap="wrap",
         ),
     ):
         gcs_uploader(
@@ -440,6 +490,7 @@ def render_reference_images_gallery(state: PageState) -> None:
                 flex_direction="row",
                 gap=12,
                 align_items="center",
+                flex_wrap="wrap",
             ),
         ):
             me.uploader(
@@ -463,6 +514,7 @@ def render_reference_images_gallery(state: PageState) -> None:
                 flex_direction="row",
                 gap=8,
                 margin=me.Margin(top=8),
+                flex_wrap="wrap",
             ),
         ):
             for idx, ref in enumerate(r2v_refs):
@@ -480,8 +532,7 @@ def render_reference_images_gallery(state: PageState) -> None:
                     )
                     me.button(
                         "Remove",
-                        type="icon",
-                        icon="delete",
+                        type="flat",
                         on_click=lambda _e, i=idx: on_remove_ref_image(i),
                     )
 
@@ -537,6 +588,20 @@ def on_close_error_dialog(_e: me.ClickEvent) -> None:
     """Close the error detail dialog."""
     state = me.state(PageState)
     state.show_error_dialog = False
+    yield
+
+
+def open_info_dialog(_e: me.ClickEvent) -> None:
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+
+def close_info_dialog(_e: me.ClickEvent) -> None:
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield
 
 

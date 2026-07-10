@@ -73,6 +73,7 @@ class PageState:
     # UI loading and dialog states
     is_loading: bool = False
     show_error_dialog: bool = False
+    info_dialog_open: bool = False
     error_message: str = ""
 
     # Output results (Single generation fallback)
