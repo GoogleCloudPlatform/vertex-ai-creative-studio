@@ -18,6 +18,13 @@ import inspect
 import os
 import uuid
 
+try:
+    import urllib3.contrib.pyopenssl
+
+    urllib3.contrib.pyopenssl.extract_from_urllib3()
+except ImportError, AttributeError:
+    pass
+
 import google.auth
 import mesop as me
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -140,7 +147,8 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=os.environ.get(
-        "CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080",
+        "CORS_ORIGIN_REGEX",
+        r"https://.*|http://localhost:8080",
     ),
     allow_credentials=True,
     allow_methods=["*"],
