@@ -366,6 +366,13 @@ def render_image_uploader(state: PageState, label: str) -> None:
             on_upload=on_upload_image,
             key=str(state.reference_image_file_key),
         )
+        library_chooser_button(
+            on_library_select=on_image_select,
+            button_label="Choose from Library",
+            media_type=["images"],
+            disabled=state.is_loading,
+            key="omni_image_library",
+        )
         if state.reference_image_uri:
             me.image(
                 src=state.reference_image_uri,
@@ -427,12 +434,27 @@ def render_reference_images_gallery(state: PageState) -> None:
     r2v_refs = json.loads(state.r2v_references_json)
 
     if len(r2v_refs) < MAX_R2V_REFERENCES:
-        me.uploader(
-            label="Add Reference Image",
-            accepted_file_types=["image/png", "image/jpeg"],
-            on_upload=on_upload_ref_image,
-            key=str(state.r2v_upload_key),
-        )
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                gap=12,
+                align_items="center",
+            ),
+        ):
+            me.uploader(
+                label="Add Reference Image",
+                accepted_file_types=["image/png", "image/jpeg"],
+                on_upload=on_upload_ref_image,
+                key=str(state.r2v_upload_key),
+            )
+            library_chooser_button(
+                on_library_select=on_r2v_image_select,
+                button_label="Choose from Library",
+                media_type=["images"],
+                disabled=state.is_loading,
+                key="omni_r2v_image_library",
+            )
 
     if r2v_refs:
         with me.box(
@@ -652,6 +674,31 @@ def on_upload_ref_image(e: me.UploadEvent) -> Generator[None]:
     except Exception as ex:  # noqa: BLE001
         state.error_message = f"Failed to upload reference: {ex}"
         state.show_error_dialog = True
+    yield
+
+
+def on_image_select(e: LibrarySelectionChangeEvent) -> Generator[None]:
+    """Handle selecting an image from the library."""
+    state = me.state(PageState)
+    state.reference_image_gcs = e.gcs_uri
+    state.reference_image_uri = create_display_url(e.gcs_uri)
+    state.reference_image_mime_type = "image/png"
+    yield
+
+
+def on_r2v_image_select(e: LibrarySelectionChangeEvent) -> Generator[None]:
+    """Handle selecting a reference image from the library for Reference-to-Video."""
+    state = me.state(PageState)
+    refs = json.loads(state.r2v_references_json)
+    if len(refs) < MAX_R2V_REFERENCES:
+        refs.append(
+            {
+                "gcs_uri": e.gcs_uri,
+                "mime_type": "image/png",
+                "display_url": create_display_url(e.gcs_uri),
+            },
+        )
+        state.r2v_references_json = json.dumps(refs)
     yield
 
 
