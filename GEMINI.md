@@ -48,6 +48,10 @@ When importing, copying, or adding a new Agent Skill to the repository:
 
 ### SDK Integration Nuances
 *   **Model Parameter Probing:** The `google-genai` SDK and Vertex AI backend can be incredibly strict. For example, `types.ImageConfig(image_size="512PX")` will fail validation; it must be `"512"`. `types.ThinkingConfig` expects `thinking_budget` (not `thinking_level`), and setting `include_thoughts=True` without a budget throws a `400 INVALID_ARGUMENT`. Always write a short `test_probe.py` script to verify exact SDK payload shapes before wiring them into the Mesop UI state.
+*   **OpenSSL / urllib3 Connection Mutation Crash (OpenSSL 26.3.0+):** In Python 3.10+ with OpenSSL 26.3.0, when `google-auth` and `urllib3` use pooled SSL connections across threaded background workers, modifying SSL context settings on an already-connected socket throws `ValueError: Context has already been used to create a Connection, it cannot be mutated again`. Apply a defensive wrapper around `OpenSSL.SSL.Context.set_verify` and `load_verify_locations` that intercepts and silently ignores this specific error message to allow pooled connection reuse.
+*   **Vertex AI Interactions API (Omni / Enterprise Agent Platform):**
+    - **Timeouts:** Setting `http_options={"timeout": ...}` on `genai.Client(...)` is often overridden or ignored. You MUST pass an explicit `timeout=...` keyword argument (in seconds) directly to `client.interactions.create(..., timeout=...)` for long-running media generation.
+    - **Global vs. Regional Routing:** Experimental preview models (such as `gemini-omni-flash-preview`) reside on the `global` location endpoint (`aiplatform.googleapis.com/v1beta1/.../locations/global/interactions`). Do not allow configuration fallbacks to force regional gateways like `us-central1` for these models, as this will cause `404 Model Not Found` errors.
 
 
 
