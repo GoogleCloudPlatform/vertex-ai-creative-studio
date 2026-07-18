@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+*   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
+
 ## 2026-07-10 (v3.9.1)
 
 *   **Feat:** Added support for `gemini-3.1-flash-lite-image` ("Nano Banana 2 Lite") with 1K resolution aspect ratios in `mcp-nanobanana-go` and `mcp-gemini-go`.

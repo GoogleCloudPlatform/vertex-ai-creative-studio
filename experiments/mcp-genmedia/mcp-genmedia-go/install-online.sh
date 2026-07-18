@@ -145,6 +145,23 @@ else
     exit 1
 fi
 
+# macOS Gatekeeper will silently SIGKILL (exit 137) downloaded binaries that
+# aren't signed with a trusted/valid signature, since they inherit a
+# quarantine attribute from being fetched over the network. Our release
+# binaries are unsigned, so clear the quarantine flag and apply an ad-hoc
+# signature to let them run.
+if [[ "$OS" == "darwin" ]]; then
+    if command -v xattr >/dev/null 2>&1; then
+        xattr -dr com.apple.quarantine "$INSTALL_DIR"/mcp-*-go 2>/dev/null || true
+    fi
+    if command -v codesign >/dev/null 2>&1; then
+        echo_info "Ad-hoc signing binaries for macOS Gatekeeper..."
+        for bin in "$INSTALL_DIR"/mcp-*-go; do
+            codesign --force --sign - "$bin" 2>/dev/null || echo_err "Failed to sign $bin; it may be blocked by Gatekeeper. Run: codesign --force --sign - \"$bin\""
+        done
+    fi
+fi
+
 echo_success "Installation successful!"
 echo_info "The following servers were installed:"
 ls -1 "$INSTALL_DIR"/mcp-*-go | xargs -n 1 basename | sed 's/^/  - /'

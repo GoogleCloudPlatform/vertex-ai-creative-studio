@@ -75,6 +75,31 @@ check_path() {
 }
 
 #
+# Function to ad-hoc codesign a locally built binary on macOS.
+#
+# 'go install' produces binaries with a signature that macOS Gatekeeper can
+# reject at exec time, silently killing the process (SIGKILL / exit 137)
+# with no output. Re-signing with an ad-hoc signature resolves this. This is
+# a no-op on non-macOS platforms.
+#
+codesign_go_binary() {
+  local server_dir="$1"
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    return
+  fi
+  if ! command -v codesign &> /dev/null; then
+    return
+  fi
+  local binary_path="$HOME/go/bin/$server_dir"
+  if [ -f "$binary_path" ]; then
+    if ! codesign --force --sign - "$binary_path" 2>/dev/null; then
+      echo -e "${YELLOW}WARNING: Failed to ad-hoc sign $binary_path. It may be blocked by macOS Gatekeeper.${NC}"
+      echo -e "  Run manually: ${BLUE}codesign --force --sign - \"$binary_path\"${NC}"
+    fi
+  fi
+}
+
+#
 # Function to setup Agent Skills.
 #
 setup_agent_skills() {
@@ -160,6 +185,7 @@ main() {
             echo -e "${RED}ERROR: Failed to install $d. Please check the output above for details.${NC}"
             exit 1
           fi
+          codesign_go_binary "$d"
         done
         echo -e "${GREEN}All MCP servers have been installed successfully.${NC}"
         echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed servers.${NC}"
@@ -175,6 +201,7 @@ main() {
           echo -e "${BLUE}Installing $server...${NC}"
                     # Run go mod tidy to prevent checksum mismatch errors
           if (cd "$server" && go mod tidy && go install); then
+            codesign_go_binary "$server"
             echo -e "${GREEN}$server has been installed successfully.${NC}"
             echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed server.${NC}"
             setup_agent_skills
