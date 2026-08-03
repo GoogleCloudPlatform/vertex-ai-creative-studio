@@ -54,6 +54,24 @@ variable "model_id" {
   default     = "gemini-3.5-flash"
 }
 
+variable "gemini_location" {
+  description = "Endpoint used for Gemini text/multimodal calls. Gemini 3.x models are not served from single regions such as us-central1 — keep this at 'global' (or a us/eu multi-region) even when region is regional."
+  type        = string
+  default     = "global"
+}
+
+variable "cloud_run_cpu" {
+  description = "CPU limit for the Creative Studio container"
+  type        = string
+  default     = "2000m"
+}
+
+variable "cloud_run_memory" {
+  description = "Memory limit for the Creative Studio container. Thumbnail extraction decodes video in-process with moviepy/OpenCV into a tmpfs temp dir (RAM on Cloud Run), which OOMs at 1Gi."
+  type        = string
+  default     = "2Gi"
+}
+
 variable "gemini_audio_analysis_model_id" {
   description = "Gemini model ID to use for audio analysis features"
   type        = string
