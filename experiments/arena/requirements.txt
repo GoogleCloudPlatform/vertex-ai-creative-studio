@@ -14,7 +14,7 @@ charset-normalizer==3.4.9
 click==8.4.2
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
-cryptography==49.0.0
+cryptography==50.0.0
 deepdiff==9.1.0
 docstring-parser==0.18.0
 fastparquet==2026.5.0
