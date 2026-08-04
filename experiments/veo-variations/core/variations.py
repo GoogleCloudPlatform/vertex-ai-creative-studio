@@ -33,7 +33,7 @@ Return your response ONLY as a JSON list of strings:
 ]
 """
 
-async def generate_concept_variations(concept, count, project_id, location, model_name="gemini-3.1-flash-lite-preview"):
+async def generate_concept_variations(concept, count, project_id, location, model_name="gemini-3.5-flash-lite"):
     client = get_gemini_client(project_id, location)
     
     prompt = VARIATION_PROMPT_TEMPLATE.format(concept=concept, count=count)

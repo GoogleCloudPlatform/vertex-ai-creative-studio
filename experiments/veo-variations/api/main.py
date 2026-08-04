@@ -75,11 +75,14 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
         bucket = os.getenv("VEO_BUCKET")
         eval_project = os.getenv("GOOGLE_CLOUD_PROJECT")
         eval_location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+        eval_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         
         # 1. Generate Prompt Variations
         jobs[job_id]["status"] = "brainstorming_variations"
         try:
-            variation_prompts = await generate_concept_variations(prompt, count, eval_project, eval_location)
+            variation_prompts = await generate_concept_variations(
+                prompt, count, eval_project, eval_location, model_name=eval_model
+            )
         except Exception as e:
             print(f"Brainstorming failed: {e}")
             raise Exception(f"Failed to generate variations: {str(e)}")

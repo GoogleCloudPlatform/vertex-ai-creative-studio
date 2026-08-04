@@ -1,0 +1,28 @@
+.gcloudignore
+.git
+.gitignore
+
+# Node / UI dependencies
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Python Virtual Environments & Caches
+.venv/
+**/.venv/
+*.pyc
+__pycache__/
+**/__pycache__/
+
+# Output media & local artifacts
+videos/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+
+# Secrets and environment overrides
+.env
+.env.*
+!.env.template

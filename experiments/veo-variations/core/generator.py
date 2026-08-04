@@ -1,10 +1,36 @@
 import os
 import asyncio
 import time
+import mimetypes
+import io
+from PIL import Image as PILImage
 from pathlib import Path
 from google import genai
 from google.genai import types
 from google.cloud import storage
+
+def load_image_for_veo(image_path):
+    """Loads an image file, ensuring proper JPEG/PNG mime type and format for Veo."""
+    try:
+        with PILImage.open(image_path) as img:
+            fmt = (img.format or "").upper()
+            if fmt == "PNG":
+                buffer = io.BytesIO()
+                img.save(buffer, format="PNG")
+                return buffer.getvalue(), "image/png"
+            else:
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG")
+                return buffer.getvalue(), "image/jpeg"
+    except Exception as e:
+        print(f"PIL loading failed for {image_path}: {e}, falling back to raw bytes")
+        mime_type, _ = mimetypes.guess_type(image_path)
+        if mime_type not in ["image/jpeg", "image/png"]:
+            mime_type = "image/jpeg"
+        with open(image_path, "rb") as f:
+            return f.read(), mime_type
 
 def get_veo_client(project_id, location):
     if not project_id:
@@ -50,9 +76,8 @@ async def generate_video(prompt, model, duration, project_id, location, bucket, 
 
     image = None
     if image_path:
-        with open(image_path, "rb") as f:
-            img_bytes = f.read()
-        image = types.Image(image_bytes=img_bytes, mime_type="image/png")
+        img_bytes, mime_type = load_image_for_veo(image_path)
+        image = types.Image(image_bytes=img_bytes, mime_type=mime_type)
 
     try:
         operation = client.models.generate_videos(

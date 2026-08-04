@@ -1,5 +1,6 @@
 # Python-generated files
 __pycache__/
+**/__pycache__/
 *.py[oc]
 build/
 dist/
@@ -7,4 +8,22 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+**/.venv/
+
+# Node / UI dependencies and build outputs
+node_modules/
+**/node_modules/
+ui/dist/
+
+# Media output & local artifacts
+videos/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+
+# Environment files
+.env
+.env.*
+!.env.template
