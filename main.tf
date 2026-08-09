@@ -167,6 +167,7 @@ locals {
   creative_studio_env_vars = {
     PROJECT_ID            = var.project_id
     LOCATION              = var.region
+    GEMINI_LOCATION       = var.gemini_location
     GEMINI_TTS_LOCATION   = var.gemini_tts_location
     MODEL_ID              = var.model_id
     GEMINI_AUDIO_ANALYSIS_MODEL_ID = var.gemini_audio_analysis_model_id

@@ -54,6 +54,12 @@ PROJECT_ID=
 # Default: gemini-3.5-flash
 # MODEL_ID=gemini-3.5-flash
 
+# [OPTIONAL] The endpoint used for Gemini text/multimodal calls. Gemini 3.x models
+# are NOT served from single regions such as us-central1 (requests 404); keep this
+# at "global" — or a us/eu multi-region — independently of LOCATION.
+# Default: global
+# GEMINI_LOCATION=global
+
 # [OPTIONAL] The specific model used for image generation features.
 # Default: gemini-2.5-flash-image
 # GEMINI_IMAGE_GEN_MODEL=gemini-2.5-flash-image

@@ -70,6 +70,10 @@ class Default:
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
+    # Gemini 3.x models are not served from single regions such as us-central1 —
+    # only from the global endpoint (and the us/eu multi-regions). LOCATION stays
+    # regional because Veo/Imagen/Lyria/VTO and the Cloud Tasks queue need it.
+    GEMINI_LOCATION: str = os.environ.get("GEMINI_LOCATION", "global")
     GEMINI_TTS_LOCATION: str = os.environ.get("GEMINI_TTS_LOCATION", "global")
     GA_MEASUREMENT_ID: str = os.environ.get("GA_MEASUREMENT_ID")
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.5-flash")

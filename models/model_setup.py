@@ -119,7 +119,9 @@ class GeminiModelSetup:
         """Init method for Gemini client. Model is specified at call time."""
         config = Default()
         effective_project_id = project_id if project_id else config.PROJECT_ID
-        effective_location = location if location else config.LOCATION
+        # Defaults to GEMINI_LOCATION (global), not LOCATION — Gemini 3.x models
+        # 404 on single-region endpoints like us-central1.
+        effective_location = location if location else config.GEMINI_LOCATION
 
         if not effective_project_id or not effective_location:
             raise ValueError("Project ID and Location must be set for Gemini client.")

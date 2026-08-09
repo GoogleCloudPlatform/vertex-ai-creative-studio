@@ -1226,7 +1226,7 @@ def generate_text(
     contents = [types.Content(role="user", parts=parts)]
 
     client = GeminiModelSetup.init(
-        location=cfg.LOCATION,
+        location=cfg.GEMINI_LOCATION,
     )
 
     # print(f"Sending request to model: {model_name}")

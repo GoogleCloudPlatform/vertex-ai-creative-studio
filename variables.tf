@@ -54,6 +54,12 @@ variable "model_id" {
   default     = "gemini-3.5-flash"
 }
 
+variable "gemini_location" {
+  description = "Endpoint used for Gemini text/multimodal calls. Gemini 3.x models are not served from single regions such as us-central1 — keep this at 'global' (or a us/eu multi-region) even when region is regional."
+  type        = string
+  default     = "global"
+}
+
 variable "gemini_audio_analysis_model_id" {
   description = "Gemini model ID to use for audio analysis features"
   type        = string
