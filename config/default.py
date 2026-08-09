@@ -285,7 +285,7 @@ def load_build_info() -> None:
                 data = json.load(f)
                 Default.BUILD_COMMIT = data.get("commit", "unknown")
                 Default.BUILD_DATE = data.get("date", "unknown")
-        except FileNotFoundError, json.JSONDecodeError:
+        except (FileNotFoundError, json.JSONDecodeError):
             pass
 
 
@@ -325,7 +325,7 @@ def load_about_page_config():
     try:
         with open(config_path) as f:
             content = json.load(f)
-    except FileNotFoundError, json.JSONDecodeError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return None
 
     # The rest of the function that processes GCS URLs remains the same

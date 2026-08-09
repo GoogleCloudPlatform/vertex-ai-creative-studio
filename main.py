@@ -22,7 +22,7 @@ try:
     import urllib3.contrib.pyopenssl
 
     urllib3.contrib.pyopenssl.extract_from_urllib3()
-except ImportError, AttributeError:
+except (ImportError, AttributeError):
     pass
 
 try:
@@ -44,7 +44,7 @@ try:
                 return _wrapper
 
             setattr(OpenSSL.SSL.Context, _attr_name, _make_wrapper(_attr))
-except ImportError, AttributeError:
+except (ImportError, AttributeError):
     pass
 
 import google.auth
