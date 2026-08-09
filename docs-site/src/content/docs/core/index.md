@@ -47,7 +47,11 @@ title: "GenMedia Creative Studio | Google Cloud AI"
 
 ## GenMedia Creative Studio
 
+> [!IMPORTANT]
+> **Git History Reset Notice**: The repository history on `main` was scrubbed in August 2026 to remove legacy compiled binaries, reducing clone size by ~60%. If you have an existing clone, please see the [Git History Reset Instructions on our Changelog](/core/changelog/) for steps to synchronize your local checkout.
+
 > **Browser Compatibility:** For the best experience, we recommend using Google Chrome. Some features may not work as expected on other browsers, such as Safari or Firefox.
+
 
 GenMedia Creative Studio is a web application showcasing Google Cloud's generative media - Gemini Omni, Veo, Lyria, Chirp, Gemini 2.5 Flash Image Generation (nano-banana), and Gemini TTS along with custom workflows and techniques for creative exploration and inspiration. We're looking forward to see what you create!
 
