@@ -12,7 +12,8 @@ This document lists environment variables used by the MCP servers in this reposi
 | `<PREFIX>_LOCATION` | No | Server-specific override for location (e.g., `CHIRP3_LOCATION=eu`). | None | All |
 | `ALLOW_UNSAFE_MODELS` | No | Optional (`true`/`false`). Allows users to bypass strict local model constraint validation to test experimental or pre-release model strings. | `false` | Veo, Imagen, Gemini, NanoBanana, Lyria |
 | `ENABLE_OPTIONAL_HEADER_CAPTURE` | No | Optional (`true`/`false`). Intended for internal debugging. Injects raw Bearer token to capture `x-goog-sherlog-link`. | `false` | Imagen, Gemini, NanoBanana, Lyria |
-| `GENMEDIA_BUCKET` | No | A default GCS bucket to use for outputs if one isn't specified in a tool request. | None | All |
+| `GENMEDIA_BUCKET` | No | A default GCS bucket to use for outputs if one isn't specified in a tool request. For NanoBanana, generated images fall back to `<bucket>/nanobanana_outputs/`. | None | All |
+| `NANOBANANA_SIGNED_URL_EXPIRY_HOURS` | No | Validity (hours) of the V4 signed HTTPS URL returned for each uploaded image. Clamped to `168` (V4 max); `0` disables signed-URL generation (the `gs://` URI is still returned). Signing under ADC without a private key needs `roles/iam.serviceAccountTokenCreator` on the runtime SA (non-fatal if absent). | `24` | NanoBanana |
 | `VERTEX_API_ENDPOINT` | No | Overrides the Base URL of the Vertex AI client for testing against staging, preview, or sandbox environments. | None | Veo, Imagen, Gemini, NanoBanana, Lyria |
 | `GCS_DOWNLOAD_TIMEOUT` | No | Timeout for GCS download/streaming operations. Accepts Go duration strings (e.g. `"30s"`, `"5m"`). | `5m` | All |
 | `MCP_CUSTOM_PATH` | No | Overrides the system `PATH` for `ffmpeg` and `ffprobe` tool executions. | None | AVTool |

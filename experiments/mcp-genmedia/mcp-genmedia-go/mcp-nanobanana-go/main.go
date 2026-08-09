@@ -50,10 +50,10 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
-	flag.Parse()
 }
 
 func main() {
+	flag.Parse() // Ensure flags are parsed before use
 
 	var cleanup func()
 	appConfig, cleanup = common.Init(serviceName, version)

@@ -33,6 +33,30 @@ The tool utilizes the following environment variables:
     *   Default: `false`
 *   `ENABLE_OPTIONAL_HEADER_CAPTURE` (boolean): Optional (`true`/`false`). Intended for internal debugging. When set to `true`, the server intercepts API requests and injects the raw ADC Bearer token to capture and surface the `x-goog-sherlog-link` header in the tool output. This feature is supported for NanoBanana.
     *   Default: `false`
+*   `GENMEDIA_BUCKET` (string): Optional. Bucket name (no `gs://` prefix) used as the **fallback** destination for generated images when the `gcs_bucket_uri` parameter is not passed. Images are written under `<bucket>/nanobanana_outputs/`.
+*   `NANOBANANA_SIGNED_URL_EXPIRY_HOURS` (integer): Optional. Validity, in hours, of the V4 signed HTTPS URLs returned alongside each uploaded image.
+    *   Default: `24`
+    *   Values are clamped to `168` (7 days, the V4 maximum).
+    *   Set to `0` to disable signed-URL generation entirely (the `gs://` URI is still returned).
+
+## Saving to Google Cloud Storage
+
+When `gcs_bucket_uri` (or the `GENMEDIA_BUCKET` fallback) is set, the tool uploads each generated image to GCS, returns the `gs://` URI, and additionally returns a **V4-signed HTTPS URL** so MCP clients can display the image without the bucket being public. This is useful for remote/containerized deployments (SSE bridge, Cloud Run) where no retrievable local directory exists — without a bucket configured and no `output_directory`, generated image bytes are discarded.
+
+### Signed URLs — credentials
+
+Generating a signed URL requires an RSA signer:
+
+*   With a **service-account JSON key** (`GOOGLE_APPLICATION_CREDENTIALS`), signing is done locally — no extra IAM required.
+*   Under **Application Default Credentials without a private key** (the normal Cloud Run / GKE / metadata-server case), the tool signs via the IAM `signBlob` API. This requires the **runtime service account to hold `roles/iam.serviceAccountTokenCreator` on itself** (which grants `iam.serviceAccounts.signBlob`):
+
+    ```bash
+    gcloud iam service-accounts add-iam-policy-binding RUNTIME_SA_EMAIL \
+      --member="serviceAccount:RUNTIME_SA_EMAIL" \
+      --role="roles/iam.serviceAccountTokenCreator"
+    ```
+
+*   **If this permission is absent, signing is skipped (non-fatal): the upload still succeeds and the `gs://` URI is still returned — only the HTTPS signed link is omitted.**
 
 ## Example Usage
 
