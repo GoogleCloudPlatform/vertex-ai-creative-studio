@@ -98,6 +98,73 @@ func TestInteractionsClientCreate(t *testing.T) {
 	}
 }
 
+// TestFlatMediaAndSherlogThroughSeam proves the v0.2.0 consumer-side incorporation:
+// a Lyria-style flat outputs[]/steps[] entry ({type:"audio", mime_type, data}) and
+// an x-goog-sherlog-link response header are carried through the mcp-common mapping
+// (fromLibContents/fromLibResponse) to Step.MimeType/Step.Data and
+// InteractionResponse.SherlogLink on the non-streaming Create path.
+//
+// This asserts at the seam/mapping level, NOT via GenerateOmniVideo (which is
+// video-only and errors on 0 videos). It fails against v0.1.5 / before the field
+// copies (SherlogLink stays empty; the flat audio Data/MimeType are dropped) and
+// passes with the mapping change.
+func TestFlatMediaAndSherlogThroughSeam(t *testing.T) {
+	const (
+		wantMime    = "audio/wav"
+		wantData    = "SGVsbG8=" // base64("Hello")
+		wantSherlog = "https://sherlog.example/xyz"
+	)
+
+	// Flat audio in BOTH outputs[] (Lyria's live shape) and steps[], so the test
+	// documents that fromLibContents copies the flat fields for either collection.
+	respJSON := `{
+		"id": "lyria-1",
+		"object": "interaction",
+		"status": "completed",
+		"role": "model",
+		"outputs": [{"type": "audio", "mime_type": "` + wantMime + `", "data": "` + wantData + `"}],
+		"steps": [{"type": "audio", "mime_type": "` + wantMime + `", "data": "` + wantData + `"}]
+	}`
+
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("x-goog-sherlog-link", wantSherlog)
+		_, _ = io.WriteString(w, respJSON)
+	}))
+	defer ts.Close()
+
+	baseURL := ts.URL + "/v1beta1/projects/test-project/locations/global/interactions"
+	c := newTestClient(baseURL, ts.Client())
+
+	resp, err := c.Create(context.Background(), &InteractionRequest{
+		Model: "lyria-002",
+		Input: []InputItem{{Type: "text", Text: "a calm piano melody"}},
+	})
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+
+	// Blocker B: sherlog link surfaces on the Create path.
+	if resp.SherlogLink != wantSherlog {
+		t.Errorf("SherlogLink = %q, want %q (Blocker B: sherlog must flow through the seam on Create)", resp.SherlogLink, wantSherlog)
+	}
+
+	// Blocker A: flat audio survives the mapping in both collections.
+	assertFlatAudio := func(where string, steps []Step) {
+		if len(steps) != 1 {
+			t.Fatalf("%s: len = %d, want 1", where, len(steps))
+		}
+		if steps[0].MimeType != wantMime {
+			t.Errorf("%s[0].MimeType = %q, want %q (Blocker A: flat media dropped)", where, steps[0].MimeType, wantMime)
+		}
+		if steps[0].Data != wantData {
+			t.Errorf("%s[0].Data = %q, want %q (Blocker A: flat media dropped)", where, steps[0].Data, wantData)
+		}
+	}
+	assertFlatAudio("Outputs", resp.Outputs)
+	assertFlatAudio("Steps", resp.Steps)
+}
+
 // TestInteractionsClientCreateAPIError verifies a 4xx body is surfaced verbatim by
 // the adopted library and preserved through the seam.
 func TestInteractionsClientCreateAPIError(t *testing.T) {

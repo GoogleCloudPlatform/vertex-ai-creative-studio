@@ -113,12 +113,11 @@ type InteractionResponse struct {
 	Usage   *InteractionUsage `json:"usage,omitempty"`
 	Error   *InteractionError `json:"error,omitempty"`
 
-	// SherlogLink is populated from the x-goog-sherlog-link response header when
-	// optional header capture is enabled. It is not part of the JSON body.
-	//
-	// NOTE (v0.2.0 lib gap): the adopted library's non-streaming Create does not
-	// surface response headers, so this stays empty on the Create path. Flagged in
-	// impl/p1-result.md for the library owner.
+	// SherlogLink is populated from the x-goog-sherlog-link response header. It is
+	// not part of the JSON body. Since cloud-interactions-go v0.2.0 the adopted
+	// library surfaces this header on the non-streaming Create path
+	// (interactions.InteractionResponse.SherlogLink), and fromLibResponse copies it
+	// through, so it is populated on Create.
 	SherlogLink string `json:"-"`
 }
 
@@ -261,11 +260,12 @@ func fromLibResponse(resp *interactions.InteractionResponse) *InteractionRespons
 	}
 
 	out := &InteractionResponse{
-		ID:      resp.ID,
-		Object:  resp.Object,
-		Status:  resp.Status,
-		Steps:   fromLibContents(resp.Steps),
-		Outputs: fromLibContents(resp.Outputs),
+		ID:          resp.ID,
+		Object:      resp.Object,
+		Status:      resp.Status,
+		Steps:       fromLibContents(resp.Steps),
+		Outputs:     fromLibContents(resp.Outputs),
+		SherlogLink: resp.SherlogLink,
 	}
 	if resp.Usage != nil {
 		out.Usage = &InteractionUsage{
@@ -286,15 +286,17 @@ func fromLibResponse(resp *interactions.InteractionResponse) *InteractionRespons
 }
 
 // fromLibContents maps a slice of library Content (a step/output entry) into the
-// suite's Step slice, copying nested content parts. Thought steps carry no parts;
-// they are preserved by Type so GenerateOmniVideo can count them.
+// suite's Step slice, copying nested content parts as well as the flat media
+// fields (MimeType/Data) the library exposes since v0.2.0 for Lyria-style flat
+// outputs[]/steps[]. Thought steps carry no parts; they are preserved by Type so
+// GenerateOmniVideo can count them.
 func fromLibContents(in []interactions.Content) []Step {
 	if in == nil {
 		return nil
 	}
 	steps := make([]Step, 0, len(in))
 	for _, c := range in {
-		s := Step{Type: c.Type, Text: c.Text}
+		s := Step{Type: c.Type, Text: c.Text, MimeType: c.MimeType, Data: c.Data}
 		for _, p := range c.Content {
 			s.Content = append(s.Content, Part{
 				Type:     p.Type,
