@@ -36,6 +36,12 @@ import (
 // maxOmniImages is the per-prompt image input limit (findings §1).
 const maxOmniImages = 10
 
+// maxInlineMediaBytes caps the size of a local media file that will be read into
+// memory and base64-inlined into the interaction request. Larger files must be
+// referenced by a gs:// URI instead (base64 inflates payloads ~33%, and the
+// Interactions request body is bounded). 20 MiB is a deliberately conservative cap.
+const maxInlineMediaBytes = 20 * 1024 * 1024
+
 // omniVideoGenerationHandler generates one or more videos via the shared
 // common.GenerateOmniVideo entry point and persists the returned MP4 bytes
 // locally and/or to GCS (with best-effort V4 signed URLs), reusing the suite's
@@ -78,12 +84,13 @@ func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest
 	}
 
 	// Image / video inputs (local paths -> inline bytes; gs:// -> URI).
+	// Enforce the image-count limit BEFORE parseMediaRefs reads any file into memory.
+	if imgs, ok := args["images"].([]interface{}); ok && len(imgs) > maxOmniImages {
+		return mcp.NewToolResultError(fmt.Sprintf("too many images: %d provided, the model accepts at most %d", len(imgs), maxOmniImages)), nil
+	}
 	images, err := parseMediaRefs(args["images"], "image")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
-	}
-	if len(images) > maxOmniImages {
-		return mcp.NewToolResultError(fmt.Sprintf("too many images: %d provided, the model accepts at most %d", len(images), maxOmniImages)), nil
 	}
 	videos, err := parseMediaRefs(args["videos"], "video")
 	if err != nil {
@@ -232,6 +239,15 @@ func parseMediaRefs(arg any, kind string) ([]common.OmniMediaRef, error) {
 			refs = append(refs, common.OmniMediaRef{URI: path, MimeType: mimeType})
 			continue
 		}
+		// Guard against inlining an oversized file: stat first, and reject files
+		// above the inline cap with a hint to use a gs:// URI instead.
+		info, statErr := os.Stat(path)
+		if statErr != nil {
+			return nil, fmt.Errorf("failed to read %s file %q: %w", kind, path, statErr)
+		}
+		if info.Size() > maxInlineMediaBytes {
+			return nil, fmt.Errorf("%s file %q is %d bytes, exceeding the %d-byte inline limit; upload it to GCS and pass a gs:// URI instead", kind, path, info.Size(), maxInlineMediaBytes)
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s file %q: %w", kind, path, err)
@@ -293,6 +309,24 @@ func toInt(v any) (int, error) {
 	}
 }
 
+// toFloat64 coerces a JSON-decoded numeric tool argument to a float64. MCP
+// arguments usually arrive as float64, but integer literals may surface as int /
+// int64 depending on the decoder, so those are accepted too (mirrors toInt).
+func toFloat64(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	default:
+		return 0, false
+	}
+}
+
 // parseOptionalFloatInRange reads an optional float tool argument and validates
 // it lies within [min, max]. Returns nil when the argument is absent.
 func parseOptionalFloatInRange(args map[string]interface{}, key string, min, max float64) (*float32, error) {
@@ -300,7 +334,7 @@ func parseOptionalFloatInRange(args map[string]interface{}, key string, min, max
 	if !present || raw == nil {
 		return nil, nil
 	}
-	f, ok := raw.(float64)
+	f, ok := toFloat64(raw)
 	if !ok {
 		return nil, fmt.Errorf("%s must be a number", key)
 	}

@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -154,5 +155,60 @@ func TestParseOptionalFloatInRange(t *testing.T) {
 	// Wrong type.
 	if _, err := parseOptionalFloatInRange(args, "not_number", 0, 2); err == nil {
 		t.Error("expected error for a non-numeric value")
+	}
+}
+
+// TestParseOptionalFloatInRangeIntegers guards BOT-1: integer JSON numbers (which
+// may surface as float64, int, or int64) must be accepted for temperature/top_p,
+// not rejected as "must be a number".
+func TestParseOptionalFloatInRangeIntegers(t *testing.T) {
+	cases := map[string]interface{}{
+		"float64_int": float64(1), // JSON "1" decoded to float64
+		"int":         1,
+		"int64":       int64(1),
+	}
+	for name, raw := range cases {
+		t.Run(name, func(t *testing.T) {
+			// temperature range [0,2]
+			v, err := parseOptionalFloatInRange(map[string]interface{}{"temperature": raw}, "temperature", 0, 2)
+			if err != nil {
+				t.Fatalf("integer temperature %v (%T) rejected: %v", raw, raw, err)
+			}
+			if v == nil || *v != 1 {
+				t.Fatalf("temperature = %v, want 1", v)
+			}
+			// top_p range [0,1]
+			p, err := parseOptionalFloatInRange(map[string]interface{}{"top_p": raw}, "top_p", 0, 1)
+			if err != nil {
+				t.Fatalf("integer top_p %v (%T) rejected: %v", raw, raw, err)
+			}
+			if p == nil || *p != 1 {
+				t.Fatalf("top_p = %v, want 1", p)
+			}
+		})
+	}
+}
+
+// TestParseMediaRefsOversized guards BOT-3: a local file above the inline cap is
+// rejected with a hint to use a gs:// URI, and is not read fully into memory.
+func TestParseMediaRefsOversized(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "big.mp4")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	// Sparse file just over the cap (no large allocation).
+	if err := f.Truncate(maxInlineMediaBytes + 1); err != nil {
+		t.Fatalf("truncate: %v", err)
+	}
+	f.Close()
+
+	_, err = parseMediaRefs([]interface{}{path}, "video")
+	if err == nil {
+		t.Fatal("expected an error for an oversized local file")
+	}
+	if !strings.Contains(err.Error(), "gs://") {
+		t.Errorf("error should suggest a gs:// URI, got: %v", err)
 	}
 }
