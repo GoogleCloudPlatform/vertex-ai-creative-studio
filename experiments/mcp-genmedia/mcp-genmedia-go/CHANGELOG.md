@@ -4,6 +4,14 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.14.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.13.0...mcp-v3.14.0) (2026-08-10)
+
+
+### Features
+
+* **mcp:** add full omni_video_generation tool surface and shared media persistence ([#1615](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1615)) ([2f5f874](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/2f5f874ade521bfea3618e55c36af5179d99f7f8))
+* **mcp:** add omni_video_generation to mcp-gemini-go + Omni contract/drift tests ([#1617](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1617)) ([6fd49c2](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/6fd49c2ae7671dab6f1a28e5ae8324fc22a8dd6a))
+
 ## [3.13.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.12.1...mcp-v3.13.0) (2026-08-10)
 
 
