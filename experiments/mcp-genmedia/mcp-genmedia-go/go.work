@@ -1,12 +1,13 @@
 go 1.26.0
 
 use (
-	./mcp-nanobanana-go
 	./mcp-avtool-go
 	./mcp-chirp3-go
 	./mcp-common
 	./mcp-gemini-go
 	./mcp-imagen-go
 	./mcp-lyria-go
+	./mcp-nanobanana-go
+	./mcp-omni-go
 	./mcp-veo-go
 )

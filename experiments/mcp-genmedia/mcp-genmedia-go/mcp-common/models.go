@@ -479,6 +479,82 @@ func ResolveLyriaModel(modelInput string, allowUnsafe bool) (LyriaModelInfo, boo
 
 	return LyriaModelInfo{}, false
 }
+// --- Omni Model Configuration ---
+
+// DefaultOmniModel is the canonical default Gemini Omni model ID.
+const DefaultOmniModel = "gemini-omni-flash-preview"
+
+// OmniModelInfo holds the details for a specific Gemini Omni model. Omni models
+// (text/image/video in, text+video out) are reachable only via the Vertex
+// Interactions API and are global-only.
+type OmniModelInfo struct {
+	CanonicalName string
+	Aliases       []string
+	Description   string
+}
+
+// SupportedOmniModels is the single source of truth for all supported Omni models.
+var SupportedOmniModels = map[string]OmniModelInfo{
+	"gemini-omni-flash-preview": {
+		CanonicalName: "gemini-omni-flash-preview",
+		Aliases:       []string{"Gemini Omni Flash", "Omni"},
+		Description:   "Gemini Omni Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only).",
+	},
+}
+
+// ResolveOmniModel finds the canonical model info from a user-provided name or
+// alias. An empty input resolves to the default Omni model.
+func ResolveOmniModel(modelInput string, allowUnsafe bool) (OmniModelInfo, bool) {
+	if strings.TrimSpace(modelInput) == "" {
+		return SupportedOmniModels[DefaultOmniModel], true
+	}
+
+	modelInputLower := strings.ToLower(modelInput)
+	for canonicalName, info := range SupportedOmniModels {
+		if strings.ToLower(canonicalName) == modelInputLower {
+			return info, true
+		}
+		for _, alias := range info.Aliases {
+			if strings.ToLower(alias) == modelInputLower {
+				return info, true
+			}
+		}
+	}
+
+	if allowUnsafe && modelInput != "" {
+		// Return a permissive fallback struct for experimental models.
+		return OmniModelInfo{CanonicalName: modelInput}, true
+	}
+
+	return OmniModelInfo{}, false
+}
+
+// BuildOmniModelDescription generates a formatted string listing supported Omni
+// models and their aliases, suitable for use in an MCP tool description.
+func BuildOmniModelDescription() string {
+	var sb strings.Builder
+	sb.WriteString("The Gemini Omni model ID to use for video generation. Supported models:\n")
+
+	keys := make([]string, 0, len(SupportedOmniModels))
+	for k := range SupportedOmniModels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		info := SupportedOmniModels[k]
+		fmt.Fprintf(&sb, "- *%s*", info.CanonicalName)
+		if len(info.Aliases) > 0 {
+			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
+		}
+		if info.Description != "" {
+			fmt.Fprintf(&sb, " - %s", info.Description)
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
+
 // and their aliases, suitable for use in an MCP tool description.
 func BuildLyriaModelDescription() string {
 	var sb strings.Builder
