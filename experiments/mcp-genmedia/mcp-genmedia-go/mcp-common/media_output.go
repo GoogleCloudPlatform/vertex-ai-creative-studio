@@ -32,6 +32,16 @@ import (
 // signedURLV4MaxHours is the maximum validity for a V4 signed URL (7 days).
 const signedURLV4MaxHours = 168
 
+// uploadToGCSFn and generateV4SignedURLFn are indirections over the real GCS
+// upload and V4-signing helpers so the GCS branch of PersistMediaOutputs can be
+// unit-tested without a live bucket or credentials. They default to the real
+// implementations (UploadToGCS / GenerateV4SignedURL) — production behavior is
+// unchanged — and are only reassigned by tests, which restore them afterwards.
+var (
+	uploadToGCSFn         = UploadToGCS
+	generateV4SignedURLFn = GenerateV4SignedURL
+)
+
 // MediaArtifact is a single generated media blob to persist (an image, a video,
 // an audio clip, ...). FileName is the base name including extension; it is used
 // verbatim for the local file and, prefixed by any GCS object prefix, for the
@@ -95,7 +105,7 @@ func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsB
 		// with its intended bucket/object (GCSURI stays empty until success).
 		out.GCSBucket = bucketName
 		out.GCSObject = objectName
-		if err := UploadToGCS(ctx, bucketName, objectName, art.MimeType, art.Data); err != nil {
+		if err := uploadToGCSFn(ctx, bucketName, objectName, art.MimeType, art.Data); err != nil {
 			out.GCSError = err
 			return out, nil
 		}
@@ -104,7 +114,7 @@ func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsB
 		// Best-effort V4 signed HTTPS URL so clients can fetch the media without
 		// the bucket being public. Non-fatal on failure.
 		if signedURLExpiry > 0 {
-			if signedURL, sErr := GenerateV4SignedURL(ctx, bucketName, objectName, signedURLExpiry); sErr != nil {
+			if signedURL, sErr := generateV4SignedURLFn(ctx, bucketName, objectName, signedURLExpiry); sErr != nil {
 				log.Printf("failed to generate signed URL for %s: %v", out.GCSURI, sErr)
 			} else {
 				out.SignedURL = signedURL
