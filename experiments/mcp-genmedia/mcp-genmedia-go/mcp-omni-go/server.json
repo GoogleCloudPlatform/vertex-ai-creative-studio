@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.GoogleCloudPlatform/vertex-ai-creative-studio-mcp-omni-go",
+  "description": "Provides video generation (with optional embedded audio) using Google's Gemini Omni model via the Vertex Interactions API.",
+  "status": "active",
+  "repository": {
+    "url": "ssh://git@github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registry_type": "go",
+      "registry_base_url": "https://pkg.go.dev",
+      "identifier": "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/mcp-genmedia/mcp-genmedia-go/mcp-omni-go",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environment_variables": [
+        {
+          "description": "Your Google Cloud project ID.",
+          "is_required": true,
+          "format": "string",
+          "is_secret": false,
+          "name": "GOOGLE_CLOUD_PROJECT"
+        },
+        {
+            "description": "The Google Cloud region for the APIs (e.g., `us-central1`).",
+            "is_required": false,
+            "format": "string",
+            "is_secret": false,
+            "name": "LOCATION"
+        }
+      ]
+    }
+  ]
+}

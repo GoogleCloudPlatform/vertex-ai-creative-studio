@@ -19,7 +19,8 @@ SERVERS := \
 	mcp-gemini-go \
 	mcp-lyria-go \
 	mcp-avtool-go \
-	mcp-imagen-go
+	mcp-imagen-go \
+	mcp-omni-go
 
 .PHONY: all build clean version vet $(SERVERS)
 

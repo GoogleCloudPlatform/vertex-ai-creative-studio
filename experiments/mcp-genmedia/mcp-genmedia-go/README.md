@@ -186,6 +186,11 @@ This repository provides AI application samples for:
     *   Tools: `veo_t2v` (text-to-video) and `veo_i2v` (image-to-video).
     *   Supports parameters like aspect ratio and duration. Videos are saved to GCS by the API and can optionally be downloaded to a local directory.
 
+*   **`mcp-omni-go`**:
+    *   Provides video generation (with optional embedded audio) using Google's Gemini Omni model via the Vertex Interactions API.
+    *   Tool: `omni_video_generation` for generating video from a text prompt, optionally conditioned on input images and/or videos.
+    *   Uses Application Default Credentials (ADC) against the `global` Interactions endpoint. Output can be saved to a local directory and/or GCS (with a best-effort V4 signed URL).
+
 ## Common Features:
 
 *   **Transport Protocols**: Most servers support `stdio` (default), `http` (streamable HTTP with CORS), and `sse` (Server-Sent Events, legacy) transports.
@@ -211,10 +216,10 @@ This allows you to have default values in your `.env` file and override them for
 The following variables can be defined in your `.env` file or as shell environment variables:
 
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set. Note: `PROJECT_ID` is also supported as a fallback.
-    *   **Per-Server Override**: You can override the global project ID for specific servers using `VEO_PROJECT_ID`, `IMAGEN_PROJECT_ID`, `LYRIA_PROJECT_ID`, `GEMINI_PROJECT_ID`, `CHIRP3_PROJECT_ID`, `AVTOOL_PROJECT_ID`, or `NANOBANANA_PROJECT_ID`.
+    *   **Per-Server Override**: You can override the global project ID for specific servers using `VEO_PROJECT_ID`, `IMAGEN_PROJECT_ID`, `LYRIA_PROJECT_ID`, `GEMINI_PROJECT_ID`, `CHIRP3_PROJECT_ID`, `AVTOOL_PROJECT_ID`, `NANOBANANA_PROJECT_ID`, or `OMNI_PROJECT_ID`.
 *   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
     *   **Fallback**: `LOCATION` is also supported as a fallback for `GOOGLE_CLOUD_LOCATION`.
-    *   **Per-Server Override**: You can override the global location for specific servers using `<PREFIX>_LOCATION` (e.g., `VEO_LOCATION`, `IMAGEN_LOCATION`, `LYRIA_LOCATION`, `GEMINI_LOCATION`, `CHIRP3_LOCATION`, `AVTOOL_LOCATION`, or `NANOBANANA_LOCATION`).
+    *   **Per-Server Override**: You can override the global location for specific servers using `<PREFIX>_LOCATION` (e.g., `VEO_LOCATION`, `IMAGEN_LOCATION`, `LYRIA_LOCATION`, `GEMINI_LOCATION`, `CHIRP3_LOCATION`, `AVTOOL_LOCATION`, `NANOBANANA_LOCATION`, or `OMNI_LOCATION`). Note: `mcp-omni-go` defaults `LOCATION` to `global` and the Interactions API call is always made against the `global` endpoint.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
 *   `ALLOW_UNSAFE_MODELS` (boolean): Optional (`true`/`false`). Allows users to bypass strict local model constraint validation, enabling them to test experimental or pre-release model strings that are not yet hardcoded in the registry. Defaults to `false`.
 *   `ENABLE_OPTIONAL_HEADER_CAPTURE` (boolean): Optional (`true`/`false`). Intended for internal debugging. When set to `true`, the server intercepts API requests and injects the raw ADC Bearer token to capture and surface the `x-goog-sherlog-link` header in the tool output. This feature is supported for Imagen, Gemini, NanoBanana, and Lyria, but currently not supported for Veo due to Go SDK limitations with long-running operations. Defaults to `false`.

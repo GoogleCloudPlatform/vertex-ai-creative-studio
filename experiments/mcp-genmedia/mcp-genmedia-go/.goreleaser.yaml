@@ -62,6 +62,15 @@ builds:
     env: [CGO_ENABLED=0]
     goos: [linux, windows, darwin]
     goarch: [amd64, arm64]
+  - id: mcp-omni-go
+    dir: experiments/mcp-genmedia/mcp-genmedia-go/mcp-omni-go
+    main: .
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    binary: mcp-omni-go
+    env: [CGO_ENABLED=0]
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
 
 archives:
   -
