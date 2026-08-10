@@ -30,8 +30,9 @@ The server exposes the following tool:
         `Gemini Omni Flash`). See `mcp-common/models.go` for the supported list.
         Defaults to `gemini-omni-flash-preview`.
     *   `images` (array of string, optional): Up to 10 input images to condition
-        generation on. Each entry is a local file path or a `gs://` URI
-        (`image/png`, `image/jpeg`, `image/webp`).
+        generation on. Each entry is a local file path or a `gs://` URI. The MIME
+        type is inferred from the file extension: `image/png`, `image/jpeg`,
+        `image/webp`, `image/gif`, `image/heic`, `image/heif`.
     *   `videos` (array of string, optional): Input videos to reference or edit.
         Each entry is a local file path or a `gs://` URI (e.g. `video/mp4`,
         `video/webm`, `video/quicktime`).
