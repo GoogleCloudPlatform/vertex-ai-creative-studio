@@ -161,14 +161,14 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 					FileName: fileName,
 				}, outputDir, gcsBucketURI, expiry)
 				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to save generated image: %v", err)), nil
+					return mcp.NewToolResultError(err.Error()), nil
 				}
 
 				if persisted.LocalPath != "" {
 					savedFiles = append(savedFiles, persisted.LocalPath)
 				}
 				if persisted.GCSError != nil {
-					log.Printf("failed to upload image to GCS: %v", persisted.GCSError)
+					log.Printf("failed to upload image to gs://%s/%s: %v", persisted.GCSBucket, persisted.GCSObject, persisted.GCSError)
 					fmt.Fprintf(&responseText, "\n\n[Warning: failed to upload generated image to GCS: %v]", persisted.GCSError)
 				}
 				if persisted.GCSURI != "" {

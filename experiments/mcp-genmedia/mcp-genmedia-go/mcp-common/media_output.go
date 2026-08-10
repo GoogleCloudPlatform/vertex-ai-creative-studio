@@ -52,7 +52,12 @@ type PersistedMedia struct {
 	LocalPath string
 	// GCSURI is the gs:// URI uploaded, if gcs_bucket_uri was set and upload succeeded.
 	GCSURI string
-	// GCSObject is the object name (prefix + filename) used for the GCS upload.
+	// GCSBucket is the destination bucket name. It is populated whenever a GCS
+	// destination was requested (even if the upload later failed) so callers can
+	// log the intended bucket alongside GCSError.
+	GCSBucket string
+	// GCSObject is the object name (prefix + filename) used for the GCS upload. It
+	// is populated whenever a GCS destination was requested (even on failure).
 	GCSObject string
 	// SignedURL is a best-effort V4 signed URL for the uploaded object.
 	SignedURL string
@@ -74,11 +79,11 @@ func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsB
 
 	if outputDir != "" {
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			return out, fmt.Errorf("failed to create output directory %q: %w", outputDir, err)
+			return out, fmt.Errorf("failed to create output directory: %w", err)
 		}
 		filePath := filepath.Join(outputDir, art.FileName)
 		if err := os.WriteFile(filePath, art.Data, 0644); err != nil {
-			return out, fmt.Errorf("failed to write output file %q: %w", filePath, err)
+			return out, fmt.Errorf("failed to write output file: %w", err)
 		}
 		out.LocalPath = filePath
 	}
@@ -86,12 +91,15 @@ func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsB
 	if gcsBucketURI != "" {
 		bucketName, objectPrefix := ParseGCSBucketAndPrefix(gcsBucketURI)
 		objectName := objectPrefix + art.FileName
+		// Populate the destination up front so a failed upload can still be logged
+		// with its intended bucket/object (GCSURI stays empty until success).
+		out.GCSBucket = bucketName
+		out.GCSObject = objectName
 		if err := UploadToGCS(ctx, bucketName, objectName, art.MimeType, art.Data); err != nil {
 			out.GCSError = err
 			return out, nil
 		}
 		out.GCSURI = fmt.Sprintf("gs://%s/%s", bucketName, objectName)
-		out.GCSObject = objectName
 
 		// Best-effort V4 signed HTTPS URL so clients can fetch the media without
 		// the bucket being public. Non-fatal on failure.

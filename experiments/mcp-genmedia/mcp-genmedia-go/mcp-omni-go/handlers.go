@@ -175,14 +175,14 @@ func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest
 			FileName: fmt.Sprintf("omni_%s_%d.mp4", gentime, n),
 		}, outputDir, gcsBucketURI, expiry)
 		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("failed to save generated video: %v", err)), nil
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 
 		if persisted.LocalPath != "" {
 			savedFiles = append(savedFiles, persisted.LocalPath)
 		}
 		if persisted.GCSError != nil {
-			log.Printf("failed to upload video to GCS: %v", persisted.GCSError)
+			log.Printf("failed to upload video to gs://%s/%s: %v", persisted.GCSBucket, persisted.GCSObject, persisted.GCSError)
 			fmt.Fprintf(&responseText, "\n\n[Warning: failed to upload generated video to GCS: %v]", persisted.GCSError)
 		}
 		if persisted.GCSURI != "" {
