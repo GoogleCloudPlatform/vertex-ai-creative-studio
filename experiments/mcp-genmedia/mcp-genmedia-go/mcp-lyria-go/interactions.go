@@ -1,119 +1,81 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
-// generateAudioWithInteractions uses the experimental Interactions API to generate audio
-// for newer Lyria models like lyria-3-pro-preview and lyria-3-clip-preview.
+// generateAudioWithInteractions generates audio for newer Lyria models like
+// lyria-3-pro-preview and lyria-3-clip-preview via the shared mcp-common
+// Interactions seam (common.NewInteractionsClient + Create).
+//
+// The seam owns the transport concerns this function used to hand-roll: ADC via
+// google.FindDefaultCredentials, the auto-refreshing oauth2 client, the
+// x-goog-user-project header, and the global-only interactions URL. It
+// additionally pins the "Api-Revision" header on every request — the single
+// intended, benign wire delta versus the previous hand-rolled client (omni uses
+// the same header successfully). This is a behavior-preserving consolidation:
+// audio bytes, output filenames, result text, env-var handling, and sherlog
+// capture are unchanged.
 func generateAudioWithInteractions(ctx context.Context, modelID string, prompt string) ([]byte, string, error) {
 	log.Printf("Using Interactions API for model: %s", modelID)
 
-	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	client, err := common.NewInteractionsClient(ctx, appConfig)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get default credentials: %w", err)
-	}
-	oauthClient := oauth2.NewClient(ctx, creds.TokenSource)
-
-	endpoint := "aiplatform.googleapis.com"
-	if appConfig.ApiEndpoint != "" {
-		endpoint = appConfig.ApiEndpoint
+		return nil, "", fmt.Errorf("failed to create interactions client: %w", err)
 	}
 
-	// Lyria 3 preview models via the Interactions API currently only support the global location ("Cardolan").
-	// We hardcode "global" here instead of using appConfig.Location (which defaults to "us-central1").
-	url := fmt.Sprintf("https://%s/v1beta1/projects/%s/locations/global/interactions",
-		endpoint, appConfig.ProjectID)
-
-	payload := map[string]interface{}{
-		"model": modelID,
-		"input": []map[string]string{
-			{
-				"type": "text",
-				"text": prompt,
-			},
-		},
-		"store": false,
+	req := &common.InteractionRequest{
+		Model: modelID,
+		Input: []common.InputItem{{Type: "text", Text: prompt}},
+		Store: false,
 	}
 
-	body, err := json.Marshal(payload)
+	resp, err := client.Create(ctx, req)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to marshal payload: %w", err)
+		return nil, "", err
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to create http request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-goog-user-project", appConfig.ProjectID)
-
-	// Inject auth header manually if optional header capture is enabled
-	if appConfig.EnableOptionalHeaderCapture {
-		token, tokenErr := creds.TokenSource.Token()
-		if tokenErr == nil {
-			httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
-		}
-	}
-
-	resp, err := oauthClient.Do(httpReq)
-	if err != nil {
-		return nil, "", fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
+	// Sherlog link is only surfaced when optional header capture is enabled,
+	// preserving the pre-seam behavior (the seam always populates
+	// resp.SherlogLink from the x-goog-sherlog-link response header).
 	var sherlogLink string
 	if appConfig.EnableOptionalHeaderCapture {
-		sherlogLink = resp.Header.Get("x-goog-sherlog-link")
+		sherlogLink = resp.SherlogLink
 	}
 
-	respBody, err := io.ReadAll(resp.Body)
+	// Lyria returns flat audio ({type:"audio", mime_type, data}); the live shape
+	// arrives in outputs[], but tolerate steps[] as well.
+	audioBytes, found, err := extractFlatAudio(resp.Outputs)
+	if !found && err == nil {
+		audioBytes, found, err = extractFlatAudio(resp.Steps)
+	}
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read response body: %w", err)
+		return nil, "", err
 	}
-
-	if resp.StatusCode >= 400 {
-		return nil, "", fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+	if !found {
+		return nil, "", fmt.Errorf("no audio output found in response")
 	}
+	return audioBytes, sherlogLink, nil
+}
 
-	var raw map[string]interface{}
-	if err := json.Unmarshal(respBody, &raw); err != nil {
-		return nil, "", fmt.Errorf("failed to parse JSON response: %w", err)
-	}
-
-	outputs, ok := raw["outputs"].([]interface{})
-	if !ok {
-		return nil, "", fmt.Errorf("no \"outputs\" array found in response")
-	}
-
-	for _, out := range outputs {
-		outMap, ok := out.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if outMap["type"] == "audio" {
-			data, ok := outMap["data"].(string)
-			if !ok {
-				continue
-			}
-			// Decode the base64 string directly
-			decodedBytes, err := base64.StdEncoding.DecodeString(data)
+// extractFlatAudio scans a flat outputs[]/steps[] slice for the first audio
+// entry and returns its base64-decoded bytes. found is false when no audio
+// entry is present; a present-but-undecodable entry surfaces the decode error
+// verbatim, matching the pre-seam behavior.
+func extractFlatAudio(steps []common.Step) ([]byte, bool, error) {
+	for _, s := range steps {
+		if s.Type == "audio" && s.Data != "" {
+			decoded, err := base64.StdEncoding.DecodeString(s.Data)
 			if err != nil {
-				return nil, "", fmt.Errorf("failed to decode base64 audio data: %w", err)
+				return nil, true, fmt.Errorf("failed to decode base64 audio data: %w", err)
 			}
-			return decodedBytes, sherlogLink, nil
+			return decoded, true, nil
 		}
 	}
-
-	return nil, "", fmt.Errorf("no audio output found in response")
+	return nil, false, nil
 }
