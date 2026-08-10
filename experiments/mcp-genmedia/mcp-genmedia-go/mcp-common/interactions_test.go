@@ -151,6 +151,7 @@ func TestFlatMediaAndSherlogThroughSeam(t *testing.T) {
 
 	// Blocker A: flat audio survives the mapping in both collections.
 	assertFlatAudio := func(where string, steps []Step) {
+		t.Helper()
 		if len(steps) != 1 {
 			t.Fatalf("%s: len = %d, want 1", where, len(steps))
 		}
