@@ -4,6 +4,13 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.11.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.10.0...mcp-v3.11.0) (2026-08-10)
+
+
+### Features
+
+* **mcp-genmedia:** optional seed for Nano Banana + Veo tools ([#1599](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1599)) ([7bc840a](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/7bc840a2c05341a4c18035a0574a6dc1a08ae782))
+
 ## 2026-08-09 (v3.10.0)
 
 *   **Feat:** `mcp-nanobanana-go` now saves generated images to Google Cloud Storage via a new optional `gcs_bucket_uri` tool argument, with fallback to the `GENMEDIA_BUCKET` environment variable, and returns V4 signed HTTPS URLs for the uploaded objects. Signed URL lifetime is configurable via the new `NANOBANANA_SIGNED_URL_EXPIRY_HOURS` environment variable (default: 24 hours). (Thanks @danielamigos, #1592.)
