@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	cloud.google.com/go/storage v1.64.0
-	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260810044412-cc5608278023
+	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260810132958-58c6df0d10a8
 	github.com/mark3labs/mcp-go v0.57.0
 	go.opentelemetry.io/otel v1.45.0
 	google.golang.org/genai v1.67.0
