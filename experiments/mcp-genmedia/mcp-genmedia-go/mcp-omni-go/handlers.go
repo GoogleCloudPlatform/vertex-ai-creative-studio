@@ -319,7 +319,9 @@ func videoExtForMimeType(mimeType string) string {
 }
 
 // toInt coerces a JSON-decoded numeric tool argument to an int. MCP arguments
-// arrive as float64 for JSON numbers; a string of digits is also accepted.
+// arrive as float64 for JSON numbers, but integer literals may surface as int /
+// int64 depending on the decoder, so those are accepted too. A non-integral
+// float64 or any non-numeric value is rejected with an error.
 func toInt(v any) (int, error) {
 	switch n := v.(type) {
 	case float64:
