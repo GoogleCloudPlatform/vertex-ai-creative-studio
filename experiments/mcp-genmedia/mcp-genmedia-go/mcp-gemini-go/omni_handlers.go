@@ -188,7 +188,7 @@ func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest
 		persisted, err := common.PersistMediaOutputs(ctx, common.MediaArtifact{
 			Data:     videoBytes,
 			MimeType: mimeType,
-			FileName: fmt.Sprintf("omni_%s_%d.mp4", gentime, n),
+			FileName: fmt.Sprintf("omni_%s_%d%s", gentime, n, videoExtForMimeType(mimeType)),
 		}, outputDir, gcsBucketURI, expiry)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
@@ -254,6 +254,9 @@ func parseMediaRefs(arg any, kind string) ([]common.OmniMediaRef, error) {
 		if statErr != nil {
 			return nil, fmt.Errorf("failed to read %s file %q: %w", kind, path, statErr)
 		}
+		if info.IsDir() {
+			return nil, fmt.Errorf("%s path %q is a directory, not a file (expected a local media file or a gs:// URI)", kind, path)
+		}
 		if info.Size() > maxInlineMediaBytes {
 			return nil, fmt.Errorf("%s file %q is %d bytes, exceeding the %d-byte inline limit; upload it to GCS and pass a gs:// URI instead", kind, path, info.Size(), maxInlineMediaBytes)
 		}
@@ -297,6 +300,30 @@ func inferMediaMimeType(path string) string {
 		return "video/3gpp"
 	default:
 		return "application/octet-stream"
+	}
+}
+
+// videoExtForMimeType returns a file extension for a generated video MIME type,
+// defaulting to ".mp4" (the Omni model's output format) for unknown or empty
+// types so the saved filename's extension matches the actual bytes.
+func videoExtForMimeType(mimeType string) string {
+	switch strings.ToLower(strings.TrimSpace(mimeType)) {
+	case "video/mp4":
+		return ".mp4"
+	case "video/webm":
+		return ".webm"
+	case "video/quicktime":
+		return ".mov"
+	case "video/mpeg":
+		return ".mpeg"
+	case "video/3gpp":
+		return ".3gp"
+	case "video/x-flv":
+		return ".flv"
+	case "video/wmv", "video/x-ms-wmv":
+		return ".wmv"
+	default:
+		return ".mp4"
 	}
 }
 
