@@ -473,7 +473,7 @@ typing-extensions==4.16.0
     #   pydantic-core
     #   soundfile
     #   typing-inspection
-typing-inspection==0.4.2
+typing-inspection==0.4.3
     # via
     #   fastapi
     #   pydantic
