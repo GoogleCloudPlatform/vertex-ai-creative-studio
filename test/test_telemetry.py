@@ -70,7 +70,7 @@ def test_track_model_call_success(mock_logger):
         ctx["billing_units"]["candidates_tokens"] = 50
 
     mock_logger.info.assert_called_once()
-    args, kwargs = mock_logger.info.call_args
+    _args, kwargs = mock_logger.info.call_args
     extra = kwargs["extra"]["extra_data"]
 
     assert extra["event_type"] == "model_call"
@@ -78,6 +78,44 @@ def test_track_model_call_success(mock_logger):
     assert extra["status"] == "success"
     assert extra["pipeline_id"] == "pipe-123"
     assert extra["billing_units"] == {"prompt_tokens": 100, "candidates_tokens": 50}
+
+
+@patch("common.analytics.analytics_logger")
+def test_track_model_call_safety_filter(mock_logger):
+    import pytest
+
+    with pytest.raises(Exception, match="Content Filtered"):
+        with track_model_call("imagen-4.0") as ctx:
+            ctx["billing_units"]["sample_count"] = 1
+            raise Exception("Content Filtered: Prompt triggered safety filter")
+
+    mock_logger.info.assert_called_once()
+    _args, kwargs = mock_logger.info.call_args
+    extra = kwargs["extra"]["extra_data"]
+
+    assert extra["status"] == "failure"
+    assert extra["error"]["category"] == "SAFETY_FILTER"
+    assert extra["error"]["retryable"] is False
+    assert extra["billing_units"] == {"sample_count": 1}
+
+
+@patch("common.analytics.analytics_logger")
+def test_track_model_call_upstream_failure(mock_logger):
+    import pytest
+
+    with pytest.raises(Exception, match="503 Service Unavailable"):
+        with track_model_call("veo-3.1") as ctx:
+            ctx["billing_units"]["video_seconds_generated"] = 8
+            raise Exception("503 Service Unavailable: Backend error")
+
+    mock_logger.info.assert_called_once()
+    _args, kwargs = mock_logger.info.call_args
+    extra = kwargs["extra"]["extra_data"]
+
+    assert extra["status"] == "failure"
+    assert extra["error"]["category"] == "UPSTREAM_FAILURE"
+    assert extra["error"]["retryable"] is True
+    assert extra["billing_units"] == {"video_seconds_generated": 8}
 
 
 from models.gemini import _extract_usage_metadata
@@ -112,7 +150,11 @@ def test_gemini_tts_telemetry(mock_tts_client, mock_logger):
     from models.gemini_tts import synthesize_speech
 
     result = synthesize_speech(
-        "Hello world", "Prompt", "gemini-tts", "en-US-Standard-A", "en-US",
+        "Hello world",
+        "Prompt",
+        "gemini-tts",
+        "en-US-Standard-A",
+        "en-US",
     )
     assert result == b"fake_audio_bytes"
 
