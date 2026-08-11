@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	cloud.google.com/go/storage v1.64.0
-	github.com/ghchinoy/cloud-interactions-go v0.2.0
+	github.com/ghchinoy/cloud-interactions-go v0.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.45.0
