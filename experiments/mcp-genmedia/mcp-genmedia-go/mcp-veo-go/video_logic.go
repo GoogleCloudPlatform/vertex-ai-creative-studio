@@ -54,12 +54,14 @@ func veoOutputNames(outputFilename string, count int, mimeType string) []string 
 // name the objects itself under the OutputGCSURI prefix) to the client-desired
 // names. srcURIs and names are aligned 1:1 by identity (srcURIs[i] is the video
 // whose desired name is names[i]), so a skipped/partial element never drifts the
-// mapping. It returns the bucket, the ordered src→dst renames, and the resulting
-// gs:// URIs (aligned with srcURIs order). When names is empty it returns nil
-// (default API names kept).
-func buildVeoRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket string, renames []common.Rename, dstURIs []string) {
+// mapping. It returns the bucket, the ordered src→dst renames, and — aligned 1:1
+// with renames — the source gs:// URI each rename came from (planSrcURIs) and the
+// resulting destination gs:// URI (dstURIs). planSrcURIs lets the caller write each
+// renamed URI back onto the exact artifact it came from by identity rather than by
+// slice position. When names is empty it returns nil (default API names kept).
+func buildVeoRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket string, renames []common.Rename, planSrcURIs, dstURIs []string) {
 	if len(names) == 0 || len(srcURIs) == 0 {
-		return "", nil, nil
+		return "", nil, nil, nil
 	}
 	bucket, prefix := common.ParseGCSBucketAndPrefix(gcsOutputURI)
 	n := len(srcURIs)
@@ -74,9 +76,29 @@ func buildVeoRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket st
 		}
 		dstObject := prefix + names[i]
 		renames = append(renames, common.Rename{Src: srcObject, Dst: dstObject})
+		planSrcURIs = append(planSrcURIs, srcURIs[i])
 		dstURIs = append(dstURIs, common.BuildGCSURI(bucket, dstObject))
 	}
-	return bucket, renames, dstURIs
+	return bucket, renames, planSrcURIs, dstURIs
+}
+
+// applyRenamedURIs writes each successfully-renamed destination URI back onto the
+// artifact it came from, pairing by identity (the source gs:// URI in planSrcURIs)
+// rather than by slice position. renames/planSrcURIs/dstURIs are aligned 1:1 by
+// construction (buildVeoRenamePlan), and renamedCount is how many leading plan
+// entries common.RenameGCSObjects reported as renamed (a prefix of the plan,
+// truncated at the first failure). Positional writeback into the (un-compacted)
+// gcsVideoURIs would drift if any source URI was skipped or the batch partially
+// failed; identity pairing never does.
+func applyRenamedURIs(gcsVideoURIs, planSrcURIs, dstURIs []string, renamedCount int) {
+	for k := 0; k < renamedCount && k < len(dstURIs) && k < len(planSrcURIs); k++ {
+		for idx := range gcsVideoURIs {
+			if gcsVideoURIs[idx] == planSrcURIs[k] {
+				gcsVideoURIs[idx] = dstURIs[k]
+				break
+			}
+		}
+	}
 }
 
 // callGenerateVideosAPI orchestrates the entire video generation process.
@@ -384,12 +406,13 @@ func callGenerateVideosAPI(
 	// context used for downloads), before the tool returns.
 	var renameNote string
 	if outputNames != nil && len(gcsVideoURIs) > 0 {
-		renameBucket, renames, dstURIs := buildVeoRenamePlan(config.OutputGCSURI, gcsVideoURIs, outputNames)
+		renameBucket, renames, planSrcURIs, dstURIs := buildVeoRenamePlan(config.OutputGCSURI, gcsVideoURIs, outputNames)
 		if len(renames) > 0 {
 			renamed, rErr := common.RenameGCSObjects(ctx, renameBucket, renames)
-			for j := 0; j < len(renamed) && j < len(dstURIs); j++ {
-				gcsVideoURIs[j] = dstURIs[j]
-			}
+			// Pair each renamed URI back to its source artifact by identity, not by
+			// slice position, so a skipped/unparseable URI or a partial batch failure
+			// never writes a renamed URI onto the wrong artifact.
+			applyRenamedURIs(gcsVideoURIs, planSrcURIs, dstURIs, len(renamed))
 			if rErr != nil {
 				renameNote = fmt.Sprintf("Note: renaming generated GCS object(s) to match output_filename '%s' partially failed (some API-original objects may remain): %v", outputFilename, rErr)
 				log.Print(renameNote)

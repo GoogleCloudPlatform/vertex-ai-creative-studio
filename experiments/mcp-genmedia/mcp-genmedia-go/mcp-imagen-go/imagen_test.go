@@ -65,10 +65,15 @@ func TestBuildImagenRenamePlan(t *testing.T) {
 	}
 	names := imagenOutputNames("hero.png", 4, "image/png")
 
-	bucket, renames, dstURIs := buildImagenRenamePlan(gcsOutputURI, srcURIs, names)
+	bucket, renames, planSrcURIs, dstURIs := buildImagenRenamePlan(gcsOutputURI, srcURIs, names)
 
 	if bucket != "mybucket" {
 		t.Errorf("bucket = %q, want mybucket", bucket)
+	}
+	// planSrcURIs is aligned 1:1 with renames/dstURIs and echoes the source URIs so
+	// the caller can pair renamed URIs back by identity, not slice position.
+	if !reflect.DeepEqual(planSrcURIs, srcURIs) {
+		t.Errorf("planSrcURIs = %v, want %v", planSrcURIs, srcURIs)
 	}
 	wantRenames := []common.Rename{
 		{Src: "imagen_outputs/sample_0.png", Dst: "imagen_outputs/hero_1.png"},
@@ -93,7 +98,7 @@ func TestBuildImagenRenamePlan(t *testing.T) {
 // TestBuildImagenRenamePlanSingle: n==1 ⇒ no suffix (hero.png), bucket-root prefix.
 func TestBuildImagenRenamePlanSingle(t *testing.T) {
 	names := imagenOutputNames("hero.png", 1, "image/png")
-	bucket, renames, dstURIs := buildImagenRenamePlan("gs://mybucket/", []string{"gs://mybucket/sample_0.png"}, names)
+	bucket, renames, _, dstURIs := buildImagenRenamePlan("gs://mybucket/", []string{"gs://mybucket/sample_0.png"}, names)
 	if bucket != "mybucket" {
 		t.Errorf("bucket = %q, want mybucket", bucket)
 	}
@@ -109,8 +114,55 @@ func TestBuildImagenRenamePlanSingle(t *testing.T) {
 // handler leaves the API-written object names untouched (byte-for-byte legacy).
 func TestBuildImagenRenamePlanBackCompat(t *testing.T) {
 	names := imagenOutputNames("", 4, "image/png") // nil
-	bucket, renames, dstURIs := buildImagenRenamePlan("gs://mybucket/imagen_outputs/", []string{"gs://mybucket/imagen_outputs/sample_0.png"}, names)
-	if bucket != "" || renames != nil || dstURIs != nil {
-		t.Errorf("expected empty plan for unset output_filename, got bucket=%q renames=%v dstURIs=%v", bucket, renames, dstURIs)
+	bucket, renames, planSrcURIs, dstURIs := buildImagenRenamePlan("gs://mybucket/imagen_outputs/", []string{"gs://mybucket/imagen_outputs/sample_0.png"}, names)
+	if bucket != "" || renames != nil || planSrcURIs != nil || dstURIs != nil {
+		t.Errorf("expected empty plan for unset output_filename, got bucket=%q renames=%v planSrcURIs=%v dstURIs=%v", bucket, renames, planSrcURIs, dstURIs)
 	}
+}
+
+// TestApplyRenamedURIsIdentityPairing proves the URI writeback pairs each rename
+// result to its artifact by identity (source URI), not by slice position (nit
+// p3b-1). It constructs a reordered/partial rename result set over a src list with a
+// middle unparseable URI (skipped by the plan) and asserts the renamed URIs land on
+// the correct artifacts — a positional writeback would drift them.
+func TestApplyRenamedURIsIdentityPairing(t *testing.T) {
+	// The middle artifact's URI is unparseable, so the plan skips it. names[i]
+	// belongs to artifact i, so artifact 2 must be renamed to hero_3.png.
+	gcsSavedURIs := []string{
+		"gs://mybucket/imagen_outputs/sample_0.png",
+		"not-a-gcs-uri", // unparseable → skipped by the plan
+		"gs://mybucket/imagen_outputs/sample_2.png",
+	}
+	names := imagenOutputNames("hero.png", 3, "image/png") // hero_1.png, hero_2.png, hero_3.png
+
+	_, renames, planSrcURIs, dstURIs := buildImagenRenamePlan("gs://mybucket/imagen_outputs/", gcsSavedURIs, names)
+	if len(renames) != 2 {
+		t.Fatalf("expected 2 renames (middle skipped), got %d", len(renames))
+	}
+
+	t.Run("full success renames both parseable artifacts to the right names", func(t *testing.T) {
+		saved := append([]string(nil), gcsSavedURIs...)
+		applyRenamedURIs(saved, planSrcURIs, dstURIs, len(renames)) // renamedCount = 2
+		want := []string{
+			"gs://mybucket/imagen_outputs/hero_1.png",
+			"not-a-gcs-uri", // untouched
+			"gs://mybucket/imagen_outputs/hero_3.png",
+		}
+		if !reflect.DeepEqual(saved, want) {
+			t.Errorf("identity writeback = %v, want %v", saved, want)
+		}
+	})
+
+	t.Run("partial failure only writes back the renamed prefix, still by identity", func(t *testing.T) {
+		saved := append([]string(nil), gcsSavedURIs...)
+		applyRenamedURIs(saved, planSrcURIs, dstURIs, 1) // only the first rename succeeded
+		want := []string{
+			"gs://mybucket/imagen_outputs/hero_1.png",
+			"not-a-gcs-uri",
+			"gs://mybucket/imagen_outputs/sample_2.png", // NOT drifted onto by hero_3
+		}
+		if !reflect.DeepEqual(saved, want) {
+			t.Errorf("partial identity writeback = %v, want %v", saved, want)
+		}
+	})
 }

@@ -281,12 +281,17 @@ func imagenOutputNames(outputFilename string, count int, mimeType string) []stri
 
 // buildImagenRenamePlan maps the API-written GCS objects (Path C: imagen lets
 // Vertex name the objects sample_k under the output prefix) to the client-desired
-// names. It returns the bucket, the ordered src→dst renames, and the resulting
-// gs:// URIs (aligned with srcURIs order). names are the output of
-// imagenOutputNames; when names is empty it returns nil (default API names kept).
-func buildImagenRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket string, renames []common.Rename, dstURIs []string) {
+// names. It returns the bucket, the ordered src→dst renames, and — aligned 1:1 with
+// renames — the source gs:// URI each rename came from (planSrcURIs) and the
+// resulting destination gs:// URI (dstURIs). names[i] belongs to the artifact
+// srcURIs[i] by identity, so a skipped (unparseable) URI never drifts the mapping.
+// The returned planSrcURIs lets the caller write each renamed URI back onto the
+// exact artifact it came from by identity rather than by slice position. names are
+// the output of imagenOutputNames; when names is empty it returns nil (default API
+// names kept).
+func buildImagenRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket string, renames []common.Rename, planSrcURIs, dstURIs []string) {
 	if len(names) == 0 || len(srcURIs) == 0 {
-		return "", nil, nil
+		return "", nil, nil, nil
 	}
 	bucket, prefix := common.ParseGCSBucketAndPrefix(gcsOutputURI)
 	n := len(srcURIs)
@@ -301,9 +306,29 @@ func buildImagenRenamePlan(gcsOutputURI string, srcURIs, names []string) (bucket
 		}
 		dstObject := prefix + names[i]
 		renames = append(renames, common.Rename{Src: srcObject, Dst: dstObject})
+		planSrcURIs = append(planSrcURIs, srcURIs[i])
 		dstURIs = append(dstURIs, common.BuildGCSURI(bucket, dstObject))
 	}
-	return bucket, renames, dstURIs
+	return bucket, renames, planSrcURIs, dstURIs
+}
+
+// applyRenamedURIs writes each successfully-renamed destination URI back onto the
+// artifact it came from, pairing by identity (the source gs:// URI in planSrcURIs)
+// rather than by slice position. renames/planSrcURIs/dstURIs are aligned 1:1 by
+// construction (buildImagenRenamePlan), and renamedCount is how many leading plan
+// entries common.RenameGCSObjects reported as renamed (it returns a prefix of the
+// plan, truncated at the first failure). Positional writeback into the
+// (un-compacted) gcsSavedURIs would drift if any source URI was skipped or the
+// batch partially failed; identity pairing never does.
+func applyRenamedURIs(gcsSavedURIs, planSrcURIs, dstURIs []string, renamedCount int) {
+	for k := 0; k < renamedCount && k < len(dstURIs) && k < len(planSrcURIs); k++ {
+		for idx := range gcsSavedURIs {
+			if gcsSavedURIs[idx] == planSrcURIs[k] {
+				gcsSavedURIs[idx] = dstURIs[k]
+				break
+			}
+		}
+	}
 }
 
 func imagenGenerationHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -598,12 +623,13 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	// failure; the reported URIs reflect the successfully-renamed objects.
 	var renameNote string
 	if outputNames != nil && len(gcsSavedURIs) > 0 {
-		renameBucket, renames, dstURIs := buildImagenRenamePlan(gcsOutputURI, gcsSavedURIs, outputNames)
+		renameBucket, renames, planSrcURIs, dstURIs := buildImagenRenamePlan(gcsOutputURI, gcsSavedURIs, outputNames)
 		if len(renames) > 0 {
 			renamed, rErr := common.RenameGCSObjects(ctx, renameBucket, renames)
-			for i := 0; i < len(renamed) && i < len(dstURIs); i++ {
-				gcsSavedURIs[i] = dstURIs[i]
-			}
+			// Pair each renamed URI back to its source artifact by identity, not by
+			// slice position, so a skipped/unparseable URI or a partial batch failure
+			// never writes a renamed URI onto the wrong artifact.
+			applyRenamedURIs(gcsSavedURIs, planSrcURIs, dstURIs, len(renamed))
 			if rErr != nil {
 				renameNote = fmt.Sprintf("Note: renaming generated GCS object(s) to match output_filename '%s' partially failed (some API-original sample_* objects may remain): %v", outputFilename, rErr)
 				log.Print(renameNote)
