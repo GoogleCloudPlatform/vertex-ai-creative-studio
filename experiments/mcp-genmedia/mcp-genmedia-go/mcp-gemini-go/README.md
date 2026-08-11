@@ -15,6 +15,7 @@ Generates content (text and/or images) based on a multimodal prompt.
 - `images` (string array, optional): A list of local file paths or GCS URIs for input images.
 - `output_directory` (string, optional): Local directory to save any generated image(s) to.
 - `gcs_bucket_uri` (string, optional): GCS URI prefix to store any generated images.
+- `output_filename` (string, optional): Base name for the output(s), e.g. `hero.png`. The extension is forced to the true image type and, when more than one image is generated, a `_1..n` suffix is inserted before the extension. Applied identically to local files and GCS objects. See [Naming Outputs](../README.md#naming-outputs-output_filename).
 
 ### `gemini_audio_tts`
 
@@ -27,7 +28,8 @@ Synthesizes speech from text using Gemini models, allowing for granular control 
 - `voice_name` (string, optional): The voice to use. Defaults to `Callirrhoe`. Use the `list_gemini_voices` tool to see all options.
 - `model_name` (string, optional): The model to use. Defaults to `gemini-3.1-flash-tts-preview`.
 - `output_directory` (string, optional): Local directory to save the generated audio file to.
-- `output_filename_prefix` (string, optional): A prefix for the output WAV filename.
+- `output_filename` (string, optional): Full base name for the output WAV file, e.g. `greeting.wav`. The extension is forced to `.wav`. Takes precedence over `output_filename_prefix` (which only supplies a prefix). See [Naming Outputs](../README.md#naming-outputs-output_filename).
+- `output_filename_prefix` (string, optional): **Deprecated — prefer `output_filename`.** A prefix for the output WAV filename. Still accepted for backward compatibility.
 
 ### `list_gemini_voices`
 

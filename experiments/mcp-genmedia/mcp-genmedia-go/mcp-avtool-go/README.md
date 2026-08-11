@@ -107,6 +107,20 @@ Run the compiled executable with a transport flag:
 Input files can be specified as local file system paths or as GCS URIs (e.g., `gs://your-bucket/path/to/file.mp4`).
 Output files can be saved to a specified local directory and/or uploaded to a GCS bucket. If no output locations are specified, temporary files are created for processing and then cleaned up.
 
+### Output naming (`output_filename`)
+
+Each tool accepts an optional `output_filename` (string) to name its output,
+consistent with the rest of the genmedia suite (see
+[Naming Outputs](../README.md#naming-outputs-output_filename)). **AVTool is
+intentionally exempt from extension-forcing**: because the extension selects the
+`ffmpeg` output container/codec, the extension you supply is honored (e.g.
+`clip.mkv` stays `.mkv`); a missing extension falls back to the tool's default.
+AVTool produces a single output, so no `_1..n` suffix is applied.
+
+The legacy `output_file_name` parameter is still accepted but is
+**deprecated — prefer `output_filename`** (`output_filename` wins when both are
+set). No removal is planned in this release.
+
 ## Development
 
 For a detailed description of the `ffmpeg` and `ffprobe` commands used in this service, see the `compositing_recipes.md` file.

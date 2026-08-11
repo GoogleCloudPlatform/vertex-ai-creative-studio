@@ -19,7 +19,8 @@ The following tool is exposed by this server:
         *   Min: `1`.
         *   Note: Currently, only the first sample is processed and returned/saved.
     *   `output_gcs_bucket` (string, optional): Google Cloud Storage bucket name (without `gs://` prefix). If provided, audio is saved to GCS. If this parameter is empty but the `GENMEDIA_BUCKET` environment variable is set, `GENMEDIA_BUCKET` will be used.
-    *   `file_name` (string, optional): Desired file name (e.g., "my_song.wav"). Used for GCS object and local file. If omitted, a unique name like "lyria_output_&lt;uid&gt;.wav" is generated.
+    *   `output_filename` (string, optional): Base name for the output (e.g., "my_song.wav"). Used for the GCS object and local file; the extension is forced to the audio type (`.wav`). Takes precedence over `file_name`. If omitted, a unique name like "lyria_output_&lt;uid&gt;.wav" is generated. See [Naming Outputs](../README.md#naming-outputs-output_filename).
+    *   `file_name` (string, optional): **Deprecated — prefer `output_filename`.** Desired file name (e.g., "my_song.wav"). Used for GCS object and local file. Still accepted for backward compatibility.
     *   `local_path` (string, optional): Local directory path. If provided, audio is saved locally.
     *   `model_id` (string, optional): Specific Lyria model ID to use for the Vertex AI endpoint.
         *   Defaults to the value of the `DEFAULT_LYRIA_MODEL_ID (Deprecated)` environment variable, or `"lyria-3-clip-preview"` if the variable is not set.

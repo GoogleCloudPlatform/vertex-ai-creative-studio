@@ -16,7 +16,8 @@ The following tools are exposed by this server:
     *   `text` (string, required): The text to synthesize into speech.
     *   `voice_name` (string, optional): The specific Chirp3-HD voice name to use (e.g., "en-US-Chirp3-HD-Zephyr").
         *   If not provided, defaults to "en-US-Chirp3-HD-Zephyr" if available, otherwise the first available Chirp3-HD voice.
-    *   `output_filename_prefix` (string, optional): A prefix for the output WAV filename if saving locally. A timestamp and .wav extension will be appended.
+    *   `output_filename` (string, optional): Full base name for the output WAV file, e.g. `greeting.wav`. The extension is forced to `.wav`. Takes precedence over `output_filename_prefix` (which only supplies a prefix). See [Naming Outputs](../index.md#naming-outputs-output_filename).
+    *   `output_filename_prefix` (string, optional): **Deprecated — prefer `output_filename`.** A prefix for the output WAV filename if saving locally. A timestamp and .wav extension will be appended. Still accepted for backward compatibility.
         *   Default: `"chirp_audio"`
     *   `output_directory` (string, optional): If provided, specifies a local directory to save the generated audio file to. Filenames will be generated automatically using the prefix. If not provided, audio data is returned in the response.
     *   `pronunciations` (array of strings, optional): An array of custom pronunciations. Each item should be a string in the format 'phrase:phonetic_representation' (e.g., 'tomato:təˈmeɪtoʊ'). All items must use the same encoding specified by `pronunciation_encoding`.

@@ -44,7 +44,12 @@ The server exposes the following tool:
         Sent in `generation_config`.
     *   `output_directory` (string, optional): Local directory to save the generated
         video(s) to. Filenames (`omni_<timestamp>_<n>.mp4`) are generated
-        automatically.
+        automatically unless `output_filename` is set.
+    *   `output_filename` (string, optional): Base name for the output(s), e.g.
+        `clip.mp4`. The extension is forced to the true video type and, when more
+        than one video is generated, a `_1..n` suffix is inserted before the
+        extension. Applied identically to local files and GCS objects. See
+        [Naming Outputs](../README.md#naming-outputs-output_filename).
     *   `gcs_bucket_uri` (string, optional): GCS URI prefix to store generated
         video(s) (e.g., `your-bucket/outputs/`). If not provided and
         `GENMEDIA_BUCKET` is set, `gs://<GENMEDIA_BUCKET>/omni_outputs/` is used.

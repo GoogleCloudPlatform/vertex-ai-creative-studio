@@ -196,6 +196,51 @@ This repository provides AI application samples for:
 *   **Transport Protocols**: Most servers support `stdio` (default), `http` (streamable HTTP with CORS), and `sse` (Server-Sent Events, legacy) transports.
 *   **Google Cloud Authentication**: Relies on Application Default Credentials (ADC) or service account keys.
 
+## Naming Outputs: `output_filename`
+
+Every media-generating tool accepts a single optional `output_filename` (string)
+with identical name and semantics, so a client can **predict the exact output
+name** from the tool and request. The same computed name is applied consistently
+across all sinks — the inline response, the local `output_directory`, and GCS.
+
+- **Precedence.** When more than one naming argument is supplied, `output_filename`
+  always wins. Otherwise the server's legacy parameter (with its legacy semantics)
+  is used, and otherwise the server's default naming scheme. When `output_filename`
+  is unset, behavior is byte-for-byte unchanged from before this feature.
+- **Extension is forced to the true output type.** You provide the file *stem*; the
+  extension is set from the model's actual output MIME type. `hero.jpeg` on a PNG
+  response becomes `hero.png`, and a missing extension is added. **`mcp-avtool-go`
+  is the one exception** — for `ffmpeg` the extension selects the output
+  container/codec, so avtool honors the extension you provide (and only warns if it
+  looks unexpected).
+- **Multiple outputs get a `_1..n` suffix.** For a single output the name is
+  exactly `<stem>.<ext>` (no suffix). For `n > 1` outputs the names are
+  `<stem>_1.<ext> … <stem>_n.<ext>` — 1-based, no zero-padding, contiguous, in
+  generation order.
+- **Collisions overwrite, with a warning.** If the computed name already exists
+  (local file or GCS object) it is overwritten and a warning is logged — no error
+  and no automatic renaming, so re-running with the same name is idempotent.
+- **Path traversal is sanitized.** Any directory components or `..` in
+  `output_filename` are stripped to a single safe name; use `output_directory` /
+  `gcs_bucket_uri` to choose the destination.
+- **Path-C servers (imagen, veo).** These let the Vertex API name the objects
+  (`sample_*`) in the output prefix, then copy each object to the requested name
+  and delete the original. On success no `sample_*` originals remain; the copy adds
+  a small amount of tool latency (a fast metadata operation for same-region
+  buckets, proportional to size for large/cross-region objects).
+
+### Deprecated legacy aliases
+
+The following per-server parameters are still accepted for backward compatibility
+but are **deprecated — prefer `output_filename`** (no removal is planned in this
+release):
+
+| Server | Legacy parameter | Notes |
+| --- | --- | --- |
+| `mcp-avtool-go` | `output_file_name` | Full output name (extension not forced). |
+| `mcp-lyria-go` | `file_name` | Full output name. |
+| `mcp-chirp3-go`, `mcp-gemini-go` (TTS) | `output_filename_prefix` | A *prefix* only (a timestamp/voice + extension is appended); `output_filename` provides the full name. |
+
 ## Configuration (Environment Variables)
 
 All servers in this project are configured using environment variables. While some servers have unique variables, the following are common to most of them:

@@ -75,6 +75,34 @@ The servers are configured primarily through environment variables. Key variable
 
 For a detailed list of tools provided by each server, refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
 
+## Naming Outputs: `output_filename`
+
+Every media-generating tool accepts a single optional `output_filename` (string)
+with identical name and semantics across servers, so a client can **predict the
+exact output name** from the tool and request. The same computed name is applied
+consistently to the inline response, the local `output_directory`, and GCS.
+
+*   **Precedence:** `output_filename` always wins over a server's legacy naming
+    parameter; if neither is set, the server's default scheme is used. When
+    `output_filename` is unset, behavior is unchanged (no regression).
+*   **Extension forced to the true type:** you provide the file *stem* and the
+    extension is set from the model's actual output MIME type (`hero.jpeg` on a PNG
+    response → `hero.png`; a missing extension is added). **AVTool is exempt** —
+    for `ffmpeg` the extension selects the output container, so AVTool keeps the
+    extension you provide.
+*   **Multiple outputs → `_1..n` suffix:** one output is `<stem>.<ext>`; `n > 1`
+    outputs are `<stem>_1.<ext> … <stem>_n.<ext>` (1-based, no zero-padding, in
+    generation order).
+*   **Collisions overwrite with a warning** (re-running the same name is
+    idempotent), and **path traversal is sanitized** to a single safe name.
+*   **Imagen & Veo** let the Vertex API name objects (`sample_*`) and then rename
+    them to `output_filename`; on success no `sample_*` originals remain.
+
+**Deprecated legacy aliases** (still accepted; prefer `output_filename`, no
+removal planned): AVTool `output_file_name`, Lyria `file_name`, and the Chirp 3 /
+Gemini TTS `output_filename_prefix` (a *prefix* only — `output_filename` gives the
+full name).
+
 ## Authentication
 
 The servers use Google's Application Default Credentials (ADC). Ensure you have authenticated by one of the following methods:

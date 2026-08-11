@@ -21,6 +21,7 @@ The following tool is exposed by this server:
         *   Common values: `"1:1"` (square), `"16:9"` (widescreen), `"9:16"` (portrait)
     *   `gcs_bucket_uri` (string, optional): GCS URI prefix to store the generated images (e.g., "your-bucket/outputs/" or "gs://your-bucket/outputs/"). If provided, images are saved to GCS instead of returning bytes directly.
     *   `output_directory` (string, optional): If provided, specifies a local directory to save the generated image(s) to.
+    *   `output_filename` (string, optional): Base name for the output(s), e.g. `hero.png`. The extension is forced to the true image type and, when more than one image is generated, a `_1..n` suffix is inserted before the extension (`hero_1.png … hero_n.png`). Applied identically to local files and GCS objects. See [Naming Outputs](../README.md#naming-outputs-output_filename).
 
 ### Resources
 
