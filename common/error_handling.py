@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import re
 from enum import Enum
 from typing import Any
 
@@ -85,10 +86,10 @@ def classify_error(exc: Exception) -> dict[str, Any]:
                 "resource_exhausted",
                 "capacity",
                 "rate limit",
-                "429",
                 "high load",
             ]
         )
+        or bool(re.search(r"\b429\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.CAPACITY_EXHAUSTED.value,
@@ -101,15 +102,15 @@ def classify_error(exc: Exception) -> dict[str, Any]:
     if any(
         k in msg_lower
         for k in [
-            "safety",
             "recitation",
-            "block",
-            "blocked",
             "harmful",
             "rai",
             "content policy",
             "finish_reason",
+            "safety_filter_exceeded",
         ]
+    ) or bool(
+        re.search(r"\b(block|blocked|safety filter|safety violation)\b", msg_lower)
     ):
         return {
             "category": ErrorCategory.SAFETY_FILTER.value,
@@ -123,9 +124,8 @@ def classify_error(exc: Exception) -> dict[str, Any]:
         code in (504, 4)
         or "deadlineexceeded" in exc_type_name.lower()
         or "timeout" in exc_type_name.lower()
-        or any(
-            k in msg_lower for k in ["timeout", "timed out", "deadline exceeded", "504"]
-        )
+        or any(k in msg_lower for k in ["timeout", "timed out", "deadline exceeded"])
+        or bool(re.search(r"\b504\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.CLIENT_TIMEOUT.value,
@@ -147,9 +147,9 @@ def classify_error(exc: Exception) -> dict[str, Any]:
                 "unsupported",
                 "invalid prompt",
                 "bad request",
-                "400",
             ]
         )
+        or bool(re.search(r"\b400\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.INVALID_ARGUMENT.value,
@@ -164,10 +164,8 @@ def classify_error(exc: Exception) -> dict[str, Any]:
         or any(
             k in exc_type_name.lower() for k in ["unauthenticated", "permissiondenied"]
         )
-        or any(
-            k in msg_lower
-            for k in ["permission denied", "unauthorized", "401", "403", "iam"]
-        )
+        or any(k in msg_lower for k in ["permission denied", "unauthorized", "iam"])
+        or bool(re.search(r"\b(401|403)\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.AUTH_ERROR.value,
@@ -180,7 +178,8 @@ def classify_error(exc: Exception) -> dict[str, Any]:
     if (
         code in (404, 5)
         or "notfound" in exc_type_name.lower()
-        or any(k in msg_lower for k in ["not found", "notfound", "404"])
+        or any(k in msg_lower for k in ["not found", "notfound"])
+        or bool(re.search(r"\b404\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.NOT_FOUND.value,
@@ -189,7 +188,7 @@ def classify_error(exc: Exception) -> dict[str, Any]:
             "retryable": False,
         }
 
-    # 6. Upstream / Server Error
+    # 7. Upstream / Server Error
     if (
         code in (500, 502, 503, 13, 14)
         or any(
@@ -201,11 +200,10 @@ def classify_error(exc: Exception) -> dict[str, Any]:
             for k in [
                 "internal server error",
                 "service unavailable",
-                "500",
-                "503",
                 "backend error",
             ]
         )
+        or bool(re.search(r"\b(500|502|503)\b", msg_lower))
     ):
         return {
             "category": ErrorCategory.UPSTREAM_FAILURE.value,

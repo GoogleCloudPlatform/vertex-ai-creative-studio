@@ -69,6 +69,18 @@ def test_classify_error_exceptions():
     assert classify_error(exc7)["category"] == "UNKNOWN"
 
 
+def test_classify_error_false_positives():
+    # Ensure parameter names like "block_low_and_above" do not trigger SAFETY_FILTER
+    exc_block_param = Exception(
+        "Failed processing config with safety_filter_level=block_low_and_above"
+    )
+    assert classify_error(exc_block_param)["category"] == "UNKNOWN"
+
+    # Ensure URI numbers like "asset_4041_v2.png" do not trigger NOT_FOUND
+    exc_uri = Exception("Failed processing asset_4041_v2.png")
+    assert classify_error(exc_uri)["category"] == "UNKNOWN"
+
+
 @patch("common.storage.get_storage_client")
 def test_store_to_gcs_bucket_normalization(mock_get_client):
     mock_client = MagicMock()
