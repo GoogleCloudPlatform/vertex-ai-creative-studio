@@ -902,7 +902,7 @@ def on_transformation_click(e: me.ClickEvent):
         transformation = json.loads(e.key)
         title = transformation["title"]
         prompt = transformation["prompt"]
-    except json.JSONDecodeError, KeyError:
+    except (json.JSONDecodeError, KeyError):
         yield from show_snackbar(state, "Invalid transformation data.")
         return
 

@@ -48,8 +48,7 @@ url = "https://pypi.org/simple"
 default = true
 
 [tool.ruff]
-# Python version (optional, defaults to auto-detect)
-# target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 # Enable Pyflakes ("F") and Pycodestyle ("E", "W") categories by default.
