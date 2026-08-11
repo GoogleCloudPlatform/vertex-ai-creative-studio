@@ -224,7 +224,7 @@ lazy-loader==0.5
     # via
     #   librosa
     #   scikit-image
-librosa==0.11.0
+librosa==1.0.0
     # via vertex-ai-genmedia-creative-studio
 llvmlite==0.48.0
     # via numba
