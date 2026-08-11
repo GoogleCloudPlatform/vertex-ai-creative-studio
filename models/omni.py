@@ -21,7 +21,7 @@ import uuid
 
 from google import genai
 
-from common.analytics import get_logger
+from common.analytics import get_logger, track_model_call
 from common.error_handling import GenerationError
 from common.storage import download_from_gcs, store_to_gcs
 from config.default import Default
@@ -65,40 +65,50 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
             f"Unsupported Gemini Omni model: {request.model_version_id}",
         )
 
-    # 1. Resolve client
-    client = get_omni_client(config.OMNI_LOCATION)
+    billing_units = {
+        "video_seconds_generated": request.duration_seconds,
+        "sample_count": 1,
+        "aspect_ratio": request.aspect_ratio,
+        "omni_mode": request.omni_mode,
+        "is_multiturn": bool(request.previous_interaction_id),
+    }
 
-    # 2. Build input list
-    input_parts = _build_input_parts(request)
+    with track_model_call(model_config.model_name, billing_units=billing_units) as ctx:
+        # 1. Resolve client
+        client = get_omni_client(config.OMNI_LOCATION)
 
-    # 3. Call Interactions API
-    try:
-        call_args = {
-            "model": model_config.model_name,
-            "input": input_parts,
-        }
-        if request.previous_interaction_id:
-            call_args["previous_interaction_id"] = request.previous_interaction_id
+        # 2. Build input list
+        input_parts = _build_input_parts(request)
 
-        logger.info(
-            f"Calling client.interactions.create with model={model_config.model_name}",
-        )
-        interaction = client.interactions.create(
-            **call_args,
-            timeout=config.OMNI_TIMEOUT_MS / 1000.0,
-        )
+        # 3. Call Interactions API
+        try:
+            call_args = {
+                "model": model_config.model_name,
+                "input": input_parts,
+            }
+            if request.previous_interaction_id:
+                call_args["previous_interaction_id"] = request.previous_interaction_id
 
-        # 4. Extract outputs
-        video_data, interaction_id = _extract_video_payload(interaction)
+            logger.info(
+                f"Calling client.interactions.create with model={model_config.model_name}",
+            )
+            interaction = client.interactions.create(
+                **call_args,
+                timeout=config.OMNI_TIMEOUT_MS / 1000.0,
+            )
 
-        # 5. Decode and save
-        gcs_uri = _save_video_to_gcs(video_data)
+            # 4. Extract outputs
+            video_data, interaction_id = _extract_video_payload(interaction)
 
-        return gcs_uri, interaction_id
+            # 5. Decode and save
+            gcs_uri = _save_video_to_gcs(video_data)
+            ctx["details"]["interaction_id"] = interaction_id
 
-    except Exception as e:
-        logger.exception("Error calling Gemini Omni Interactions API")
-        raise GenerationError(f"Omni generation failed: {e}") from e
+            return gcs_uri, interaction_id
+
+        except Exception as e:
+            logger.exception("Error calling Gemini Omni Interactions API")
+            raise GenerationError(f"Omni generation failed: {e}") from e
 
 
 DEFAULT_OMNI_DURATION = 10

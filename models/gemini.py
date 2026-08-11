@@ -16,7 +16,7 @@
 import json
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from google.cloud.aiplatform import telemetry
@@ -86,6 +86,23 @@ class RoomList(BaseModel):
     )
 
 
+def _extract_usage_metadata(response: Any) -> dict[str, int]:
+    """Extracts prompt, candidate, and total token counts from a response."""
+    units = {}
+    if hasattr(response, "usage_metadata") and response.usage_metadata:
+        um = response.usage_metadata
+        if hasattr(um, "prompt_token_count") and um.prompt_token_count is not None:
+            units["prompt_tokens"] = um.prompt_token_count
+        if (
+            hasattr(um, "candidates_token_count")
+            and um.candidates_token_count is not None
+        ):
+            units["candidates_tokens"] = um.candidates_token_count
+        if hasattr(um, "total_token_count") and um.total_token_count is not None:
+            units["total_tokens"] = um.total_token_count
+    return units
+
+
 # Initialize client and default model ID for rewriter
 client = GeminiModelSetup.init()
 cfg = Default()  # Instantiate config
@@ -100,13 +117,13 @@ def generate_image_from_prompt_and_images(
     gcs_folder: str = "generated_images",
     file_prefix: str = "image",
     candidate_count: int = 1,
-    image_size: Optional[str] = None,
+    image_size: str | None = None,
     use_search: bool = False,
     use_image_search: bool = False,
-    thinking_level: Optional[str] = None,
+    thinking_level: str | None = None,
     include_thoughts: bool = False,
-    model_name: Optional[str] = None,
-) -> tuple[list[str], float, list[str], Optional[dict[str, Any]], list[str]]:
+    model_name: str | None = None,
+) -> tuple[list[str], float, list[str], dict[str, Any] | None, list[str]]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
     if not model_name:
@@ -177,11 +194,21 @@ def generate_image_from_prompt_and_images(
             else 1024,  # Example mapping, adjust as needed
         )
 
+    billing_units = {
+        "aspect_ratio": aspect_ratio,
+        "input_asset_count": len(images),
+    }
+    if use_search:
+        billing_units["grounding_web_search"] = True
+    if use_image_search:
+        billing_units["grounding_image_search"] = True
+
     with track_model_call(
         model_name=model_name,
+        billing_units=billing_units,
         aspect_ratio=aspect_ratio,
         num_images=len(images),
-    ):
+    ) as ctx:
         response = client.models.generate_content(
             model=model_name,
             contents=contents,
@@ -193,6 +220,7 @@ def generate_image_from_prompt_and_images(
                 # candidate_count=candidate_count,
             ),
         )
+        ctx["billing_units"].update(_extract_usage_metadata(response))
 
     end_time = time.time()
     execution_time = end_time - start_time
@@ -312,7 +340,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     full_prompt = f"{rewriter_prompt} {original_prompt}"
     analytics_logger.info(f"Rewriter: '{full_prompt}' with model {REWRITER_MODEL_ID}")
     try:
-        with track_model_call(model_name=REWRITER_MODEL_ID, task="rewriter"):
+        with track_model_call(model_name=REWRITER_MODEL_ID, task="rewriter") as ctx:
             response = client.models.generate_content(
                 model=REWRITER_MODEL_ID,  # Explicitly use the configured model
                 contents=full_prompt,
@@ -320,6 +348,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
                     response_modalities=["TEXT"],
                 ),
             )
+            ctx["billing_units"].update(_extract_usage_metadata(response))
         analytics_logger.info(f"Rewriter success! {response.text}")
         return response.text
     except Exception as e:
@@ -336,7 +365,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
 def analyze_audio_with_gemini(
     audio_uri: str,
     music_generation_prompt: str,
-) -> Optional[dict[str, any]]:
+) -> dict[str, any] | None:
     """Analyzes a given audio file URI against an original music generation prompt using Gemini.
 
     Args:
@@ -553,7 +582,9 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
 
             critique_client = GeminiModelSetup.init(location=critique_location)
 
-            with track_model_call(model_name=critique_model_id, task="image_critique"):
+            with track_model_call(
+                model_name=critique_model_id, task="image_critique",
+            ) as ctx:
                 response = critique_client.models.generate_content(
                     model=critique_model_id,
                     contents=contents_payload,
@@ -563,6 +594,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
                         max_output_tokens=8192,
                     ),
                 )
+                ctx["billing_units"].update(_extract_usage_metadata(response))
 
             analytics_logger.info("Received critique response from Gemini.")
 
@@ -1190,7 +1222,7 @@ def generate_critique_questions(
 def generate_text(
     prompt: str,
     images: list[str],
-    model_name: Optional[str] = None,
+    model_name: str | None = None,
 ) -> tuple[str, float]:
     """Generates text from a prompt and a list of media files."""
     # print(f"Entering generate_text with prompt: {prompt} and {len(images)} images.")
@@ -1230,11 +1262,12 @@ def generate_text(
     )
 
     # print(f"Sending request to model: {model_name}")
-    with track_model_call(model_name=model_name, task="generate_text"):
+    with track_model_call(model_name=model_name, task="generate_text") as ctx:
         response = client.models.generate_content(
             model=model_name,
             contents=contents,
         )
+        ctx["billing_units"].update(_extract_usage_metadata(response))
     # print(f"Received raw response from model: {response}")
 
     # end_time = time.time()
@@ -1311,10 +1344,12 @@ def evaluate_tts_audio(
 
 class StoryboardScene(BaseModel):
     scene_number: int = Field(
-        ..., description="The sequence number of this scene, 1 to 4.",
+        ...,
+        description="The sequence number of this scene, 1 to 4.",
     )
     narrative: str = Field(
-        ..., description="The detailed narrative story event for this scene.",
+        ...,
+        description="The detailed narrative story event for this scene.",
     )
     image_prompt: str = Field(
         ...,
@@ -1328,7 +1363,8 @@ class StoryboardScene(BaseModel):
 
 class StoryboardNarrative(BaseModel):
     overall_story: str = Field(
-        ..., description="The overall coherent story narrative combining all scenes.",
+        ...,
+        description="The overall coherent story narrative combining all scenes.",
     )
     scenes: list[StoryboardScene] = Field(
         ...,
@@ -1396,7 +1432,9 @@ def get_best_video_frame_timestamp(video_uri: str) -> float:
     try:
         video_part = types.Part.from_uri(file_uri=video_uri, mime_type="video/mp4")
     except Exception as e:
-        analytics_logger.error(f"Failed to create video Part from URI '{video_uri}': {e}")
+        analytics_logger.error(
+            f"Failed to create video Part from URI '{video_uri}': {e}",
+        )
         return 0.0
 
     prompt_text = "Analyze this video and identify the single frame that best represents the overall content, action, or most interesting visual moment. Return the exact timestamp in seconds."
@@ -1410,11 +1448,15 @@ def get_best_video_frame_timestamp(video_uri: str) -> float:
     try:
         with track_model_call(model_name=model_name, task="get_best_video_frame"):
             response = client.models.generate_content(
-                model=model_name, contents=[prompt_text, video_part], config=frame_config
+                model=model_name,
+                contents=[prompt_text, video_part],
+                config=frame_config,
             )
 
         result = BestFrameTimestamp.model_validate_json(response.text)
-        analytics_logger.info(f"Gemini selected best frame at {result.timestamp_seconds}s")
+        analytics_logger.info(
+            f"Gemini selected best frame at {result.timestamp_seconds}s",
+        )
         return result.timestamp_seconds
     except Exception as e:
         analytics_logger.error(f"Error during Gemini best frame analysis: {e}")

@@ -13,27 +13,213 @@
 # limitations under the License.
 
 import logging
+from enum import Enum
+from typing import Any
 
 # Dedicated logger for tracking the suppressed error
 race_condition_logger = logging.getLogger("genmedia.race_condition_tracker")
 
-class GenerationError(Exception):
-    """Custom exception for video generation errors."""
 
-    def __init__(self, message):
+class ErrorCategory(str, Enum):
+    CAPACITY_EXHAUSTED = "CAPACITY_EXHAUSTED"  # Code 8 / 429 Quota / High Load
+    SAFETY_FILTER = "SAFETY_FILTER"  # RAI moderation / Recitation filter
+    CLIENT_TIMEOUT = "CLIENT_TIMEOUT"  # Generation duration exceeded threshold
+    INVALID_ARGUMENT = (
+        "INVALID_ARGUMENT"  # Unsupported resolution, aspect ratio, prompt length
+    )
+    AUTH_ERROR = "AUTH_ERROR"  # Permission / IAM failure
+    UPSTREAM_FAILURE = "UPSTREAM_FAILURE"  # 500 / 503 internal backend error
+    UNKNOWN = "UNKNOWN"
+
+
+class GenerationError(Exception):
+    """Custom exception for video generation and generative model errors."""
+
+    def __init__(
+        self,
+        message: str,
+        category: ErrorCategory | str = ErrorCategory.UNKNOWN,
+        code: int | None = None,
+        retryable: bool = False,
+    ):
         self.message = message
+        self.category = (
+            category.value if isinstance(category, ErrorCategory) else str(category)
+        )
+        self.code = code
+        self.retryable = retryable
         super().__init__(self.message)
+
 
 class AsyncVeoPollingFailedError(Exception):
     """Exception for failures during async Veo job polling."""
-    pass
+
+
+
+def classify_error(exc: Exception) -> dict[str, Any]:
+    """Classifies an exception into a structured canonical error dict.
+
+    Returns a dict with keys: category, code, message, retryable.
+    """
+    if isinstance(exc, GenerationError):
+        return {
+            "category": exc.category,
+            "code": exc.code,
+            "message": exc.message,
+            "retryable": exc.retryable,
+        }
+
+    code = getattr(exc, "code", getattr(exc, "status_code", None))
+    msg = str(exc)
+    msg_lower = msg.lower()
+    exc_type_name = type(exc).__name__
+
+    # 1. Capacity / Quota
+    if (
+        code in (429, 8)
+        or "resourceexhausted" in exc_type_name.lower()
+        or any(
+            k in msg_lower
+            for k in [
+                "quota",
+                "resource_exhausted",
+                "capacity",
+                "rate limit",
+                "429",
+                "high load",
+            ]
+        )
+    ):
+        return {
+            "category": ErrorCategory.CAPACITY_EXHAUSTED.value,
+            "code": code or 429,
+            "message": msg,
+            "retryable": True,
+        }
+
+    # 2. Safety Filter / RAI
+    if any(
+        k in msg_lower
+        for k in [
+            "safety",
+            "recitation",
+            "block",
+            "blocked",
+            "harmful",
+            "rai",
+            "content policy",
+            "finish_reason",
+        ]
+    ):
+        return {
+            "category": ErrorCategory.SAFETY_FILTER.value,
+            "code": code,
+            "message": msg,
+            "retryable": False,
+        }
+
+    # 3. Timeout
+    if (
+        code in (504, 4)
+        or "deadlineexceeded" in exc_type_name.lower()
+        or "timeout" in exc_type_name.lower()
+        or any(
+            k in msg_lower for k in ["timeout", "timed out", "deadline exceeded", "504"]
+        )
+    ):
+        return {
+            "category": ErrorCategory.CLIENT_TIMEOUT.value,
+            "code": code or 504,
+            "message": msg,
+            "retryable": True,
+        }
+
+    # 4. Invalid Argument
+    if (
+        code in (400, 3)
+        or "invalidargument" in exc_type_name.lower()
+        or any(
+            k in msg_lower
+            for k in [
+                "invalidargument",
+                "invalid_argument",
+                "invalid argument",
+                "unsupported",
+                "invalid prompt",
+                "bad request",
+                "400",
+            ]
+        )
+    ):
+        return {
+            "category": ErrorCategory.INVALID_ARGUMENT.value,
+            "code": code or 400,
+            "message": msg,
+            "retryable": False,
+        }
+
+    # 5. Auth Error
+    if (
+        code in (401, 403, 7, 16)
+        or any(
+            k in exc_type_name.lower() for k in ["unauthenticated", "permissiondenied"]
+        )
+        or any(
+            k in msg_lower
+            for k in ["permission denied", "unauthorized", "401", "403", "iam"]
+        )
+    ):
+        return {
+            "category": ErrorCategory.AUTH_ERROR.value,
+            "code": code or 403,
+            "message": msg,
+            "retryable": False,
+        }
+
+    # 6. Upstream / Server Error
+    if (
+        code in (500, 502, 503, 13, 14)
+        or any(
+            k in exc_type_name.lower()
+            for k in ["internalservererror", "serviceunavailable"]
+        )
+        or any(
+            k in msg_lower
+            for k in [
+                "internal server error",
+                "service unavailable",
+                "500",
+                "503",
+                "backend error",
+            ]
+        )
+    ):
+        return {
+            "category": ErrorCategory.UPSTREAM_FAILURE.value,
+            "code": code or 500,
+            "message": msg,
+            "retryable": True,
+        }
+
+    # Default
+    return {
+        "category": ErrorCategory.UNKNOWN.value,
+        "code": code,
+        "message": msg,
+        "retryable": False,
+    }
+
 
 class UnknownHandlerIdFilter(logging.Filter):
     """A logging filter to suppress 'Unknown handler id' errors."""
+
     def filter(self, record):
         # Suppress the specific benign error message from Mesop
         if "Unknown handler id" in record.getMessage():
             # Log to a separate, non-disruptive logger for tracking purposes
-            race_condition_logger.info("Suppressed 'Unknown handler id' error", extra={"original_record": record.getMessage()})
-            return False # Prevent the original logger from processing it
+            race_condition_logger.info(
+                "Suppressed 'Unknown handler id' error",
+                extra={"original_record": record.getMessage()},
+            )
+            return False  # Prevent the original logger from processing it
         return True

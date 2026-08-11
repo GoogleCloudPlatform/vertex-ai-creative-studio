@@ -14,8 +14,8 @@
 
 
 import functools
-import logging
 import json
+import logging
 import os
 import time
 from contextlib import contextmanager
@@ -63,8 +63,10 @@ def get_logger(name: str):
         logger.addHandler(handler)
     return logger
 
+
 # Central analytics logger
 analytics_logger = get_logger("genmedia.analytics")
+
 
 def log_page_view(page_name: str, session_id: str = None):
     """Logs a page view event."""
@@ -82,7 +84,10 @@ def log_page_view(page_name: str, session_id: str = None):
     }
     analytics_logger.info(f"Page view: {page_name}", extra={"extra_data": extra_data})
 
-def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras: dict = None):
+
+def log_ui_click(
+    element_id: str, page_name: str, session_id: str = None, extras: dict = None,
+):
     """Logs a UI click event."""
     try:
         state = me.state(AppState)
@@ -99,9 +104,20 @@ def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras
     }
     if extras:
         extra_data.update(extras)
-    analytics_logger.info(f"UI Click: {element_id} on {page_name}", extra={"extra_data": extra_data})
+    analytics_logger.info(
+        f"UI Click: {element_id} on {page_name}", extra={"extra_data": extra_data},
+    )
 
-def log_model_call(model_name: str, status: str, duration_ms: float = 0, details: dict = None):
+
+def log_model_call(
+    model_name: str,
+    status: str,
+    duration_ms: float = 0,
+    details: dict = None,
+    billing_units: dict = None,
+    pipeline_id: str = None,
+    error: dict = None,
+):
     """Logs a generative model call event."""
     try:
         state = me.state(AppState)
@@ -117,17 +133,28 @@ def log_model_call(model_name: str, status: str, duration_ms: float = 0, details
     extra_data = {
         "event_type": "model_call",
         "model_name": model_name,
-        "status": status, # e.g., "success", "failure"
+        "status": status,  # e.g., "success", "failure"
         "duration_ms": round(duration_ms, 2),
         "page_name": page_name,
         "session_id": session_id,
         "user_email": user_email,
         "details": details or {},
     }
-    analytics_logger.info(f"Model Call: {model_name} ({status})", extra={'extra_data': extra_data})
+    if billing_units:
+        extra_data["billing_units"] = billing_units
+    if pipeline_id:
+        extra_data["pipeline_id"] = pipeline_id
+    if error:
+        extra_data["error"] = error
+
+    analytics_logger.info(
+        f"Model Call: {model_name} ({status})", extra={"extra_data": extra_data},
+    )
+
 
 def track_click(element_id: str):
     """Decorator to log a UI click event on an event handler."""
+
     def decorator(handler_function):
         @functools.wraps(handler_function)
         def wrapper(*args, **kwargs):
@@ -135,21 +162,55 @@ def track_click(element_id: str):
             log_ui_click(
                 element_id=element_id,
                 page_name=state.current_page,
-                session_id=state.session_id
+                session_id=state.session_id,
             )
             return handler_function(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
+
 @contextmanager
-def track_model_call(model_name: str, **kwargs):
-    """Context manager to log the duration and status of a model call."""
+def track_model_call(
+    model_name: str, billing_units: dict = None, pipeline_id: str = None, **kwargs,
+):
+    """Context manager to log the duration, status, and telemetry of a model call.
+
+    Yields a dict `ctx = {"billing_units": {...}, "details": {...}, "pipeline_id": ...}`
+    which code inside the block can update dynamically.
+    """
+    from common.error_handling import classify_error
+
     start_time = time.time()
+    ctx = {
+        "billing_units": billing_units or {},
+        "details": kwargs,
+        "pipeline_id": pipeline_id,
+    }
     try:
-        yield
+        yield ctx
         duration_ms = (time.time() - start_time) * 1000
-        log_model_call(model_name, status="success", duration_ms=duration_ms, details=kwargs)
+        log_model_call(
+            model_name,
+            status="success",
+            duration_ms=duration_ms,
+            details=ctx["details"],
+            billing_units=ctx["billing_units"] if ctx["billing_units"] else None,
+            pipeline_id=ctx["pipeline_id"],
+        )
     except Exception as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_model_call(model_name, status="failure", duration_ms=duration_ms, details={"error": str(e), **kwargs})
-        raise # Re-raise the exception after logging
+        err_dict = classify_error(e)
+        details = dict(ctx["details"])
+        details["error"] = err_dict["message"]
+        log_model_call(
+            model_name,
+            status="failure",
+            duration_ms=duration_ms,
+            details=details,
+            billing_units=ctx["billing_units"] if ctx["billing_units"] else None,
+            pipeline_id=ctx["pipeline_id"],
+            error=err_dict,
+        )
+        raise  # Re-raise the exception after logging
