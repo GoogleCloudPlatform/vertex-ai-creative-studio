@@ -327,7 +327,24 @@ def render_chat_thread(state: PageState) -> None:
 
 def render_settings_panel(state: PageState, _app_state: AppState) -> None:
     """Render the configuration settings panel."""
+    # Once a conversation has started, lock the generation settings so the
+    # whole conversation stays consistent. This mirrors the turn-gating used
+    # for the left pane above (see render_page_content).
+    chat_started = (
+        bool(state.previous_interaction_id)
+        or len(json.loads(state.chat_messages_json)) > 0
+    )
+
     me.text("Model Settings", type="headline-6")
+
+    if chat_started:
+        me.text(
+            "Settings are locked after the first turn to keep this "
+            "conversation consistent. Start a new conversation (Reset Chat) "
+            "to change them.",
+            type="caption",
+            style=me.Style(font_style="italic"),
+        )
 
     me.text("Generation Mode", type="body-2")
     me.select(
@@ -340,6 +357,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         ],
         value=state.omni_mode,
         on_selection_change=on_mode_change,
+        disabled=chat_started,
     )
 
     me.text("Omni Model Version", type="body-2")
@@ -351,6 +369,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         ],
         value=state.omni_model,
         on_selection_change=on_model_change,
+        disabled=chat_started,
     )
 
     me.text("Aspect Ratio", type="body-2")
@@ -362,6 +381,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         ],
         value=state.aspect_ratio,
         on_selection_change=on_aspect_ratio_change,
+        disabled=chat_started,
     )
 
     me.text(f"Video Duration: {state.video_length}s", type="body-2")
@@ -370,6 +390,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         max=10,
         value=state.video_length,
         on_value_change=on_duration_change,
+        disabled=chat_started,
     )
 
     me.box(style=me.Style(height=24))
