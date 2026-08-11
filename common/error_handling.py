@@ -28,6 +28,7 @@ class ErrorCategory(str, Enum):
         "INVALID_ARGUMENT"  # Unsupported resolution, aspect ratio, prompt length
     )
     AUTH_ERROR = "AUTH_ERROR"  # Permission / IAM failure
+    NOT_FOUND = "NOT_FOUND"  # Resource, object, or bucket 404
     UPSTREAM_FAILURE = "UPSTREAM_FAILURE"  # 500 / 503 internal backend error
     UNKNOWN = "UNKNOWN"
 
@@ -53,7 +54,6 @@ class GenerationError(Exception):
 
 class AsyncVeoPollingFailedError(Exception):
     """Exception for failures during async Veo job polling."""
-
 
 
 def classify_error(exc: Exception) -> dict[str, Any]:
@@ -172,6 +172,19 @@ def classify_error(exc: Exception) -> dict[str, Any]:
         return {
             "category": ErrorCategory.AUTH_ERROR.value,
             "code": code or 403,
+            "message": msg,
+            "retryable": False,
+        }
+
+    # 6. Not Found (404)
+    if (
+        code in (404, 5)
+        or "notfound" in exc_type_name.lower()
+        or any(k in msg_lower for k in ["not found", "notfound", "404"])
+    ):
+        return {
+            "category": ErrorCategory.NOT_FOUND.value,
+            "code": code or 404,
             "message": msg,
             "retryable": False,
         }

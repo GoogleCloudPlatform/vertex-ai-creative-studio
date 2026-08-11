@@ -20,7 +20,7 @@ from collections.abc import Generator
 
 import mesop as me
 
-from common.analytics import track_model_call
+from common.analytics import get_logger
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import generate_upload_signed_url, store_to_gcs
 from common.utils import create_display_url
@@ -822,15 +822,7 @@ def on_click_generate(_e: me.ClickEvent) -> Generator[None]:
 
     try:
         model_config = get_omni_model_config(state.omni_model)
-        # Log analytics
-        with track_model_call(
-            model_name=model_config.model_name,
-            prompt_length=len(req.prompt),
-            aspect_ratio=req.aspect_ratio,
-            video_count=1,
-            mode=state.omni_mode,
-        ):
-            gcs_uri, interaction_id = generate_omni_video(req)
+        gcs_uri, interaction_id = generate_omni_video(req)
 
         state.result_gcs_uri = gcs_uri
         state.result_display_url = create_display_url(gcs_uri)

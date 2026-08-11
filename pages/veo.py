@@ -19,7 +19,7 @@ import time
 
 import mesop as me
 
-from common.analytics import log_ui_click, track_click, track_model_call
+from common.analytics import log_ui_click, track_click
 from common.error_handling import AsyncVeoPollingFailedError, GenerationError
 from common.metadata import (
     MediaItem,
@@ -342,15 +342,20 @@ def on_click_extend_video(e: me.ClickEvent):
         return
 
     # --- Video Selection Validation ---
-    video_to_extend_url = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
+    video_to_extend_url = (
+        state.selected_video_url
+        if state.selected_video_url
+        else state.result_display_urls[0]
+    )
     if not video_to_extend_url:
         state.error_message = "No video selected to extend."
         state.show_error_dialog = True
         yield
         return
-    
+
     # Convert display URL back to GCS URI
     from common.utils import https_url_to_gcs_uri
+
     video_input_gcs = https_url_to_gcs_uri(video_to_extend_url)
 
     # --- Reset State for New Generation ---
@@ -370,19 +375,19 @@ def on_click_extend_video(e: me.ClickEvent):
         model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
-        duration_seconds=state.video_extend_length, # Use extension length
+        duration_seconds=state.video_extend_length,  # Use extension length
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
         generate_audio=state.generate_audio,
         person_generation=state.person_generation,
         video_input_gcs=video_input_gcs,
-        video_input_mime_type="video/mp4", # Assumed MP4
+        video_input_mime_type="video/mp4",  # Assumed MP4
     )
 
     # --- 1. Initiate Async Job ---
     try:
         data = start_async_veo_job(request, app_state.user_email, mode="extension")
-            
+
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
         yield
@@ -395,24 +400,28 @@ def on_click_extend_video(e: me.ClickEvent):
 
     # --- 2. Poll for Completion ---
     while state.job_status in ["pending", "processing", "created"]:
-        time.sleep(2) 
+        time.sleep(2)
         try:
             item = get_media_item_by_id(state.current_job_id)
             if not item:
-                raise AsyncVeoPollingFailedError(f"Job {state.current_job_id} not found in Firestore.")
-            
+                raise AsyncVeoPollingFailedError(
+                    f"Job {state.current_job_id} not found in Firestore."
+                )
+
             state.job_status = item.status
 
             if state.job_status == "complete":
                 # Success! Update state with results.
                 state.result_gcs_uris = item.gcs_uris or []
                 if not state.result_gcs_uris and item.gcsuri:
-                     state.result_gcs_uris = [item.gcsuri]
-                
-                state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
+                    state.result_gcs_uris = [item.gcsuri]
+
+                state.result_display_urls = [
+                    create_display_url(uri) for uri in state.result_gcs_uris
+                ]
                 if state.result_display_urls:
                     state.selected_video_url = state.result_display_urls[0]
-                
+
                 end_time = time.time()
                 execution_time = end_time - start_time
                 state.timing = f"Extension time: {round(execution_time)} seconds"
@@ -421,12 +430,14 @@ def on_click_extend_video(e: me.ClickEvent):
                 break
 
             elif state.job_status == "failed":
-                state.error_message = item.error_message or "Unknown error during extension."
+                state.error_message = (
+                    item.error_message or "Unknown error during extension."
+                )
                 state.show_error_dialog = True
                 state.is_loading = False
                 yield
                 break
-            
+
             yield
 
         except Exception as e:
@@ -546,7 +557,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         generate_audio=state.generate_audio,
         person_generation=state.person_generation,
         reference_image_gcs=state.reference_image_gcs
-        if state.veo_mode in ["i2v", "r2v", "interpolation"] and state.reference_image_gcs
+        if state.veo_mode in ["i2v", "r2v", "interpolation"]
+        and state.reference_image_gcs
         else None,
         reference_image_mime_type=state.reference_image_mime_type,
         last_reference_image_gcs=state.last_reference_image_gcs
@@ -571,7 +583,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     # --- 1. Initiate Async Job ---
     try:
         data = start_async_veo_job(request, app_state.user_email, mode=state.veo_mode)
-            
+
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
         yield
@@ -587,12 +599,14 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     # or WebSockets if available. For now, this simple loop with yields works
     # within Mesop's generator-based event handlers to keep the UI responsive.
     while state.job_status in ["pending", "processing", "created"]:
-        time.sleep(2) 
+        time.sleep(2)
         try:
             item = get_media_item_by_id(state.current_job_id)
             if not item:
-                raise AsyncVeoPollingFailedError(f"Job {state.current_job_id} not found in Firestore.")
-            
+                raise AsyncVeoPollingFailedError(
+                    f"Job {state.current_job_id} not found in Firestore."
+                )
+
             state.job_status = item.status
 
             if state.job_status == "complete":
@@ -600,12 +614,14 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
                 state.result_gcs_uris = item.gcs_uris or []
                 # If only one URI is returned but we expected a list, handle it.
                 if not state.result_gcs_uris and item.gcsuri:
-                     state.result_gcs_uris = [item.gcsuri]
-                
-                state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
+                    state.result_gcs_uris = [item.gcsuri]
+
+                state.result_display_urls = [
+                    create_display_url(uri) for uri in state.result_gcs_uris
+                ]
                 if state.result_display_urls:
                     state.selected_video_url = state.result_display_urls[0]
-                
+
                 end_time = time.time()
                 execution_time = end_time - start_time
                 state.timing = f"Generation time: {round(execution_time)} seconds"
@@ -615,12 +631,14 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
             elif state.job_status == "failed":
                 # Failure. Show error.
-                state.error_message = item.error_message or "Unknown error during generation."
+                state.error_message = (
+                    item.error_message or "Unknown error during generation."
+                )
                 state.show_error_dialog = True
                 state.is_loading = False
                 yield
                 break
-            
+
             # Still polling...
             yield
 
@@ -762,13 +780,16 @@ def on_r2v_style_remove(e: me.ClickEvent):
 def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     """VEO image from library handler."""
     state = me.state(PageState)
-    
+
     # Helper to infer mime type from extension
     def infer_mime(uri: str) -> str:
-        if uri.lower().endswith(".png"): return "image/png"
-        if uri.lower().endswith(".jpg") or uri.lower().endswith(".jpeg"): return "image/jpeg"
-        if uri.lower().endswith(".webp"): return "image/webp"
-        return "image/png" # Default fallback
+        if uri.lower().endswith(".png"):
+            return "image/png"
+        if uri.lower().endswith(".jpg") or uri.lower().endswith(".jpeg"):
+            return "image/jpeg"
+        if uri.lower().endswith(".webp"):
+            return "image/webp"
+        return "image/png"  # Default fallback
 
     if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri

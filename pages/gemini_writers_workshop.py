@@ -19,7 +19,7 @@ from dataclasses import field
 
 import mesop as me
 
-from common.analytics import track_click, track_model_call
+from common.analytics import track_click
 from common.prompt_template_service import PromptTemplate, prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url
@@ -92,9 +92,12 @@ def on_load(e: me.LoadEvent):
         state.selected_model = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
     if state.prompt_templates_json == "[]":
         templates = prompt_template_service.load_templates(
-            config_path="config/text_prompt_templates.json", template_type="text",
+            config_path="config/text_prompt_templates.json",
+            template_type="text",
         )
-        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates], default=str)
+        state.prompt_templates_json = json.dumps(
+            [t.model_dump() for t in templates], default=str
+        )
     yield
 
 
@@ -175,10 +178,13 @@ def on_save_template(label: str, key: str, category: str, prompt: str):
         # Reload templates
 
         templates = prompt_template_service.load_templates(
-            config_path="config/text_prompt_templates.json", template_type="text",
+            config_path="config/text_prompt_templates.json",
+            template_type="text",
         )
 
-        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates], default=str)
+        state.prompt_templates_json = json.dumps(
+            [t.model_dump() for t in templates], default=str
+        )
 
         # Close dialog
 
@@ -300,7 +306,9 @@ def gemini_writers_workshop_page_content():
         me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
         with me.box(
             style=me.Style(
-                display="flex", justify_content="flex-end", margin=me.Margin(top=24),
+                display="flex",
+                justify_content="flex-end",
+                margin=me.Margin(top=24),
             ),
         ):
             me.button("Close", on_click=on_close_error_dialog, type="flat")
@@ -345,7 +353,8 @@ def gemini_writers_workshop_page_content():
                         label="Model",
                         options=[
                             me.SelectOption(
-                                label=f"Default ({cfg().MODEL_ID})", value=cfg().MODEL_ID,
+                                label=f"Default ({cfg().MODEL_ID})",
+                                value=cfg().MODEL_ID,
                             ),
                             me.SelectOption(
                                 label=f"Workshop ({cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID})",
@@ -617,7 +626,9 @@ def on_media_select(e: LibrarySelectionChangeEvent):
         state.uploaded_media_gcs_uris.append(gcs_uri)
         state.uploaded_media_display_urls.append(create_display_url(gcs_uri))
     else:
-        yield from show_snackbar(f"You can add a maximum of {MAX_MEDIA_ASSETS} media assets.")
+        yield from show_snackbar(
+            f"You can add a maximum of {MAX_MEDIA_ASSETS} media assets."
+        )
     yield
 
 
@@ -703,14 +714,11 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     model_id = state.selected_model or cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
 
     try:
-        with track_model_call(
-            model_name=model_id, prompt_length=len(base_prompt),
-        ):
-            text_result, execution_time = generate_text(
-                prompt=base_prompt,
-                images=input_gcs_uris,
-                model_name=model_id,
-            )
+        text_result, execution_time = generate_text(
+            prompt=base_prompt,
+            images=input_gcs_uris,
+            model_name=model_id,
+        )
         state.generation_time = execution_time
         state.generated_text = text_result
     except Exception as ex:

@@ -19,7 +19,7 @@ from dataclasses import field
 
 import mesop as me
 
-from common.analytics import analytics_logger, log_ui_click, track_model_call
+from common.analytics import analytics_logger, log_ui_click
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
@@ -77,7 +77,8 @@ def get_all_image_presets():
     try:
         # Load dynamic templates of type 'image'
         dynamic_templates = prompt_template_service.load_templates(
-            config_path="config/image_prompt_templates.json", template_type="image",
+            config_path="config/image_prompt_templates.json",
+            template_type="image",
         )
 
         for template in dynamic_templates:
@@ -293,7 +294,14 @@ def gemini_image_gen_page_content():
                         label="Upload Media",
                         on_upload=on_upload,
                         multiple=True,
-                        accepted_file_types=model_config.supported_input_mime_types if model_config else ["image/jpeg", "image/png", "image/webp", "application/pdf"],
+                        accepted_file_types=model_config.supported_input_mime_types
+                        if model_config
+                        else [
+                            "image/jpeg",
+                            "image/png",
+                            "image/webp",
+                            "application/pdf",
+                        ],
                         style=me.Style(width="100%"),
                         disabled=upload_disabled,
                     )
@@ -630,7 +638,9 @@ def gemini_image_gen_page_content():
                                 # Content Credentials (C2PA) Viewer
                                 with me.box(
                                     style=me.Style(
-                                        position="absolute", top=16, right=16,
+                                        position="absolute",
+                                        top=16,
+                                        right=16,
                                     ),
                                 ):
                                     manifest_json = state.c2pa_manifests.get(
@@ -651,18 +661,22 @@ def gemini_image_gen_page_content():
                             if state.grounding_info:
                                 with me.box(
                                     style=me.Style(
-                                        margin=me.Margin(top=16), width="100%",
+                                        margin=me.Margin(top=16),
+                                        width="100%",
                                     ),
                                 ):
                                     _render_grounding_info(
-                                        state.grounding_info, app_state.theme_mode,
+                                        state.grounding_info,
+                                        app_state.theme_mode,
                                     )
 
                         else:
                             # Display multiple images in a gallery view
                             with me.box(
                                 style=me.Style(
-                                    display="flex", flex_direction="column", gap=16,
+                                    display="flex",
+                                    flex_direction="column",
+                                    gap=16,
                                 ),
                             ):
                                 # Main image
@@ -702,7 +716,9 @@ def gemini_image_gen_page_content():
                                     # Content Credentials (C2PA) Viewer
                                     with me.box(
                                         style=me.Style(
-                                            position="absolute", top=16, right=16,
+                                            position="absolute",
+                                            top=16,
+                                            right=16,
                                         ),
                                     ):
                                         manifest_json = state.c2pa_manifests.get(
@@ -770,11 +786,13 @@ def gemini_image_gen_page_content():
                                 if state.grounding_info:
                                     with me.box(
                                         style=me.Style(
-                                            margin=me.Margin(top=16), width="100%",
+                                            margin=me.Margin(top=16),
+                                            width="100%",
                                         ),
                                     ):
                                         _render_grounding_info(
-                                            state.grounding_info, app_state.theme_mode,
+                                            state.grounding_info,
+                                            app_state.theme_mode,
                                         )
                 else:
                     # Placeholder
@@ -803,7 +821,8 @@ def on_upload(e: me.UploadEvent):
 
     if not files_to_upload:
         yield from show_snackbar(
-            state, f"You can upload a maximum of {max_input_images} images.",
+            state,
+            f"You can upload a maximum of {max_input_images} images.",
         )
         return
 
@@ -834,7 +853,8 @@ def on_library_select(e: LibrarySelectionChangeEvent):
 
     if len(state.uploaded_image_gcs_uris) >= max_input_images:
         yield from show_snackbar(
-            state, f"You can upload a maximum of {max_input_images} images.",
+            state,
+            f"You can upload a maximum of {max_input_images} images.",
         )
         return
 
@@ -882,7 +902,7 @@ def on_transformation_click(e: me.ClickEvent):
         transformation = json.loads(e.key)
         title = transformation["title"]
         prompt = transformation["prompt"]
-    except (json.JSONDecodeError, KeyError):
+    except json.JSONDecodeError, KeyError:
         yield from show_snackbar(state, "Invalid transformation data.")
         return
 
@@ -908,7 +928,8 @@ def on_suggest_transformations_click(e: me.ClickEvent):
 
     if not state.generated_image_urls:
         yield from show_snackbar(
-            state, "No image available to suggest transformations for.",
+            state,
+            "No image available to suggest transformations for.",
         )
         return
 
@@ -981,7 +1002,8 @@ def on_image_action_click(e: me.ClickEvent):
 
     # The action now uses the combined list of images
     yield from _generate_and_save(
-        base_prompt=preset["prompt"], input_gcs_uris=input_gcs_uris,
+        base_prompt=preset["prompt"],
+        input_gcs_uris=input_gcs_uris,
     )
 
 
@@ -1050,29 +1072,22 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     yield
 
     try:
-        with track_model_call(
-            model_name=state.selected_model,
-            prompt_length=len(final_prompt),
-            aspect_ratio=state.aspect_ratio,
-            # num_input_images=len(input_gcs_uris),
-            # num_images_generated=state.num_images_to_generate,
-        ):
-            gcs_uris, execution_time, captions, grounding_info, all_thoughts = (
-                generate_image_from_prompt_and_images(
-                    prompt=final_prompt,
-                    images=input_gcs_uris,
-                    aspect_ratio=state.aspect_ratio,
-                    gcs_folder="gemini_image_generations",
-                    file_prefix="gemini_image",
-                    candidate_count=1,
-                    image_size=state.image_size,
-                    use_search=state.use_search,
-                    use_image_search=state.use_image_search,
-                    thinking_level=state.thinking_level,
-                    include_thoughts=state.include_thoughts,
-                    model_name=state.selected_model,
-                )
+        gcs_uris, execution_time, captions, grounding_info, all_thoughts = (
+            generate_image_from_prompt_and_images(
+                prompt=final_prompt,
+                images=input_gcs_uris,
+                aspect_ratio=state.aspect_ratio,
+                gcs_folder="gemini_image_generations",
+                file_prefix="gemini_image",
+                candidate_count=1,
+                image_size=state.image_size,
+                use_search=state.use_search,
+                use_image_search=state.use_image_search,
+                thinking_level=state.thinking_level,
+                include_thoughts=state.include_thoughts,
+                model_name=state.selected_model,
             )
+        )
 
         state.generation_time = execution_time
         state.grounding_info = json.dumps(grounding_info) if grounding_info else ""

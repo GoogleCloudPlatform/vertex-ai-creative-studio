@@ -16,7 +16,7 @@ import time
 
 import mesop as me
 
-from common.analytics import track_click, track_model_call
+from common.analytics import track_click
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
@@ -106,14 +106,9 @@ def on_upscale(e: me.ClickEvent):
 
     try:
         start_time = time.time()
-        with track_model_call(
-            model_name=UPSCALE_MODEL,
-            upscale_factor=state.upscale_factor,
-            input_resolution=state.input_resolution,
-        ):
-            output_gcs, original_res, upscaled_res = upscale_image(
-                state.input_image_gcs, state.upscale_factor
-            )
+        output_gcs, original_res, upscaled_res = upscale_image(
+            state.input_image_gcs, state.upscale_factor
+        )
         generation_time = time.time() - start_time
 
         state.output_image_gcs = output_gcs
@@ -192,7 +187,6 @@ def page():
                     )
                 ):
                     me.text("Input Image", type="headline-6")
-                    
 
                     with me.box(style=IMAGE_BOX_STYLE):
                         if state.input_image_url:
@@ -268,8 +262,6 @@ def page():
                             type="stroked",
                             style=me.Style(width="100%"),
                         )
-
-                
 
                 # Output Column
                 with me.box(

@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 import mesop as me
 
-from common.analytics import log_ui_click, track_model_call
+from common.analytics import log_ui_click
 from common.metadata import (
     MediaItem,
     add_media_item_to_firestore,
@@ -142,8 +142,6 @@ class PageState:
     initial_load_complete: bool = False
 
 
-
-
 on_aspect_ratio_change = get_on_aspect_ratio_change(PageState)
 on_image_size_change = get_on_image_size_change(PageState)
 on_num_images_change = get_on_num_images_change(PageState)
@@ -185,7 +183,8 @@ def on_media_select(e: LibrarySelectionChangeEvent):
     # Check if there's space for a new image
     if len(state.uploaded_image_gcs_uris) >= max_input_images:
         yield from show_snackbar(
-            state, f"You can add a maximum of {max_input_images} images.",
+            state,
+            f"You can add a maximum of {max_input_images} images.",
         )
         return
 
@@ -621,7 +620,9 @@ def gemini_image_gen_page_content():
                                 if state.is_evaluating:
                                     with me.box(
                                         style=me.Style(
-                                            display="flex", align_items="center", gap=8,
+                                            display="flex",
+                                            align_items="center",
+                                            gap=8,
                                         ),
                                     ):
                                         me.progress_spinner(diameter=20)
@@ -646,7 +647,8 @@ def gemini_image_gen_page_content():
                                     )
 
                                     with me.expansion_panel(
-                                        title=f"Critique Score: {score}", icon="rule",
+                                        title=f"Critique Score: {score}",
+                                        icon="rule",
                                     ):
                                         for item in details:
                                             with me.box(
@@ -683,7 +685,9 @@ def gemini_image_gen_page_content():
 
                             with me.box(
                                 style=me.Style(
-                                    display="flex", flex_direction="column", gap=16,
+                                    display="flex",
+                                    flex_direction="column",
+                                    gap=16,
                                 ),
                             ):
                                 # Main image
@@ -710,7 +714,8 @@ def gemini_image_gen_page_content():
                                 # Evaluation display
                                 with me.box(
                                     style=me.Style(
-                                        width="100%", margin=me.Margin(top=16),
+                                        width="100%",
+                                        margin=me.Margin(top=16),
                                     ),
                                 ):
                                     if state.is_evaluating:
@@ -854,7 +859,8 @@ def on_upload(e: me.UploadEvent):
 
     if not files_to_upload:
         yield from show_snackbar(
-            state, f"You can upload a maximum of {max_input_images} images.",
+            state,
+            f"You can upload a maximum of {max_input_images} images.",
         )
         return
 
@@ -1009,7 +1015,8 @@ def on_generate_questions_click(e: me.ClickEvent):
 
     try:
         questions = generate_critique_questions(
-            prompt=state.prompt, image_descriptions=state.image_descriptions,
+            prompt=state.prompt,
+            image_descriptions=state.image_descriptions,
         )
         state.critique_questions = questions
     except Exception as ex:
@@ -1033,7 +1040,7 @@ def on_transformation_click(e: me.ClickEvent):
         transformation = json.loads(e.key)
         title = transformation["title"]
         prompt = transformation["prompt"]
-    except (json.JSONDecodeError, KeyError):
+    except json.JSONDecodeError, KeyError:
         yield from show_snackbar(state, "Invalid transformation data.")
         return
 
@@ -1059,7 +1066,8 @@ def on_suggest_transformations_click(e: me.ClickEvent):
 
     if not state.generated_image_urls:
         yield from show_snackbar(
-            state, "No image available to suggest transformations for.",
+            state,
+            "No image available to suggest transformations for.",
         )
         return
 
@@ -1090,7 +1098,8 @@ def on_image_action_click(e: me.ClickEvent):
 
     # Find the template that was clicked
     template = next(
-        (t for t in json.loads(state.prompt_templates_json) if t["key"] == e.key), None,
+        (t for t in json.loads(state.prompt_templates_json) if t["key"] == e.key),
+        None,
     )
 
     if not template:
@@ -1129,7 +1138,8 @@ def on_image_action_click(e: me.ClickEvent):
 
     # The action now uses the combined list of images
     yield from _generate_and_save(
-        base_prompt=template["prompt"], input_gcs_uris=input_gcs_uris,
+        base_prompt=template["prompt"],
+        input_gcs_uris=input_gcs_uris,
     )
 
 
@@ -1202,28 +1212,21 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
     try:
         final_prompt = base_prompt
-        with track_model_call(
-            model_name=state.selected_model,
-            prompt_length=len(final_prompt),
-            aspect_ratio=state.aspect_ratio,
-            # num_input_images=len(input_gcs_uris),
-            # num_images_generated=state.num_images_to_generate,
-        ):
-            gcs_uris, execution_time, captions, grounding_info, all_thoughts = (
-                generate_image_from_prompt_and_images(
-                    prompt=final_prompt,
-                    images=input_gcs_uris,
-                    aspect_ratio=state.aspect_ratio,
-                    gcs_folder="gemini_image_generations",
-                    file_prefix="gemini_image",
-                    image_size=state.image_size,
-                    use_search=state.use_search,
-                    use_image_search=state.use_image_search,
-                    thinking_level=state.thinking_level,
-                    include_thoughts=state.include_thoughts,
-                    model_name=state.selected_model,
-                )
+        gcs_uris, execution_time, captions, grounding_info, all_thoughts = (
+            generate_image_from_prompt_and_images(
+                prompt=final_prompt,
+                images=input_gcs_uris,
+                aspect_ratio=state.aspect_ratio,
+                gcs_folder="gemini_image_generations",
+                file_prefix="gemini_image",
+                image_size=state.image_size,
+                use_search=state.use_search,
+                use_image_search=state.use_image_search,
+                thinking_level=state.thinking_level,
+                include_thoughts=state.include_thoughts,
+                model_name=state.selected_model,
             )
+        )
 
         state.generation_time = execution_time
         state.grounding_info = json.dumps(grounding_info) if grounding_info else ""
@@ -1283,7 +1286,8 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 for uri in gcs_uris:
                     try:
                         evaluation_result = evaluate_image_with_questions(
-                            image_uri=uri, questions=state.critique_questions,
+                            image_uri=uri,
+                            questions=state.critique_questions,
                         )
 
                         # Process results
@@ -1356,10 +1360,12 @@ def on_load(e: me.LoadEvent):
     # Load templates once on initial load.
     if not json.loads(state.prompt_templates_json):
         templates = prompt_template_service.load_templates(
-            config_path="config/image_prompt_templates.json", template_type="image",
+            config_path="config/image_prompt_templates.json",
+            template_type="image",
         )
         state.prompt_templates_json = json.dumps(
-            [t.model_dump() for t in templates], default=str,
+            [t.model_dump() for t in templates],
+            default=str,
         )
         print(
             f"Loaded {len(json.loads(state.prompt_templates_json))} image prompt templates.",

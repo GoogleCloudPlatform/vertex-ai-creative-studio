@@ -58,9 +58,39 @@ def test_classify_error_exceptions():
     exc6 = Exception("InternalServerError: 500 Service Unavailable")
     assert classify_error(exc6)["category"] == "UPSTREAM_FAILURE"
 
+    # Not Found
+    exc8 = Exception("404 GET https://storage.googleapis.com/...: Not Found")
+    assert classify_error(exc8)["category"] == "NOT_FOUND"
+    assert classify_error(exc8)["code"] == 404
+    assert classify_error(exc8)["retryable"] is False
+
     # Unknown
     exc7 = Exception("Random unexpected issue")
     assert classify_error(exc7)["category"] == "UNKNOWN"
+
+
+@patch("common.storage.get_storage_client")
+def test_store_to_gcs_bucket_normalization(mock_get_client):
+    mock_client = MagicMock()
+    mock_bucket = MagicMock()
+    mock_blob = MagicMock()
+    mock_client.get_bucket.return_value = mock_bucket
+    mock_bucket.blob.return_value = mock_blob
+    mock_get_client.return_value = mock_client
+
+    from common.storage import store_to_gcs
+
+    # Test raw bucket name with gs:// prefix and path
+    uri = store_to_gcs(
+        folder="videos",
+        file_name="test.mp4",
+        mime_type="video/mp4",
+        contents=b"data",
+        bucket_name="gs://my-test-bucket/subpath",
+    )
+
+    mock_client.get_bucket.assert_called_once_with("my-test-bucket")
+    assert uri == "gs://my-test-bucket/videos/test.mp4"
 
 
 @patch("common.analytics.analytics_logger")
