@@ -4,6 +4,25 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.15.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.14.1...mcp-v3.15.0) (2026-08-11)
+
+
+### Features
+
+* **mcp-common:** add resource_link content helper for GCS media output ([#483](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/483)) ([#1635](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1635)) ([4222578](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/42225787ee50f7e2228a60cf8118da1db23ee16e))
+* **mcp-genmedia:** add output_filename with deterministic suffixing (nanobanana slice) ([#1628](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1628)) ([1de67aa](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/1de67aabf0dcc63d3ea651582e38d00c1ee64e35))
+* **mcp-genmedia:** fan out output_filename across genmedia servers ([#1630](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1630)) ([80852d1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/80852d1c616686df9c36a2bfe6fbaffc1560573c)), closes [#842](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/842)
+* **mcp-genmedia:** output_filename for imagen via GCS copy-rename (imagen slice) ([#1631](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1631)) ([79770b9](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/79770b994be1f35509ea98858e591a351b250fce))
+* **mcp-genmedia:** output_filename for veo via GCS copy-rename ([#1632](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1632)) ([1d68493](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/1d68493b80f6594c85cbdf2077fc818a22ad89bc))
+* **mcp:** add resource_link content for GCS output across media servers ([#483](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/483)) ([#1637](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1637)) ([9007d4d](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/9007d4d3d56ddc7d611bb48d386a150d7fb80f11))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/ghchinoy/cloud-interactions-go to v0.2.1 ([#1629](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1629)) ([58b1b0e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/58b1b0e7fefa8de618e81c42d68a2a4e9c8de0a9))
+* **mcp-genmedia:** tidy modules after cloud-interactions-go v0.2.1 ([#1629](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1629)) ([#1634](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1634)) ([d5ddcc1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/d5ddcc17f58330316e1aa1dbc3eb5f3743b8fc59))
+* **mcp:** incorporate cloud-interactions-go v0.2.0 (carry flat media + sherlog through mcp-common seam) ([#1622](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1622)) ([e681601](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/e6816016e84ea9284ec76f2d58a3c6ae69ceea63))
+
 ## [3.14.1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.14.0...mcp-v3.14.1) (2026-08-10)
 
 
