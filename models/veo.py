@@ -25,7 +25,7 @@ from common.analytics import get_logger, track_model_call
 from common.error_handling import GenerationError
 from config.default import Default
 from config.veo_models import get_veo_model_config
-from models.requests import VideoGenerationRequest
+from models.requests import APIReferenceImage, VideoGenerationRequest  # noqa: F401
 
 config = Default()
 
@@ -103,7 +103,8 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
             "resolution": request.resolution,
             "person_generation": PERSON_GENERATION_MAP.get(
-                request.person_generation, "allow_adult",
+                request.person_generation,
+                "allow_adult",
             ),
         }
 
