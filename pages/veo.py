@@ -514,7 +514,40 @@ def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argume
         print("Prompt is empty, skipping rewrite.")
         yield
         return
-    rewritten_prompt = rewriter(state.veo_prompt_input, VIDEO_REWRITER)
+
+    # Gather mode-appropriate reference images so the rewriter has visual
+    # context. Each entry is a (gcs_uri, mime_type) pair; empty URIs are skipped
+    # by the rewriter. Use the mime types stored in state (not a hardcoded
+    # image/png) for correctness.
+    images: list[tuple[str, str]] = []
+    if state.veo_mode == "i2v":
+        if state.reference_image_gcs:
+            images.append(
+                (state.reference_image_gcs, state.reference_image_mime_type)
+            )
+    elif state.veo_mode == "interpolation":
+        if state.reference_image_gcs:
+            images.append(
+                (state.reference_image_gcs, state.reference_image_mime_type)
+            )
+        if state.last_reference_image_gcs:
+            images.append(
+                (
+                    state.last_reference_image_gcs,
+                    state.last_reference_image_mime_type,
+                )
+            )
+    elif state.veo_mode == "r2v":
+        images.extend(
+            zip(state.r2v_reference_images, state.r2v_reference_mime_types)
+        )
+        # NOTE: r2v_style_image is deliberately NOT included: a style image
+        # influences the look, not the content, of the rewrite. This is an
+        # easily-changed default if owner preference shifts.
+
+    rewritten_prompt = rewriter(
+        state.veo_prompt_input, VIDEO_REWRITER, images=images
+    )
     state.veo_prompt_input = rewritten_prompt
     state.veo_prompt_placeholder = rewritten_prompt
     yield

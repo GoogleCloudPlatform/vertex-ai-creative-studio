@@ -326,32 +326,82 @@ def extract_room_names_from_image(image_uri: str) -> list[str]:
     retry=retry_if_exception_type(Exception),  # Retry on all exceptions for robustness
     reraise=True,  # re-raise the last exception if all retries fail
 )
-def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
+def rewriter(
+    original_prompt: str,
+    rewriter_prompt: str,
+    images: list[tuple[str, str]] | None = None,
+) -> str:
     """A Gemini rewriter.
 
     Args:
         original_prompt: The original prompt to be rewritten.
         rewriter_prompt: The rewriter prompt.
+        images: Optional list of ``(gcs_uri, mime_type)`` pairs for reference
+            images to give the rewriter visual context (e.g. Veo i2v /
+            first-last / r2v reference images). When empty or omitted the call
+            is text-only and behaves exactly as before (backward compatible for
+            callers such as Lyria that pass no images). The rewriter model
+            (``REWRITER_MODEL_ID = cfg.MODEL_ID``) is vision-capable; each image
+            is attached as a ``types.Part.from_uri`` part alongside the text
+            prompt, mirroring the ``describe_image`` pattern.
 
     Returns:
         The rewritten prompt text.
 
     """
     full_prompt = f"{rewriter_prompt} {original_prompt}"
-    analytics_logger.info(f"Rewriter: '{full_prompt}' with model {REWRITER_MODEL_ID}")
-    try:
+
+    # Build multimodal parts for any supplied reference images. Skip empty URIs
+    # and fall back to image/png when a mime type is missing.
+    image_parts = [
+        types.Part.from_uri(file_uri=uri, mime_type=mime or "image/png")
+        for uri, mime in (images or [])
+        if uri
+    ]
+
+    analytics_logger.info(
+        f"Rewriter: '{full_prompt}' with model {REWRITER_MODEL_ID} "
+        f"({len(image_parts)} reference image(s))"
+    )
+
+    def _call(contents: Any) -> str:
         with track_model_call(model_name=REWRITER_MODEL_ID, task="rewriter") as ctx:
             response = client.models.generate_content(
                 model=REWRITER_MODEL_ID,  # Explicitly use the configured model
-                contents=full_prompt,
+                contents=contents,
                 config=types.GenerateContentConfig(
                     response_modalities=["TEXT"],
                 ),
             )
             ctx["billing_units"].update(_extract_usage_metadata(response))
-        analytics_logger.info(f"Rewriter success! {response.text}")
         return response.text
+
+    try:
+        contents = [full_prompt, *image_parts] if image_parts else full_prompt
+        result = _call(contents)
+        analytics_logger.info(f"Rewriter success! {result}")
+        return result
     except Exception as e:
+        # Vision-support guard: if we attached image parts and the multimodal
+        # call failed (e.g. an operator pointed MODEL_ID at a non-vision model,
+        # or the API rejected the image parts), fall back to a text-only rewrite
+        # rather than breaking the whole rewrite feature.
+        if image_parts:
+            analytics_logger.warning(
+                f"Rewriter multimodal call failed ({e}); "
+                "falling back to text-only rewrite."
+            )
+            try:
+                result = _call(full_prompt)
+                analytics_logger.info(
+                    f"Rewriter success (text-only fallback)! {result}"
+                )
+                return result
+            except Exception as fallback_error:
+                analytics_logger.error(
+                    f"Rewriter error (text-only fallback): {fallback_error}"
+                )
+                raise
         analytics_logger.error(f"Rewriter error: {e}")
         raise
 
