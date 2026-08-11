@@ -142,7 +142,8 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		Image:  inputImage,
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "first_last_to_video")
+	outputFilename := common.ResolveOutputFilename(request.GetArguments())
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, outputFilename, modelName, source, config, "first_last_to_video")
 }
 
 // veoReferenceToVideoHandler is the handler for the 'veo_reference_to_video' tool.
@@ -268,7 +269,8 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		Prompt: prompt,
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "reference_to_video")
+	outputFilename := common.ResolveOutputFilename(request.GetArguments())
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, outputFilename, modelName, source, config, "reference_to_video")
 }
 
 // veoExtendVideoHandler is the handler for the 'veo_extend_video' tool.
@@ -342,7 +344,7 @@ func veoExtendVideoHandler(client *genai.Client, ctx context.Context, request mc
 	}
 
 	inputVideo := &genai.Video{
-		URI:   videoURI,
+		URI:      videoURI,
 		MIMEType: mimeType,
 	}
 
@@ -364,5 +366,6 @@ func veoExtendVideoHandler(client *genai.Client, ctx context.Context, request mc
 		Video:  inputVideo,
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "extend_video")
+	outputFilename := common.ResolveOutputFilename(request.GetArguments())
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, outputFilename, modelName, source, config, "extend_video")
 }

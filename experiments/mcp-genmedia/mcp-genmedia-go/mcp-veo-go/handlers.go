@@ -96,7 +96,8 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 	source := &genai.GenerateVideosSource{
 		Prompt: prompt,
 	}
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, model, source, config, "t2v")
+	outputFilename := common.ResolveOutputFilename(request.GetArguments())
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, outputFilename, model, source, config, "t2v")
 }
 
 // veoImageToVideoHandler is the handler for the 'veo_i2v' tool.
@@ -199,5 +200,6 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 		Image:  inputImage,
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "i2v")
+	outputFilename := common.ResolveOutputFilename(request.GetArguments())
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, outputFilename, modelName, source, config, "i2v")
 }

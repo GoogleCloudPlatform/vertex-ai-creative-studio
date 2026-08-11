@@ -57,7 +57,6 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
-	flag.Parse()
 }
 
 // main is the entry point for the mcp-veo-go service.
@@ -65,6 +64,10 @@ func init() {
 // It then creates an MCP server, registers the 'veo_t2v' and 'veo_i2v' tools,
 // and starts listening for requests on the configured transport.
 func main() {
+	// Parse flags here (not in init) so `go test` flags are not consumed at
+	// package init, matching the sibling genmedia servers (e.g. mcp-imagen-go).
+	flag.Parse()
+
 	var err error
 
 	// Initialize OpenTelemetry
@@ -105,6 +108,9 @@ func main() {
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
+		),
+		mcp.WithString("output_filename",
+			mcp.Description("Optional. Base name for the output file(s). The extension is forced to the true video type (e.g. .mp4). For a single video the name is used as-is (foo.mp4); for multiple videos a 1-based suffix is inserted before the extension (foo_1.mp4, foo_2.mp4, ...). For GCS output the API-written objects are copy-renamed to this name after generation (adds a short GCS copy latency; larger videos add copy time proportional to size)."),
 		),
 		mcp.WithString("model",
 			mcp.DefaultString("veo-3.1-fast-generate-001"),
@@ -255,6 +261,9 @@ func main() {
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
+		),
+		mcp.WithString("output_filename",
+			mcp.Description("Optional. Base name for the output file(s). The extension is forced to the true video type (e.g. .mp4). For a single video the name is used as-is (foo.mp4); for multiple videos a 1-based suffix is inserted before the extension (foo_1.mp4, foo_2.mp4, ...). For GCS output the API-written objects are copy-renamed to this name after generation (adds a short GCS copy latency; larger videos add copy time proportional to size)."),
 		),
 		mcp.WithString("model",
 			mcp.DefaultString("veo-3.1-fast-generate-001"),
