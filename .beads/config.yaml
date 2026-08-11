@@ -67,4 +67,4 @@ dolt:
 
 dolt.shared-server: true
 
-sync.remote: "https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git"
+sync.remote: "git+ssh://git@github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git"
