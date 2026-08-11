@@ -38,6 +38,11 @@ var (
 	// Single source of truth is the VERSION file at the root of the
 	// mcp-genmedia-go tree. Defaults to "dev" for un-injected builds.
 	version = "dev"
+
+	// writeFileFn is the local-file-write seam. It is a package-level variable so
+	// the handler's naming/collision wiring is unit-testable without touching the
+	// real filesystem — mirroring the writeFileFn indirection in mcp-gemini-go.
+	writeFileFn = os.WriteFile
 )
 
 const (
@@ -500,6 +505,30 @@ func resolveChirpOutputFilename(args map[string]any, voiceName string) (string, 
 	return fmt.Sprintf("%s-%s-%s.wav", prefix, safeVoiceName, time.Now().Format(timeFormatForFilename)), nil
 }
 
+// saveChirpAudio wires the resolved output_filename through to the local file
+// write: it resolves the client-predictable name (§4a/§4b via
+// resolveChirpOutputFilename), joins it under outputDir, applies the
+// collision-overwrite warning (§4e), and writes the bytes through the injectable
+// writeFileFn seam. It returns the cleaned saved path. A name-resolution failure is
+// returned as nameErr (fatal to the caller); a write failure as writeErr (the
+// caller falls back to returning the audio inline). Splitting the two errors
+// mirrors the handler's original behavior.
+func saveChirpAudio(args map[string]any, audioBytes []byte, outputDir, voiceName string) (savedFilename string, nameErr, writeErr error) {
+	genFilename, err := resolveChirpOutputFilename(args, voiceName)
+	if err != nil {
+		return "", err, nil
+	}
+	savedFilename = filepath.Clean(filepath.Join(outputDir, genFilename))
+	// Collision policy: overwrite with a warning (design §4e).
+	if _, statErr := os.Stat(savedFilename); statErr == nil {
+		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", genFilename, outputDir)
+	}
+	if werr := writeFileFn(savedFilename, audioBytes, 0644); werr != nil {
+		return savedFilename, nil, werr
+	}
+	return savedFilename, nil, nil
+}
+
 func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	var contentItems []mcp.Content
 
@@ -621,29 +650,21 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 			audioItem := mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"}
 			contentItems = append(contentItems, audioItem)
 		} else {
-			genFilename, nameErr := resolveChirpOutputFilename(request.GetArguments(), selectedVoice.Name)
+			savedName, nameErr, writeErr := saveChirpAudio(request.GetArguments(), audioContentBytes, outputDir, selectedVoice.Name)
 			if nameErr != nil {
 				return mcp.NewToolResultError(nameErr.Error()), nil
 			}
-			savedFilename = filepath.Join(outputDir, genFilename)
-			savedFilename = filepath.Clean(savedFilename)
-
-			// Collision policy: overwrite with a warning (design §4e).
-			if _, statErr := os.Stat(savedFilename); statErr == nil {
-				log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", genFilename, outputDir)
-			}
-
-			err = os.WriteFile(savedFilename, audioContentBytes, 0644)
-			if err != nil {
-				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, err)
+			if writeErr != nil {
+				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedName, writeErr)
 				log.Print(fileSaveMessage)
 				base64AudioData := base64.StdEncoding.EncodeToString(audioContentBytes)
 				audioItem := mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"}
 				contentItems = append(contentItems, audioItem)
 				savedFilename = ""
 			} else {
-				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedFilename, len(audioContentBytes))
-				log.Printf("Audio content (%d bytes) written to file: %s", len(audioContentBytes), savedFilename)
+				savedFilename = savedName
+				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedName, len(audioContentBytes))
+				log.Printf("Audio content (%d bytes) written to file: %s", len(audioContentBytes), savedName)
 			}
 		}
 	} else {

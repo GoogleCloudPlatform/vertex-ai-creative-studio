@@ -68,6 +68,11 @@ const (
 // tag through goreleaser for releases). Defaults to "dev" for un-injected builds.
 var version = "dev"
 
+// writeFileFn is the local-file-write seam. It is a package-level variable so the
+// handler's naming/collision wiring is unit-testable without touching the real
+// filesystem — mirroring the writeFileFn indirection in mcp-gemini-go.
+var writeFileFn = os.WriteFile
+
 // init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -377,12 +382,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 				localSaveMessage = fmt.Sprintf("Failed to create local directory %s: %v.", localDirectoryPathParameter, errMkdir)
 				log.Printf("Error creating local directory %s: %v", localDirectoryPathParameter, errMkdir)
 			} else {
-				fullLocalPath := filepath.Join(localDirectoryPathParameter, baseFilename)
-				// Collision policy: overwrite with a warning (design §4e).
-				if _, statErr := os.Stat(fullLocalPath); statErr == nil {
-					log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", baseFilename, localDirectoryPathParameter)
-				}
-				errWrite := os.WriteFile(fullLocalPath, audioBytes, 0644)
+				fullLocalPath, errWrite := saveLyriaLocalFile(localDirectoryPathParameter, baseFilename, audioBytes)
 				if errWrite != nil {
 					localSaveMessage = fmt.Sprintf("Failed to save audio locally to %s: %v.", fullLocalPath, errWrite)
 					log.Printf("Error saving audio locally to %s: %v", fullLocalPath, errWrite)
@@ -454,6 +454,26 @@ func resolveLyriaOutputFilename(params map[string]any) (string, error) {
 		return "", err
 	}
 	return names[0], nil
+}
+
+// saveLyriaLocalFile wires the resolved base filename through to the local file
+// write: it joins baseFilename under localDir, applies the collision-overwrite
+// warning (§4e), and writes the bytes through the injectable writeFileFn seam. The
+// baseFilename is the value produced by resolveLyriaOutputFilename (output_filename
+// wins over the legacy file_name alias; extension forced to the true audio MIME —
+// §4a/§4b) or the shortid default when unset, so the same client-predictable name
+// is used verbatim for both the local file and the GCS object. It returns the full
+// local path and any write error.
+func saveLyriaLocalFile(localDir, baseFilename string, audioBytes []byte) (fullLocalPath string, err error) {
+	fullLocalPath = filepath.Join(localDir, baseFilename)
+	// Collision policy: overwrite with a warning (design §4e).
+	if _, statErr := os.Stat(fullLocalPath); statErr == nil {
+		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", baseFilename, localDir)
+	}
+	if werr := writeFileFn(fullLocalPath, audioBytes, 0644); werr != nil {
+		return fullLocalPath, werr
+	}
+	return fullLocalPath, nil
 }
 
 // invokeLyriaAndUpload calls the Lyria model and optionally uploads the result to GCS.

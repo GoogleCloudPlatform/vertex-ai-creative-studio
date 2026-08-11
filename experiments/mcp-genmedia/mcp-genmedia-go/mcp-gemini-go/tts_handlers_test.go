@@ -15,9 +15,94 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// TestSaveGeminiTTSAudioWiring is a handler-level wiring test: it drives
+// saveGeminiTTSAudio (the function the handler calls to persist audio) with the
+// os.WriteFile seam (writeFileFn) replaced by a recorder, and asserts the resolved
+// output_filename actually reaches the write with the extension forced to the true
+// audio MIME, precedence honored, and the collision path not erroring. gemini-TTS
+// is single-artifact, so only the n==1 (<stem>.<ext>) case occurs; the shared
+// _1..n suffix rule is covered where multi-output actually happens (imagen/veo/
+// nanobanana/gemini-image/omni) and in mcp-common's BuildOutputFilenames tests.
+func TestSaveGeminiTTSAudioWiring(t *testing.T) {
+	const (
+		voice = "Callirrhoe"
+		dir   = "/out"
+	)
+	origWrite := writeFileFn
+	t.Cleanup(func() { writeFileFn = origWrite })
+
+	var gotPath string
+	var gotBytes []byte
+	writeFileFn = func(name string, data []byte, _ os.FileMode) error {
+		gotPath, gotBytes = name, data
+		return nil
+	}
+
+	cases := []struct {
+		name      string
+		args      map[string]any
+		legacyExt string
+		mimeType  string
+		want      string
+	}{
+		{"single artifact, ext kept", map[string]any{"output_filename": "speech.wav"}, ".wav", "audio/wav", "speech.wav"},
+		{"extension forced to encoding MIME", map[string]any{"output_filename": "speech.wav"}, ".mp3", "audio/mpeg", "speech.mp3"},
+		{"output_filename wins over legacy prefix", map[string]any{"output_filename": "speech.wav", "output_filename_prefix": "legacy"}, ".wav", "audio/wav", "speech.wav"},
+		{"traversal sanitized before write", map[string]any{"output_filename": "../../etc/speech.wav"}, ".wav", "audio/wav", "speech.wav"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotPath, gotBytes = "", nil
+			saved, nameErr, writeErr := saveGeminiTTSAudio(tc.args, []byte("audio"), dir, voice, tc.legacyExt, tc.mimeType)
+			if nameErr != nil || writeErr != nil {
+				t.Fatalf("unexpected errors: name=%v write=%v", nameErr, writeErr)
+			}
+			want := filepath.Join(dir, tc.want)
+			if saved != want || gotPath != want {
+				t.Errorf("saved=%q writeTarget=%q, want %q", saved, gotPath, want)
+			}
+			if string(gotBytes) != "audio" {
+				t.Errorf("bytes written = %q, want %q", gotBytes, "audio")
+			}
+		})
+	}
+
+	t.Run("legacy prefix scheme preserved when output_filename unset", func(t *testing.T) {
+		gotPath = ""
+		saved, nameErr, writeErr := saveGeminiTTSAudio(map[string]any{"output_filename_prefix": "custom"}, []byte("a"), dir, voice, ".wav", "audio/wav")
+		if nameErr != nil || writeErr != nil {
+			t.Fatalf("unexpected errors: name=%v write=%v", nameErr, writeErr)
+		}
+		base := filepath.Base(saved)
+		if !strings.HasPrefix(base, "custom-"+voice+"-") || !strings.HasSuffix(base, ".wav") {
+			t.Errorf("legacy scheme not wired to write: got %q", saved)
+		}
+	})
+
+	t.Run("write error is surfaced separately from name error", func(t *testing.T) {
+		writeFileFn = func(string, []byte, os.FileMode) error { return fmt.Errorf("disk full") }
+		t.Cleanup(func() {
+			writeFileFn = func(name string, data []byte, _ os.FileMode) error { gotPath, gotBytes = name, data; return nil }
+		})
+		saved, nameErr, writeErr := saveGeminiTTSAudio(map[string]any{"output_filename": "speech.wav"}, []byte("a"), dir, voice, ".wav", "audio/wav")
+		if nameErr != nil {
+			t.Fatalf("unexpected name error: %v", nameErr)
+		}
+		if writeErr == nil {
+			t.Fatalf("expected write error")
+		}
+		if saved != filepath.Join(dir, "speech.wav") {
+			t.Errorf("saved path should still be reported on write error, got %q", saved)
+		}
+	})
+}
 
 // TestResolveGeminiTTSFilename covers the gemini-TTS naming decision: output_filename
 // wins over the deprecated output_filename_prefix, the extension is forced to the

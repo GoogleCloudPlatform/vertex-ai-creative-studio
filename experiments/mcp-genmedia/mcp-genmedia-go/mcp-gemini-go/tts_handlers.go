@@ -41,6 +41,30 @@ func resolveGeminiTTSFilename(args map[string]any, voiceName, legacyExt, mimeTyp
 	return fmt.Sprintf("%s-%s-%s%s", prefix, voiceName, time.Now().Format(timeFormatForTTSFilename), legacyExt), nil
 }
 
+// saveGeminiTTSAudio wires the resolved output_filename through to the local file
+// write: it resolves the client-predictable name (output_filename wins over the
+// legacy output_filename_prefix; extension forced to the true audio MIME — §4a/§4b),
+// joins it under outputDir, applies the collision-overwrite warning (§4e), and
+// writes the bytes through the injectable writeFileFn seam. It returns the full
+// saved path. A name-resolution failure is returned as nameErr (fatal to the
+// caller); a write failure as writeErr (the caller falls back to returning the
+// audio inline). Splitting the two errors mirrors the handler's original behavior.
+func saveGeminiTTSAudio(args map[string]any, audioBytes []byte, outputDir, voiceName, legacyExt, mimeType string) (savedFilename string, nameErr, writeErr error) {
+	filename, err := resolveGeminiTTSFilename(args, voiceName, legacyExt, mimeType)
+	if err != nil {
+		return "", err, nil
+	}
+	savedFilename = filepath.Join(outputDir, filename)
+	// Collision policy: overwrite with a warning (design §4e).
+	if _, statErr := os.Stat(savedFilename); statErr == nil {
+		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", filename, outputDir)
+	}
+	if werr := writeFileFn(savedFilename, audioBytes, 0644); werr != nil {
+		return savedFilename, nil, werr
+	}
+	return savedFilename, nil, nil
+}
+
 const (
 	geminiTTSAPIEndpoint     = "https://texttospeech.googleapis.com/v1/text:synthesize"
 	defaultGeminiTTSModel    = "gemini-3.1-flash-tts-preview"
@@ -306,17 +330,12 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 			base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
 			contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 		} else {
-			filename, nameErr := resolveGeminiTTSFilename(request.GetArguments(), voiceName, fileExtension, mimeType)
+			savedFilename, nameErr, writeErr := saveGeminiTTSAudio(request.GetArguments(), audioBytes, outputDir, voiceName, fileExtension, mimeType)
 			if nameErr != nil {
 				return mcp.NewToolResultError(nameErr.Error()), nil
 			}
-			savedFilename := filepath.Join(outputDir, filename)
-			// Collision policy: overwrite with a warning (design §4e).
-			if _, statErr := os.Stat(savedFilename); statErr == nil {
-				log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", filename, outputDir)
-			}
-			if err := writeFileFn(savedFilename, audioBytes, 0644); err != nil {
-				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, err)
+			if writeErr != nil {
+				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, writeErr)
 				log.Print(fileSaveMessage)
 				base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
 				contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
