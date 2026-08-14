@@ -45,7 +45,7 @@ The application is configured using environment variables, which can be set in a
 | :--- | :--- | :--- |
 | `PROJECT_ID` | Your Google Cloud Project ID. | (Required) |
 | `LOCATION` | The Google Cloud region for Vertex AI. | `us-central1` |
-| `MODEL_ID` | The primary Gemini model ID used for generation and improvement. | `gemini-3.1-pro-preview` |
+| `MODEL_ID` | The primary Gemini model ID used for generation and improvement. | `gemini-3.7-flash` |
 | `PLANNING_MODEL_ID` | The model ID used specifically for the "thinking thoughts" (planning) step of prompt improvement. | Defaults to `MODEL_ID` |
 
 ## CLI Tools
@@ -104,13 +104,13 @@ export SA_ID=sa-promptlandia@${PROJECT_ID}.iam.gserviceaccount.com
 
 #### Using Cloud Run, unauthenticated
 ```bash
-gcloud run deploy promptlandia --source . --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.1-pro-preview,LOCATION=us-central1 --allow-unauthenticated
+gcloud run deploy promptlandia --source . --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1 --allow-unauthenticated
 ```
 
 #### Using Cloud Run IAP
 
 ```bash
-gcloud alpha run deploy promptlandia --source . --iap --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.1-pro-preview,LOCATION=us-central1
+gcloud alpha run deploy promptlandia --source . --iap --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1
 ```
 
 #### Add IAP users/groups

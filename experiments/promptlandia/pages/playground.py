@@ -43,7 +43,7 @@ class PageState:
     prompt_tab: bool = True
     response_tab: bool = True
     # Model configs
-    selected_model: str = "gemini-1.5"
+    selected_model: str = "gemini-3.7-flash"
     selected_region: str = "us-east4"
     temperature: float = 1.0
     temperature_for_input: float = 1.0
@@ -146,7 +146,7 @@ def playground_page_content(app_state: me.state):
         with me.box(style=_STYLE_CONFIG_COLUMN):
             me.select(
                 options=[
-                    me.SelectOption(label="Gemini 3.1 Pro Preview", value="gemini-3.1-pro-preview"),
+                    me.SelectOption(label="Gemini 3.7 Flash", value="gemini-3.7-flash"),
                     me.SelectOption(label="Chat-GPT Turbo", value="gpt-3.5-turbo"),
                 ],
                 label="Model",
