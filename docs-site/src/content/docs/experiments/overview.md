@@ -32,3 +32,10 @@ The experimental folder contains stand-alone applications, demos, and features n
 ## Developer Tools & MCP
 
 * [MCP GenMedia](/vertex-ai-creative-studio/experiments/mcp-genmedia) - Model Context Protocol servers for Genmedia services for AI applications to utilize Veo, Imagen, Lyria, Chirp 3 HD.
+
+## Relocated Experiments
+
+These experiments have moved to their own repositories and are no longer maintained in this repo:
+
+* [Storycraft](https://github.com/mblanc/storycraft) - An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
+* [V-Start (formerly VeoStart)](https://github.com/GoogleCloudPlatform/generative-ai/tree/main/vision/sample-apps/V-Start) - A toolkit that helps users quickly create effective prompts for Veo and evaluate how well generated videos align with their intended prompts.
