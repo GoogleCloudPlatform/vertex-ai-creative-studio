@@ -161,7 +161,7 @@ The `Study` table is versatile and can support various types of studies focused 
 
 1. **Live Arena Studies:** As you are currently implementing, this table can track Elo ratings derived from real-time user comparisons of model outputs. Each arena session or a series of sessions can be grouped under a specific `study` name (e.g., "live_arena_round_1", "live_arena_round_2").
 
-2. **A/B Testing of Model Versions:** You can run studies comparing different versions of the same model (e.g., "imagen-3.0-generate-001" vs. "imagen-3.0-generate-002") on the same prompts. Each version would be recorded as a distinct `model_name`, and the overall experiment can be identified by a `study` name (e.g., "imagen_v1_v2_comparison").
+2. **A/B Testing of Model Versions:** You can run studies comparing different versions of the same model (e.g., "imagen-4.0-generate-001" vs. "imagen-4.0-fast-generate-001") on the same prompts. Each version would be recorded as a distinct `model_name`, and the overall experiment can be identified by a `study` name (e.g., "imagen_v1_v2_comparison").
 
 3. **Impact of Hyperparameter Tuning:** Studies where you evaluate the effect of different hyperparameter settings on model performance. Each set of hyperparameters can be associated with a unique `study`.
 
@@ -184,7 +184,7 @@ PROJECT_ID=<YOUR_PROJECT_ID>
 GENMEDIA_BUCKET=${PROJECT_ID}-genmedia
 GEMINI_PROJECT_ID=<YOUR_PROJECT_ID_WITH_GEMINI_API_ACCESS>
 LOCATION="us-central1"
-MODEL_ID="gemini-2.0-flash"
+MODEL_ID="gemini-3.5-flash"
 IMAGE_FIREBASE_DB="arena"
 IMAGE_COLLECTION_NAME="arena_images"
 IMAGE_RATINGS_COLLECTION_NAME="arena_elo"
@@ -236,7 +236,7 @@ gcloud run deploy genmedia-arena --source . \
     --service-account=$SA_ID \
     --set-env-vars GENMEDIA_BUCKET=${PROJECT_ID}-genmedia \
     --set-env-vars PROJECT_ID=${PROJECT_ID} \
-    --set-env-vars MODEL_ID=gemini-2.0-flash \
+    --set-env-vars MODEL_ID=gemini-3.5-flash \
     --region us-central1
 ```
 

@@ -115,9 +115,8 @@ def _render_study_info(studies: dict[dict[str, Any]], app_state: me.state):
                         model_list_items += f"<li>{model}</li>"
                 else:
                     model_list_items = """
-                    <li>imagegeneration@006</li>
-                    <li>imagen-3.0-generate-002</li>
-                    <li>imagen-3.0-fast-generate-001</li>
+                    <li>imagen-4.0-generate-001</li>
+                    <li>imagen-4.0-fast-generate-001</li>
                     <li>black-forest-labs/flux1-schnell</li>
                     <li>stability-ai/stable-diffusion-2-1</li>
                     """

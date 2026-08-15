@@ -32,7 +32,7 @@ class Default:
     # pylint: disable=invalid-name
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.0-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.5-flash")
     INIT_VERTEX: bool = os.environ.get("INIT_VERTEX", "True").lower() in ("true", "1")
 
     GENMEDIA_BUCKET: str = os.environ.get("GENMEDIA_BUCKET")
@@ -48,12 +48,12 @@ class Default:
     ELO_K_FACTOR: int = int(os.environ.get("ELO_K_FACTOR", 32))
 
     # image models
-    MODEL_IMAGEN2: str = "imagegeneration@006"
-    MODEL_IMAGEN3_FAST: str = "imagen-3.0-fast-generate-001"
-    MODEL_IMAGEN3: str = "imagen-3.0-generate-001"
-    MODEL_IMAGEN32: str = "imagen-3.0-generate-002"
-    
-    MODEL_GEMINI2: str = "gemini-2.0-flash"
+    MODEL_IMAGEN2: str = "imagen-4.0-generate-001"
+    MODEL_IMAGEN3_FAST: str = "imagen-4.0-fast-generate-001"
+    MODEL_IMAGEN3: str = "imagen-4.0-generate-001"
+    MODEL_IMAGEN32: str = "imagen-4.0-generate-001"
+
+    MODEL_GEMINI2: str = "gemini-3.5-flash"
 
     # model garden image models
     MODEL_FLUX1: str = "black-forest-labs/flux1-schnell"
