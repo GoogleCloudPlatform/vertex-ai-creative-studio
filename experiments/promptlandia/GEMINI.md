@@ -96,12 +96,12 @@ export SA_ID=sa-promptlandia@${PROJECT_ID}.iam.gserviceaccount.com
 
 **To deploy an unauthenticated service:**
 ```bash
-gcloud run deploy promptlandia --source . --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1 --allow-unauthenticated
+gcloud run deploy promptlandia --source . --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1,GEMINI_LOCATION=global --allow-unauthenticated
 ```
 
 **To deploy a service secured with IAP:**
 ```bash
-gcloud alpha run deploy promptlandia --source . --iap --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1
+gcloud alpha run deploy promptlandia --source . --iap --service-account=$SA_ID --region us-central1 --set-env-vars PROJECT_ID=$(gcloud config get project),MODEL_ID=gemini-3.7-flash,LOCATION=us-central1,GEMINI_LOCATION=global
 ```
 
 ## Committing

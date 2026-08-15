@@ -80,8 +80,9 @@ def settings_page_content(app_state: me.state):
                         style=me.Style(font_weight="bold"),
                     )
                     me.box(style=me.Style(height=8))
-                    me.text(f"Model: {Default.MODEL_ID}")
-                    me.text(f"Location: {Default.LOCATION}")
+                    me.text(f"Model (strongest): {Default.MODEL_ID}")
+                    me.text(f"Alternative model: {Default.ALTERNATIVE_MODEL_ID}")
+                    me.text(f"Gemini location: {Default.GEMINI_LOCATION}")
 
                 me.box(style=me.Style(height=32))
 

@@ -59,7 +59,9 @@ class ModelSetup:
         if not project_id:
             project_id = config.PROJECT_ID
         if not location:
-            location = config.LOCATION
+            # Gemini calls use the dedicated GEMINI_LOCATION (default "global"),
+            # decoupled from the Cloud Run / deployment region (LOCATION).
+            location = config.GEMINI_LOCATION
         if not model_id:
             model_id = config.MODEL_ID
         if not planning_model_id:

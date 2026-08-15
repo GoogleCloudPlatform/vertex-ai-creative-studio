@@ -16,9 +16,21 @@ variable "service_name" {
 }
 
 variable "model_id" {
-  description = "The ID of the Gemini model to use."
+  description = "The ID of the primary/strongest Gemini model to use."
   type        = string
   default     = "gemini-3.7-flash"
+}
+
+variable "alternative_model_id" {
+  description = "A lighter/faster Gemini model used for secondary, classification-style steps."
+  type        = string
+  default     = "gemini-3.5-flash-lite"
+}
+
+variable "gemini_location" {
+  description = "The location for Gemini model calls. Decoupled from the Cloud Run deployment region (var.region)."
+  type        = string
+  default     = "global"
 }
 
 variable "iap_members" {

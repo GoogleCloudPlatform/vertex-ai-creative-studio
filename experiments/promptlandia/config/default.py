@@ -36,13 +36,25 @@ class Default:
 
     Attributes:
         PROJECT_ID: The Google Cloud project ID.
-        LOCATION: The Google Cloud location to use for the generative AI model.
-        MODEL_ID: The ID of the generative AI model to use.
+        LOCATION: The general Google Cloud region (e.g. the Cloud Run
+            deployment region). Kept separate from the Gemini region.
+        GEMINI_LOCATION: The location used for Gemini model calls. Defaults to
+            "global" and is intentionally decoupled from LOCATION / the Cloud
+            Run deployment region.
+        MODEL_ID: The ID of the primary/strongest generative AI model to use.
+        PLANNING_MODEL_ID: The model ID used for the prompt-planning /
+            prompt-generation step. Defaults to MODEL_ID (the strongest model).
+        ALTERNATIVE_MODEL_ID: A lighter/faster model used for secondary,
+            classification-style steps (not the core planning/generation flow).
         INIT_VERTEX: Whether to initialize the Vertex AI client.
     """
 
     PROJECT_ID: str = field(default_factory=lambda: os.environ.get("PROJECT_ID"))
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
+    GEMINI_LOCATION: str = os.environ.get("GEMINI_LOCATION", "global")
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.7-flash")
     PLANNING_MODEL_ID: str = os.environ.get("PLANNING_MODEL_ID")
+    ALTERNATIVE_MODEL_ID: str = os.environ.get(
+        "ALTERNATIVE_MODEL_ID", "gemini-3.5-flash-lite"
+    )
     INIT_VERTEX: bool = True

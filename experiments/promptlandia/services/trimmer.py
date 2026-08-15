@@ -38,7 +38,9 @@ class PromptTrimmer:
             client: An instance of LLMClient. If None, a new one is created.
         """
         self.client = client or LLMClient()
-        self.model_id = Default().MODEL_ID
+        config = Default()
+        self.model_id = config.MODEL_ID
+        self.alternative_model_id = config.ALTERNATIVE_MODEL_ID
 
     def trim_prompt(self, prompt: str) -> TrimResult:
         """Trims a prompt by removing general best practices while keeping task-specific requirements.
@@ -53,13 +55,16 @@ class PromptTrimmer:
         Returns:
             A TrimResult object containing the analysis, trimmed prompt, and duration.
         """
-        logger.info(f"Trimming prompt using model: {self.model_id}")
+        logger.info(
+            f"Trimming prompt (deconstruct={self.alternative_model_id}, "
+            f"rewrite={self.model_id})"
+        )
         start_time = time.perf_counter()
 
-        # Step 1: Deconstruct
+        # Step 1: Deconstruct (classification/extraction step -> lighter model)
         deconstructor_prompt = TRIMMER_DECONSTRUCTOR.format(prompt)
         response_1 = self.client.generate_content(
-            model=self.model_id,
+            model=self.alternative_model_id,
             contents=deconstructor_prompt,
             config=GenerateContentConfig(
                 response_modalities=["TEXT"],

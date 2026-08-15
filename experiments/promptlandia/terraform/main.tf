@@ -48,8 +48,16 @@ resource "google_cloud_run_v2_service" "promptlandia_service" {
         value = var.model_id
       }
       env {
+        name  = "ALTERNATIVE_MODEL_ID"
+        value = var.alternative_model_id
+      }
+      env {
         name  = "LOCATION"
         value = var.region
+      }
+      env {
+        name  = "GEMINI_LOCATION"
+        value = var.gemini_location
       }
     }
   }

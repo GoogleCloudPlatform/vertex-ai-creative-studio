@@ -35,6 +35,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from config.default import Default
 from models.model_setup import ModelSetup
 from models.domain import TrimResult, ImprovementPlan, ImprovementResult
 
@@ -50,6 +51,8 @@ logger = logging.getLogger(__name__)
 client, model_id, planning_model_id = ModelSetup.init()
 MODEL_ID = model_id
 PLANNING_MODEL_ID = planning_model_id
+# Lighter/faster model for secondary, classification-style steps.
+ALTERNATIVE_MODEL_ID = Default().ALTERNATIVE_MODEL_ID
 
 
 def _log_non_text_parts(response):
@@ -216,13 +219,15 @@ def gemini_trim_prompt(prompt: str) -> TrimResult:
     Returns:
         A TrimResult object containing the analysis, trimmed prompt, and duration.
     """
-    logger.info(f"Trimming prompt using model: {MODEL_ID}")
+    logger.info(
+        f"Trimming prompt (deconstruct={ALTERNATIVE_MODEL_ID}, rewrite={MODEL_ID})"
+    )
     start_time = time.perf_counter()
 
-    # Step 1: Deconstruct
+    # Step 1: Deconstruct (classification/extraction step -> lighter model)
     deconstructor_prompt = TRIMMER_DECONSTRUCTOR.format(prompt)
     response_1 = _call_gemini_with_retry(
-        model=MODEL_ID,
+        model=ALTERNATIVE_MODEL_ID,
         contents=deconstructor_prompt,
         config=GenerateContentConfig(
             response_modalities=["TEXT"],

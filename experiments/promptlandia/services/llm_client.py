@@ -50,7 +50,9 @@ class LLMClient:
         """
         config = Default()
         self.project_id = project_id or config.PROJECT_ID
-        self.location = location or config.LOCATION
+        # Gemini calls use the dedicated GEMINI_LOCATION (default "global"),
+        # decoupled from the Cloud Run / deployment region (LOCATION).
+        self.location = location or config.GEMINI_LOCATION
         self.init_vertex = config.INIT_VERTEX
 
         if not self.project_id or not self.location:
