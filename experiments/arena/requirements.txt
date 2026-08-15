@@ -65,7 +65,7 @@ pandas==2.2.3
 pillow==12.2.0
 propcache==0.4.1
 proto-plus==1.26.1
-protobuf==5.29.4
+protobuf==6.33.5
 pyarrow==23.0.1
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
