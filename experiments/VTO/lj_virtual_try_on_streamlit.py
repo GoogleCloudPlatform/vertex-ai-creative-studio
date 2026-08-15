@@ -15,7 +15,7 @@ st.set_page_config(page_title="Virtual Try-On", layout="wide")
 # Constants
 PROJECT_ID = "consumer-genai-experiments"
 LOCATION = "us-central1"
-MODEL_ID = "virtual-try-on-exp-05-31"
+MODEL_ID = "virtual-try-on-001"
 IMAGE_DIR = "/Users/layolin/Documents/VTO/tryon"
 PRODUCT_IMAGE_FILES = ["red.jpg", "green.png", "dress.png", "blue.png", "yellow.png"]
 TARGET_SIZE = (250, 550)
