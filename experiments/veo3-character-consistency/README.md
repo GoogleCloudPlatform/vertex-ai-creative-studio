@@ -22,6 +22,13 @@ This demo uses the following Google AI models:
 *   **Imagen:** For generating the still images of the character in the new scene.
 *   **Veo:** For generating the final video.
 
+> **Deprecation notice:** the image edit/outpaint step uses `imagen-3.0-capability-001`,
+> which is on Google's **2026-06-30 sunset list**. A suggested conversion path to
+> Nano Banana (Gemini prompt-based editing) is documented in
+> [`MIGRATION.md`](./MIGRATION.md). This work is **deferred** until closer to the
+> deadline; tracked by
+> [#1672](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1672).
+
 ## How to Run
 
 1.  **Clone the repository:**
