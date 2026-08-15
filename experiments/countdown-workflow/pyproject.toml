@@ -9,3 +9,9 @@ dependencies = [
     "moviepy>=2.2.1",
     "yt-dlp>=2026.7.4",
 ]
+
+[tool.setuptools]
+py-modules = ["main", "config"]
+
+[tool.setuptools.packages.find]
+include = ["utils*"]
