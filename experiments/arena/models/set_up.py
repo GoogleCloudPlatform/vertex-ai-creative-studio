@@ -21,7 +21,12 @@ load_dotenv(override=True)
 config = Default()
 
 def load_default_models() -> list[str]:
-    IMAGE_GEN_MODELS = [config.MODEL_IMAGEN2, config.MODEL_IMAGEN3_FAST, config.MODEL_IMAGEN3, config.MODEL_IMAGEN32,]
+    # Deduplicate while preserving order: several MODEL_IMAGEN* aliases now map to
+    # the same imagen-4.0 backend ID, and duplicate entries here would let
+    # random.sample() pit a model against itself (corrupting Elo ratings).
+    IMAGE_GEN_MODELS = list(dict.fromkeys(
+        [config.MODEL_IMAGEN2, config.MODEL_IMAGEN3_FAST, config.MODEL_IMAGEN3, config.MODEL_IMAGEN32,]
+    ))
     if config.MODEL_FLUX1_ENDPOINT_ID:
         IMAGE_GEN_MODELS.append(config.MODEL_FLUX1)
     if config.MODEL_STABLE_DIFFUSION_ENDPOINT_ID:
