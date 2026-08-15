@@ -61,8 +61,8 @@ PROJECT_ID=
 # GEMINI_LOCATION=global
 
 # [OPTIONAL] The specific model used for image generation features.
-# Default: gemini-2.5-flash-image
-# GEMINI_IMAGE_GEN_MODEL=gemini-2.5-flash-image
+# Default: gemini-3.1-flash-image
+# GEMINI_IMAGE_GEN_MODEL=gemini-3.1-flash-image
 
 # [OPTIONAL] The region for the Gemini Image Generation API.
 # Default: global

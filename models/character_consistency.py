@@ -267,7 +267,7 @@ def _generate_gemini_candidates(
     Imagen path passed via ``EditImageConfig``) is folded into the prompt text,
     since the Gemini adapter has no negative-prompt input.
 
-    ``gemini-2.5-flash-image`` returns one image per call, so ``num_candidates``
+    ``gemini-3.1-flash-image`` returns one image per call, so ``num_candidates``
     calls are issued in parallel (mirroring the previous behaviour of returning a
     set of candidates for downstream best-image selection).
 

@@ -85,7 +85,7 @@ class Default:
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
         "GEMINI_IMAGE_GEN_MODEL",
-        "gemini-2.5-flash-image",
+        "gemini-3.1-flash-image",
     )
     GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
         "GEMINI_IMAGE_GEN_LOCATION",
@@ -247,7 +247,7 @@ class Default:
     )
     OBJECT_ROTATION_IMAGE_MODEL: str = os.environ.get(
         "OBJECT_ROTATION_IMAGE_MODEL",
-        "gemini-2.5-flash-image",
+        "gemini-3.1-flash-image",
     )
 
     image_modifiers: list[str] = field(

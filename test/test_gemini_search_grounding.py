@@ -20,7 +20,7 @@ from google.genai import types
 # Retrieve project and location from environment variables
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-MODEL_ID = "gemini-2.5-flash-image"
+MODEL_ID = "gemini-3.1-flash-image"
 
 if not PROJECT_ID:
     print("Skipping test: GOOGLE_CLOUD_PROJECT not set.")

@@ -41,14 +41,14 @@ mask inpaint/outpaint); the Imagen 4.0 generate models do not offer a like-for-l
 edit/capability call. A straight version bump is therefore not an option.
 
 The forward direction is **Nano Banana** — Gemini prompt-based image editing
-(`gemini-2.5-flash-image`). This is the same decision the **core app** already made
+(`gemini-3.1-flash-image`). This is the same decision the **core app** already made
 and shipped for its Character Consistency feature:
 
 - Precedent: **[PR #1659](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/pull/1659)**
   ported the core app's Character Consistency edit path off `imagen-3.0-capability-001`
   onto the existing Nano Banana adapter
   (`models.gemini.generate_image_from_prompt_and_images`, backed by
-  `GEMINI_IMAGE_GEN_MODEL = gemini-2.5-flash-image`) rather than doing an
+  `GEMINI_IMAGE_GEN_MODEL = gemini-3.1-flash-image`) rather than doing an
   Imagen-4.0 swap.
 
 What that pattern means for **this experiment** when the work is actually done:
