@@ -63,8 +63,9 @@ def reverse_engineer_prompts(
         logger.error(f"Error: Chunks directory not found at {chunks_dir}")
         return None
 
-    # Initialize client for Vertex AI
-    client = genai.Client(vertexai=True, project=config.GOOGLE_CLOUD_PROJECT, location=config.GOOGLE_CLOUD_LOCATION)
+    # Initialize client for Vertex AI. REVERSE_ENGINEERING_MODEL is a Gemini
+    # model, which is served from the global endpoint (config.GEMINI_LOCATION).
+    client = genai.Client(vertexai=True, project=config.GOOGLE_CLOUD_PROJECT, location=config.GEMINI_LOCATION)
 
     logger.info(f"Starting prompt reverse engineering for videos in '{chunks_dir}' using model '{config.REVERSE_ENGINEERING_MODEL}' via Vertex AI...")
 

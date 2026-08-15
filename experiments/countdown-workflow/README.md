@@ -6,7 +6,7 @@ This project is a powerful, two-stage Python pipeline that automates the creatio
 
 *   **Style Analysis:** Analyzes any YouTube video segment to extract its visual style, serving as a creative template. This stage is optional.
 *   **AI-Powered Scripting:** Automatically generates a structured video script tailored to a specific company's brand identity.
-*   **Multi-Modal Generation:** Uses Imagen for initial scene images and Veo for generating continuous video clips.
+*   **Multi-Modal Generation:** Uses Nano Banana (Gemini image) for initial scene images and Veo for generating continuous video clips.
 *   **Intelligent Selection & Validation:** Employs Gemini to analyze multiple generated scenes, validate the presence of the correct countdown digit, and select the best candidate based on creative prompts.
 *   **Automated Composition:** Assembles the final video with speed adjustments, fade-out transitions, and background music using `moviepy`.
 *   **Pydantic Validation:** Ensures the data structures returned by the AI models are valid and reliable.
@@ -21,16 +21,16 @@ This stage reverse-engineers the creative style of a given YouTube video. It can
 
 1.  **Download:** Downloads a specific time-ranged segment from a YouTube video using `yt-dlp`.
 2.  **Chunk:** Splits the downloaded video into smaller, equal-duration chunks using `moviepy`.
-3.  **Analyze:** Uses a multimodal AI model (Gemini 2.5 Pro) to process the video chunks and generate a detailed text file describing the visual style, scene composition, and overall aesthetic. This file becomes the creative brief for the next stage.
+3.  **Analyze:** Uses a multimodal AI model (Gemini 3.7 Flash) to process the video chunks and generate a detailed text file describing the visual style, scene composition, and overall aesthetic. This file becomes the creative brief for the next stage.
 
 ### Stage 2: Branded Video Generation
 
-1.  **Adapt Script:** Takes a company name and the style analysis file as input. It uses a generative AI model (Gemini 2.5 Pro) to create a new, structured JSON script with creative prompts tailored to the company's brand.
+1.  **Adapt Script:** Takes a company name and the style analysis file as input. It uses a generative AI model (Gemini 3.7 Flash) to create a new, structured JSON script with creative prompts tailored to the company's brand.
 2.  **Generate Scenes:** For each scene in the script:
-    *   It generates an initial candidate image with **Imagen** for the very first scene.
+    *   It generates an initial candidate image with **Nano Banana (Gemini image)** for the very first scene.
     *   It generates multiple candidate video clips with **Veo**. To ensure continuity, each new video scene is generated using the last frame of the previously selected scene.
 3.  **Validate and Select Best:**
-    *   A selector model (Gemini 2.5 Pro) reviews the candidates to check if the countdown number is clearly visible.
+    *   A selector model (Gemini 3.7 Flash) reviews the candidates to check if the countdown number is clearly visible.
     *   If no valid video is found, the generation is retried.
     *   Once validated, the model chooses the candidate that best fits the prompt.
 4.  **Compose Video:** All the chosen video clips are assembled into a final MP4 file, sped up, and blended with a fade-out transition and background music.
@@ -60,10 +60,14 @@ This stage reverse-engineers the creative style of a given YouTube video. It can
         ```bash
         cp .env.example .env
         ```
-    *   Edit the `.env` file and add your Google Cloud Project ID and Location.
+    *   Edit the `.env` file and add your Google Cloud Project ID and locations.
         ```
         GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
+        # Region for the Veo (video generation) endpoint.
         GOOGLE_CLOUD_LOCATION="your-gcp-location"
+        # Location for the Gemini text models and the Nano Banana (Gemini) image
+        # model. The Gemini 3.x family is served only from the "global" endpoint.
+        GEMINI_LOCATION="global"
         ```
 
 ## Usage

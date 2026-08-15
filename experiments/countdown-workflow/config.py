@@ -35,16 +35,26 @@ GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 if not GOOGLE_CLOUD_PROJECT:
     raise ValueError("GOOGLE_CLOUD_PROJECT environment variable is required.")
 
-# Google Cloud location for Vertex AI services
+# Google Cloud location for Vertex AI services. Used for the regional Veo
+# (video generation) endpoint.
 GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
+# Location for the Gemini text models and the Nano Banana (Gemini) image model.
+# The Gemini 3.x family (gemini-3.7-flash, gemini-3.1-flash-image) is served only
+# from the "global" endpoint and returns 404 in regional locations such as
+# us-central1, so these calls use a dedicated location. This mirrors the core
+# app's split between LOCATION (regional) and GEMINI_IMAGE_GEN_LOCATION=global.
+GEMINI_LOCATION: str = os.getenv("GEMINI_LOCATION", "global")
+
 # Specific model IDs for various AI tasks
-IMAGE_GENERATION_MODEL: str = "imagen-4.0-generate-preview-06-06"
-# VIDEO_GENERATION_MODEL: str = "veo-3.0-generate-preview"
-VIDEO_GENERATION_MODEL: str = "veo-3.0-fast-generate-preview"
-SELECTOR_MODEL: str = "gemini-2.5-pro"
-SCRIPT_GENERATION_MODEL: str = "gemini-2.5-pro"
-REVERSE_ENGINEERING_MODEL: str = "gemini-2.5-pro"
+# Nano Banana (Gemini image) — text-to-image via generate_content. Served from
+# GEMINI_LOCATION (global).
+IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image"
+# VIDEO_GENERATION_MODEL: str = "veo-3.1-generate-001"
+VIDEO_GENERATION_MODEL: str = "veo-3.1-fast-generate-001"
+SELECTOR_MODEL: str = "gemini-3.7-flash"
+SCRIPT_GENERATION_MODEL: str = "gemini-3.7-flash"
+REVERSE_ENGINEERING_MODEL: str = "gemini-3.7-flash"
 
 # --- Logging Configuration ---
 LOG_LEVEL: int = logging.INFO

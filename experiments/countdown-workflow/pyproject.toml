@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "google-genai>=1.26.0",
+    "google-genai>=1.63.0",
     "moviepy>=2.2.1",
     "yt-dlp>=2026.7.4",
 ]

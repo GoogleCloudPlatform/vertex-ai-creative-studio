@@ -68,9 +68,46 @@ class DigitCheckResponse(BaseModel):
     video_1_check: VideoDigitCheck
 
 # --- AI Client and Model Configuration ---
-def get_genai_client() -> genai.Client:
-    """Initializes and returns the GenAI client."""
-    return genai.Client(vertexai=True, project=config.GOOGLE_CLOUD_PROJECT, location=config.GOOGLE_CLOUD_LOCATION)
+def get_genai_client(location: Optional[str] = None) -> genai.Client:
+    """Initializes and returns a GenAI client for a given Vertex AI location.
+
+    Args:
+        location (Optional[str]): The Vertex AI location to target. Defaults to
+            ``config.GEMINI_LOCATION`` (the ``global`` endpoint), which is
+            required by the Gemini text models and the Nano Banana image model.
+            Pass ``config.GOOGLE_CLOUD_LOCATION`` for the regional Veo endpoint.
+
+    Returns:
+        genai.Client: A configured Vertex AI GenAI client.
+    """
+    return genai.Client(
+        vertexai=True,
+        project=config.GOOGLE_CLOUD_PROJECT,
+        location=location or config.GEMINI_LOCATION,
+    )
+
+
+def _extract_image_bytes(response: types.GenerateContentResponse) -> Optional[bytes]:
+    """Extracts the first inline image payload from a Gemini image response.
+
+    Args:
+        response (types.GenerateContentResponse): The response from a Nano Banana
+            (Gemini image) ``generate_content`` call.
+
+    Returns:
+        Optional[bytes]: The raw image bytes of the first image part, or ``None``
+            if the response contained no image.
+    """
+    if not response.candidates:
+        return None
+    candidate = response.candidates[0]
+    if not candidate.content or not candidate.content.parts:
+        return None
+    for part in candidate.content.parts:
+        inline_data = getattr(part, "inline_data", None)
+        if inline_data and getattr(inline_data, "data", None):
+            return inline_data.data
+    return None
 
 # --- AI-Powered Script Adaptation ---
 def adapt_countdown_script(
@@ -143,34 +180,56 @@ def generate_candidate_images_locally(
     output_prefix: str
 ) -> List[str]:
     """
-    Generates multiple candidate images using Imagen and saves them to local paths.
+    Generates multiple candidate images using Nano Banana (Gemini image) and
+    saves them to local paths.
+
+    Uses the Gemini image-generation ``generate_content`` call shape (mirroring
+    the core app's ``models/gemini.py::generate_image_from_prompt_and_images``).
+    Nano Banana returns a single image per call, so ``num_candidates`` calls are
+    issued to build the candidate set that downstream best-image selection
+    expects. The 16:9 aspect ratio is preserved via ``types.ImageConfig``; the
+    Imagen-only ``person_generation`` control has no Gemini-image equivalent and
+    is dropped (the script prompt already forbids depicting children).
 
     Args:
-        client (genai.Client): The GenAI client instance.
+        client (genai.Client): The GenAI client instance (Nano Banana / Gemini
+            image requires the ``global`` location — see ``get_genai_client``).
         prompt (str): The text prompt for image generation.
         num_candidates (int): The number of images to generate.
         output_prefix (str): The base path and filename prefix for saving images.
 
     Returns:
         List[str]: A list of file paths to the generated images.
+
+    Raises:
+        RuntimeError: If every candidate call comes back without an image, so an
+            empty candidate set never silently flows into best-image selection.
     """
     logger.info(f"  - Generating {num_candidates} candidate images for prompt: '{prompt[:50]}...'")
-    response = client.models.generate_images(
-        model=config.IMAGE_GENERATION_MODEL, 
-        prompt=prompt, 
-        config=types.GenerateImagesConfig(
-            number_of_images=num_candidates, 
-            aspect_ratio="16:9", 
-            person_generation="allow_adult"
-        )
-    )
     candidate_paths = []
-    for i, img_data in enumerate(response.generated_images):
+    for i in range(num_candidates):
+        response = client.models.generate_content(
+            model=config.IMAGE_GENERATION_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"],
+                image_config=types.ImageConfig(aspect_ratio="16:9"),
+            ),
+        )
+        image_bytes = _extract_image_bytes(response)
+        if not image_bytes:
+            logger.warning(f"  - Candidate {i} returned no image; skipping.")
+            continue
         path = f"{output_prefix}_candidate_{i}.png"
-        with open(path, "wb") as f: 
-            f.write(img_data.image.image_bytes)
+        with open(path, "wb") as f:
+            f.write(image_bytes)
         candidate_paths.append(path)
         logger.info(f"  - Saved candidate image to: {path}")
+
+    if not candidate_paths:
+        raise RuntimeError(
+            f"Nano Banana image generation returned no images for prompt: {prompt[:80]!r}"
+        )
     return candidate_paths
 
 def select_best_image_locally(
@@ -369,7 +428,10 @@ def generate_video_from_prompts_service(
     scenes_dir = base_output_dir / "scenes"
     os.makedirs(scenes_dir, exist_ok=True)
     
+    # Gemini text models and the Nano Banana image model are served from the
+    # global endpoint; Veo (video) is served from the regional endpoint.
     client = get_genai_client()
+    veo_client = get_genai_client(config.GOOGLE_CLOUD_LOCATION)
 
     # 1. Generate the structured script by adapting from the example
     script_response = adapt_countdown_script(client, company_name, countdown_range, example_script_path)
@@ -426,8 +488,8 @@ def generate_video_from_prompts_service(
         for attempt in range(max_attempts):
             logger.info(f"    - Attempt {attempt + 1}/{max_attempts} to generate a valid video...")
             
-            # Generate 2 candidate videos for digit checking
-            candidate_video_paths = generate_candidate_videos_locally(client, scene_data.video_prompt, input_image_path, 2, scene_output_prefix)
+            # Generate 2 candidate videos for digit checking (Veo uses the regional client)
+            candidate_video_paths = generate_candidate_videos_locally(veo_client, scene_data.video_prompt, input_image_path, 2, scene_output_prefix)
             
             # If generation failed after retries, skip to the next attempt of the digit validation loop
             if not candidate_video_paths:
