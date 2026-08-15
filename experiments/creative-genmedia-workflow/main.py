@@ -64,8 +64,8 @@ BUTTON_TEXT_COLOUR = "#03045E"
 
 # Initialize Generative Models
 
-model_20_flashlite = "gemini-2.0-flash-lite-001"
-model_20_flash = "gemini-2.0-flash-001"
+model_20_flashlite = "gemini-3.1-flash-lite"
+model_20_flash = "gemini-3.5-flash"
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
 print(f"Using GenAI SDK version: {genai.__version__}")
