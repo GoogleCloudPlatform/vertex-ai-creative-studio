@@ -25,7 +25,7 @@ export GOOGLE_CLOUD_LOCATION={YOUR_LOCATION}
 export GOOGLE_GENAI_USE_VERTEXAI=false
 export GOOGLE_API_KEY={YOUR_API_KEY}
 
-go run samples/generate_audio.go --model=gemini-2.0-flash-exp
+go run samples/generate_audio.go --model=gemini-3.5-flash
 */
 
 import (
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&model, "model", "gemini-2.0-flash-exp", "the model name, e.g. gemini-2.0-flash-exp")
+	flag.StringVar(&model, "model", "gemini-3.5-flash", "the model name, e.g. gemini-3.5-flash")
 	flag.StringVar(&outputfile, "output", "", "the filename for output")
 	flag.StringVar(&voiceName, "voice", "", "the voice to use, e.g. Zephyr, Puck, Charon, Kore, Fenrir, Leda, Orus, Aoede")
 	flag.BoolVar(&allVoices, "all", false, "generate audio for all voices")

@@ -391,7 +391,7 @@ func generateContent(ctx context.Context, prompt string) (string, error) {
 	}
 	defer client.Close()
 
-	gemini := client.GenerativeModel("gemini-1.5-flash")
+	gemini := client.GenerativeModel("gemini-3.5-flash")
 	gemini.SafetySettings = []*genai.SafetySetting{
 		{
 			Category:  genai.HarmCategoryHarassment,

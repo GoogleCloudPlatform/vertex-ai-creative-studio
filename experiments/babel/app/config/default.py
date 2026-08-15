@@ -48,7 +48,7 @@ class Default:
     GENMEDIA_BUCKET: str = os.environ.get(
         "GENMEDIA_BUCKET", f"{PROJECT_ID}-fabulae/babel"
     )  # without the "gs://"
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-1.5-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.5-flash")
     BABEL_ENDPOINT: str = os.environ.get(
         "BABEL_ENDPOINT", "http://localhost:8080"
     )  # defaults to # "http://localhost:8080"
