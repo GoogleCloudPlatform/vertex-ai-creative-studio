@@ -14,7 +14,7 @@ cachetools==7.1.7
     # via google-auth
 certifi==2026.7.22
     # via requests
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via requests
 click==8.4.2
     # via
@@ -150,7 +150,7 @@ pygments==2.20.0
     # via rich
 python-dateutil==2.9.0.post0
     # via pandas
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via
     #   mesop
     #   uvicorn
@@ -192,7 +192,7 @@ tzdata==2026.3
     # via pandas
 urllib3==2.7.0
     # via requests
-uvicorn==0.52.1
+uvicorn==0.52.3
     # via
     #   babel-web (pyproject.toml)
     #   fastapi-cli

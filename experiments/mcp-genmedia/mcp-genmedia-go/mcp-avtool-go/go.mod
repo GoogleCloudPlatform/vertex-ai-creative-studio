@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0
-	github.com/mark3labs/mcp-go v0.57.0
+	github.com/mark3labs/mcp-go v0.58.0
 	github.com/rs/cors v1.11.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.45.0

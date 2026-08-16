@@ -6,13 +6,13 @@ require (
 	cloud.google.com/go/storage v1.64.0
 	github.com/ghchinoy/cloud-interactions-go v0.2.1
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.57.0
+	github.com/mark3labs/mcp-go v0.58.0
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.45.0
 	go.opentelemetry.io/otel/sdk v1.45.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/genai v1.67.0
+	google.golang.org/genai v1.68.0
 )
 
 require github.com/felixge/httpsnoop v1.0.4 // indirect

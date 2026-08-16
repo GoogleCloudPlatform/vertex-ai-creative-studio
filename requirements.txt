@@ -23,7 +23,7 @@ black==26.5.1
     # via vertex-ai-genmedia-creative-studio
 blinker==1.9.0
     # via flask
-c2pa-python==0.37.6
+c2pa-python==0.37.7
     # via vertex-ai-genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
@@ -37,7 +37,7 @@ cffi==2.1.1
     # via
     #   cryptography
     #   soundfile
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via requests
 click==8.4.2
     # via
@@ -108,7 +108,7 @@ google-auth==2.56.3
     #   google-cloud-tasks
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.163.0
+google-cloud-aiplatform==1.164.0
     # via vertex-ai-genmedia-creative-studio
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
@@ -140,7 +140,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.17.0
+google-genai==2.18.1
     # via
     #   google-cloud-aiplatform
     #   vertex-ai-genmedia-creative-studio
@@ -226,7 +226,7 @@ lazy-loader==0.5
     #   scikit-image
 librosa==1.0.0
     # via vertex-ai-genmedia-creative-studio
-llvmlite==0.48.0
+llvmlite==0.49.0
     # via numba
 markupsafe==3.0.3
     # via
@@ -254,7 +254,7 @@ narwhals==2.24.0
     # via scikit-learn
 networkx==3.6.1
     # via scikit-image
-numba==0.66.0
+numba==0.67.0
     # via librosa
 numpy==2.5.2
     # via
@@ -309,7 +309,7 @@ pillow==12.3.0
     #   moviepy
     #   scikit-image
     #   vertex-ai-genmedia-creative-studio
-platformdirs==4.11.2
+platformdirs==4.11.3
     # via
     #   black
     #   pooch
@@ -391,7 +391,7 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via
     #   mesop
     #   moviepy
@@ -407,7 +407,7 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.16.2
+ruff==0.16.3
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
@@ -451,7 +451,7 @@ tenacity==9.1.4
     #   vertex-ai-genmedia-creative-studio
 threadpoolctl==3.6.0
     # via scikit-learn
-tifffile==2026.7.31
+tifffile==2026.8.16
     # via scikit-image
 toml==0.10.2
     # via c2pa-python
@@ -473,7 +473,7 @@ typing-extensions==4.16.0
     #   pydantic-core
     #   soundfile
     #   typing-inspection
-typing-inspection==0.4.3
+typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
@@ -481,7 +481,7 @@ tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32'
     # via pandas
 urllib3==2.7.0
     # via requests
-uvicorn==0.52.1
+uvicorn==0.52.3
     # via vertex-ai-genmedia-creative-studio
 watchdog==6.0.0
     # via mesop
@@ -493,5 +493,5 @@ werkzeug==3.1.8
     # via
     #   flask
     #   mesop
-wheel==0.47.0
+wheel==0.48.0
     # via c2pa-python
