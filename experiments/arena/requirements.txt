@@ -8,7 +8,7 @@ aiosignal==1.4.0
 alive-progress==3.3.0
 annotated-types==0.8.0
 anyio==4.14.2
-attrs==25.4.0
+attrs==26.1.0
 blinker==1.9.0
 cachecontrol==0.14.4
 certifi==2025.11.12
