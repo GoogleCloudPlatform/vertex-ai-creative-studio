@@ -11,7 +11,7 @@ anyio==4.14.2
 attrs==25.4.0
 blinker==1.9.0
 cachecontrol==0.14.4
-certifi==2025.11.12
+certifi==2026.7.22
 cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.5.1
 click==8.4.2
