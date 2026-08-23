@@ -50,6 +50,11 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		aspectRatio = strings.TrimSpace(ar)
 	}
 
+	imageSize := ""
+	if is, ok := request.GetArguments()["image_size"].(string); ok && strings.TrimSpace(is) != "" {
+		imageSize = strings.TrimSpace(is)
+	}
+
 	modelArg, _ := request.GetArguments()["model"].(string)
 	model := "gemini-3.1-flash-image"
 	if modelArg != "" {
@@ -112,6 +117,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		ResponseModalities: []string{"IMAGE", "TEXT"},
 		ImageConfig: &genai.ImageConfig{
 			AspectRatio: aspectRatio,
+			ImageSize:   imageSize,
 		},
 	}
 	contents := &genai.Content{Parts: parts, Role: "USER"}

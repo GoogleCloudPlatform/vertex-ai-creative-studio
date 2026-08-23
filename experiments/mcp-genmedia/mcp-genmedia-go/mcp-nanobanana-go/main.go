@@ -103,6 +103,7 @@ func main() {
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
 		mcp.WithString("model", mcp.DefaultString("gemini-3.1-flash-image"), mcp.Description(common.BuildGeminiImageModelDescription())),
 		mcp.WithString("aspect_ratio", mcp.DefaultString("1:1"), mcp.Description("Aspect ratio of the generated images. Note: supported aspect ratios are model-dependent.")),
+		mcp.WithString("image_size", mcp.Description("Optional. Size of the generated images: 1K, 2K, or 4K. Defaults to 1K when unset. Note: supported sizes are model-dependent.")),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input media (images, videos, or PDFs)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
