@@ -2,15 +2,15 @@ module github.com/ghchinoy/babel
 
 go 1.25.8
 
-toolchain go1.26.6
+toolchain go1.27.0
 
 require (
-	cloud.google.com/go/storage v1.64.0
+	cloud.google.com/go/storage v1.65.0
 	cloud.google.com/go/texttospeech v1.22.0
 	cloud.google.com/go/vertexai v0.19.0
 	github.com/schollz/progressbar/v3 v3.19.1
 	google.golang.org/api v0.293.0
-	google.golang.org/genai v1.68.0
+	google.golang.org/genai v1.69.0
 )
 
 require (

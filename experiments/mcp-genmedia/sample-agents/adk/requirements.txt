@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.141.1
     # via google-adk
-google-adk==2.7.0
+google-adk==2.7.1
     # via adk-genmedia-agent
 google-api-core==2.34.0
     # via
@@ -53,7 +53,7 @@ google-api-core==2.34.0
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.198.0
+google-api-python-client==2.199.0
     # via google-adk
 google-auth==2.56.3
     # via
@@ -73,7 +73,7 @@ google-auth==2.56.3
     #   google-genai
 google-auth-httplib2==0.4.1
     # via google-api-python-client
-google-cloud-aiplatform==1.164.0
+google-cloud-aiplatform==1.165.1
     # via google-adk
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
@@ -104,7 +104,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.18.1
+google-genai==2.19.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -151,7 +151,7 @@ httpx==0.28.1
     #   mcp
 httpx-sse==0.4.3
     # via mcp
-idna==3.18
+idna==3.19
     # via
     #   anyio
     #   httpx
@@ -170,7 +170,7 @@ opentelemetry-api==1.44.0
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-exporter-gcp-trace==1.14.0
+opentelemetry-exporter-gcp-trace==1.15.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -198,7 +198,7 @@ proto-plus==1.28.3
     #   google-cloud-secret-manager
     #   google-cloud-speech
     #   google-cloud-trace
-protobuf==7.35.1
+protobuf==7.36.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -296,7 +296,7 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.7.0
     # via requests
-uvicorn==0.52.3
+uvicorn==0.52.4
     # via
     #   google-adk
     #   mcp

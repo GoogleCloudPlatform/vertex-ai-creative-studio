@@ -1,6 +1,6 @@
 # Use the official Golang image to create a build artifact.
 # This stage compiles the Go application.
-FROM golang:1.26 as builder
+FROM golang:1.27 as builder
 
 WORKDIR /app
 

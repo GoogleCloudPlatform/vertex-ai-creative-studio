@@ -108,7 +108,7 @@ google-auth==2.56.3
     #   google-cloud-tasks
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.164.0
+google-cloud-aiplatform==1.165.1
     # via vertex-ai-genmedia-creative-studio
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
@@ -140,7 +140,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.18.1
+google-genai==2.19.0
     # via
     #   google-cloud-aiplatform
     #   vertex-ai-genmedia-creative-studio
@@ -173,7 +173,7 @@ grpcio==1.83.0
     #   grpcio-status
 grpcio-status==1.83.0
     # via google-api-core
-gunicorn==26.0.0
+gunicorn==26.1.0
     # via vertex-ai-genmedia-creative-studio
 h11==0.16.0
     # via
@@ -191,7 +191,7 @@ httpx==0.28.1
     #   google-genai
 hyperframe==6.1.0
     # via h2
-idna==3.18
+idna==3.19
     # via
     #   anyio
     #   httpx
@@ -239,7 +239,7 @@ matplotlib-inline==0.2.2
     # via ipython
 mediapy==1.2.7
     # via vertex-ai-genmedia-creative-studio
-mesop==1.3.4
+mesop==1.3.5
     # via vertex-ai-genmedia-creative-studio
 moviepy==2.2.1
     # via vertex-ai-genmedia-creative-studio
@@ -250,7 +250,7 @@ msgpack==1.2.1
     #   mesop
 mypy-extensions==1.1.0
     # via black
-narwhals==2.24.0
+narwhals==2.25.0
     # via scikit-learn
 networkx==3.6.1
     # via scikit-image
@@ -333,7 +333,7 @@ proto-plus==1.28.3
     #   google-cloud-resource-manager
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-protobuf==7.35.1
+protobuf==7.36.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -369,7 +369,7 @@ pydantic==2.13.4
     #   mesop
 pydantic-core==2.48.0
     # via pydantic
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   ipython
     #   ipython-pygments-lexers
@@ -407,13 +407,13 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.16.3
+ruff==0.16.4
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
 scikit-learn==1.9.0
     # via librosa
-scipy==1.18.0
+scipy==1.18.1
     # via
     #   librosa
     #   scikit-image
@@ -451,7 +451,7 @@ tenacity==9.1.4
     #   vertex-ai-genmedia-creative-studio
 threadpoolctl==3.6.0
     # via scikit-learn
-tifffile==2026.8.16
+tifffile==2026.8.23
     # via scikit-image
 toml==0.10.2
     # via c2pa-python
@@ -481,7 +481,7 @@ tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32'
     # via pandas
 urllib3==2.7.0
     # via requests
-uvicorn==0.52.3
+uvicorn==0.52.4
     # via vertex-ai-genmedia-creative-studio
 watchdog==6.0.0
     # via mesop
