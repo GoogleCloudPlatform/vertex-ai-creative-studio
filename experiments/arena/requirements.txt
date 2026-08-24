@@ -69,7 +69,7 @@ protobuf==5.29.6
 pyarrow==23.0.1
 pyasn1==0.6.4
 pyasn1-modules==0.4.2
-pycparser==2.23 ; platform_python_implementation != 'PyPy'
+pycparser==3.0 ; platform_python_implementation != 'PyPy'
 pydantic==2.13.4
 pydantic-core==2.48.0
 pyjwt==2.13.0
