@@ -30,7 +30,7 @@ cloudpickle==3.1.2
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==50.0.0
+cryptography==50.0.1
     # via authlib
 docstring-parser==0.18.0
     # via google-cloud-aiplatform
@@ -55,7 +55,7 @@ google-api-core==2.34.0
     #   google-cloud-trace
 google-api-python-client==2.199.0
     # via google-adk
-google-auth==2.56.3
+google-auth==2.57.0
     # via
     #   google-api-core
     #   google-api-python-client
@@ -71,22 +71,22 @@ google-auth==2.56.3
     #   google-cloud-storage
     #   google-cloud-trace
     #   google-genai
-google-auth-httplib2==0.4.1
+google-auth-httplib2==0.4.2
     # via google-api-python-client
 google-cloud-aiplatform==1.165.1
     # via google-adk
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
-google-cloud-audit-log==0.6.1
+google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-bigquery==3.43.0
+google-cloud-bigquery==3.44.0
     # via google-cloud-aiplatform
-google-cloud-core==2.6.1
+google-cloud-core==2.7.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-logging==3.16.2
+google-cloud-logging==3.16.3
     # via google-cloud-aiplatform
 google-cloud-resource-manager==1.18.0
     # via google-cloud-aiplatform
@@ -104,15 +104,15 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.19.0
+google-genai==2.20.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-resumable-media==2.10.1
+google-resumable-media==2.10.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.75.1
+googleapis-common-protos==1.75.2
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -158,7 +158,7 @@ idna==3.19
     #   requests
 importlib-metadata==9.0.0
     # via opentelemetry-api
-mcp==2.0.0
+mcp==2.1.1
     # via google-adk
 numpy==2.5.2
     # via shapely
@@ -188,7 +188,7 @@ packaging==26.3
     # via
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
-proto-plus==1.28.3
+proto-plus==1.28.4
     # via
     #   google-api-core
     #   google-cloud-aiplatform

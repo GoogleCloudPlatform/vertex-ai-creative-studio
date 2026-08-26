@@ -16,8 +16,8 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.5.1
 click==8.4.2
 colorama==0.4.6 ; sys_platform == 'win32'
-cramjam==2.12.0
-cryptography==50.0.0
+cramjam==2.12.1
+cryptography==50.0.1
 deepdiff==8.6.2
 distro==1.9.0
 docstring-parser==0.18.0
@@ -28,25 +28,25 @@ frozenlist==1.8.0
 fsspec==2026.7.0
 google-api-core==2.34.0
 google-api-python-client==2.199.0
-google-auth==2.56.3
-google-auth-httplib2==0.4.1
+google-auth==2.57.0
+google-auth-httplib2==0.4.2
 google-cloud-aiplatform==1.165.1
-google-cloud-bigquery==3.43.0
-google-cloud-core==2.6.1
-google-cloud-firestore==2.28.1
+google-cloud-bigquery==3.44.0
+google-cloud-core==2.7.0
+google-cloud-firestore==2.29.0
 google-cloud-resource-manager==1.18.0
-google-cloud-spanner==3.69.1
+google-cloud-spanner==3.70.0
 google-cloud-storage==3.13.1
 google-crc32c==1.8.0
-google-genai==2.19.0
-google-resumable-media==2.10.1
-googleapis-common-protos==1.75.1
+google-genai==2.20.0
+google-resumable-media==2.10.2
+googleapis-common-protos==1.75.2
 grapheme==0.6.0
 grpc-google-iam-v1==0.14.5
 grpc-interceptor==0.15.4
 grpcio==1.83.0
 grpcio-status==1.83.0 ; platform_python_implementation != 'PyPy'
-gunicorn==26.1.0
+gunicorn==26.2.0
 h11==0.16.0
 httpcore==1.0.9
 httplib2==0.32.0
@@ -64,7 +64,7 @@ packaging==26.3
 pandas==3.0.5
 pillow==12.3.0
 propcache==0.5.2
-proto-plus==1.28.3
+proto-plus==1.28.4
 protobuf==5.29.6
 pyarrow==25.0.1
 pyasn1==0.6.4

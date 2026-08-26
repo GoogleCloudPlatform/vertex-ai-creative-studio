@@ -7,7 +7,7 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	google.golang.org/genai v1.69.0
+	google.golang.org/genai v1.70.0
 )
 
 require (

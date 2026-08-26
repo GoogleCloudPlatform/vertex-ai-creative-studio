@@ -41,7 +41,7 @@ google-api-core==2.34.0
     #   google-cloud-appengine-logging
     #   google-cloud-core
     #   google-cloud-logging
-google-auth==2.56.3
+google-auth==2.57.0
     # via
     #   babel-web (pyproject.toml)
     #   google-api-core
@@ -50,13 +50,13 @@ google-auth==2.56.3
     #   google-cloud-logging
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
-google-cloud-audit-log==0.6.1
+google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-core==2.6.1
+google-cloud-core==2.7.0
     # via google-cloud-logging
-google-cloud-logging==3.16.2
+google-cloud-logging==3.16.3
     # via babel-web (pyproject.toml)
-googleapis-common-protos==1.75.1
+googleapis-common-protos==1.75.2
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -72,7 +72,7 @@ grpcio==1.83.0
     #   grpcio-status
 grpcio-status==1.83.0
     # via google-api-core
-gunicorn==26.1.0
+gunicorn==26.2.0
     # via babel-web (pyproject.toml)
 h11==0.16.0
     # via uvicorn
@@ -118,7 +118,7 @@ packaging==26.3
     #   marshmallow
 pandas==3.0.5
     # via babel-web (pyproject.toml)
-proto-plus==1.28.3
+proto-plus==1.28.4
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
