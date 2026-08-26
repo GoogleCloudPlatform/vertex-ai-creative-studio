@@ -49,6 +49,11 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		aspectRatio = strings.TrimSpace(ar)
 	}
 
+	// No-default policy (intentional): unlike mcp-imagen-go, image_size is not
+	// registered with a DefaultString. When unset it stays empty and is dropped by
+	// omitempty, so the model applies its own default (currently 1K). This is a
+	// deliberate passthrough choice so the tool never asserts a size the model may
+	// not support; keep it defaulting to the empty string here.
 	imageSize := ""
 	if is, ok := request.GetArguments()["image_size"].(string); ok && strings.TrimSpace(is) != "" {
 		imageSize = strings.TrimSpace(is)
