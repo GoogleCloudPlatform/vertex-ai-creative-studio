@@ -3,7 +3,7 @@ module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-
 go 1.26.0
 
 require (
-	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260825122401-d95296d6a03e
+	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260827011958-93a5e6e917ae
 	github.com/mark3labs/mcp-go v0.58.0
 	go.opentelemetry.io/otel v1.46.0
 	google.golang.org/genai v1.70.0
