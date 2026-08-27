@@ -4,6 +4,19 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.17.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.16.0...mcp-v3.17.0) (2026-08-27)
+
+
+### Features
+
+* **mcp-genmedia:** default omni MCP to gemini-omni-1.1-flash-preview ([#1754](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1754)) ([400cc50](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/400cc50fca5f204985b9823559667beb6406a34d))
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 93a5e6e ([#1747](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1747)) ([5a595d6](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/5a595d624b0fcd0bb8ace9d5e9ef67ed0a2a7d7e))
+* **mcp-genmedia:** add SupportedImageSizes and validate Gemini image params ([#1746](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1746)) ([#1750](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1750)) ([5a1d11c](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/5a1d11cdda2a92f409e81d6c6cfde24c28e56a2a))
+
 ## [3.16.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.15.0...mcp-v3.16.0) (2026-08-26)
 
 
