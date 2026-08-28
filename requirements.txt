@@ -23,7 +23,7 @@ black==26.5.1
     # via vertex-ai-genmedia-creative-studio
 blinker==1.9.0
     # via flask
-c2pa-python==0.37.7
+c2pa-python==0.37.8
     # via vertex-ai-genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
@@ -39,7 +39,7 @@ cffi==2.1.1
     #   soundfile
 charset-normalizer==3.5.1
     # via requests
-click==8.4.2
+click==8.5.0
     # via
     #   black
     #   flask
@@ -159,7 +159,7 @@ grpc-google-iam-v1==0.14.5
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-tasks
-grpcio==1.83.0
+grpcio==1.83.1
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
@@ -171,7 +171,7 @@ grpcio==1.83.0
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.83.0
+grpcio-status==1.83.1
     # via google-api-core
 gunicorn==26.2.0
     # via vertex-ai-genmedia-creative-studio
@@ -243,7 +243,7 @@ mesop==1.3.5
     # via vertex-ai-genmedia-creative-studio
 moviepy==2.2.1
     # via vertex-ai-genmedia-creative-studio
-msgpack==1.2.1
+msgpack==1.2.2
     # via
     #   cachecontrol
     #   librosa
@@ -309,7 +309,7 @@ pillow==12.3.0
     #   moviepy
     #   scikit-image
     #   vertex-ai-genmedia-creative-studio
-platformdirs==4.11.4
+platformdirs==4.11.5
     # via
     #   black
     #   pooch
@@ -407,7 +407,7 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.16.4
+ruff==0.16.5
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
@@ -487,7 +487,7 @@ watchdog==6.0.0
     # via mesop
 wcwidth==0.8.2
     # via prompt-toolkit
-websockets==17.0.1
+websockets==17.1
     # via google-genai
 werkzeug==3.1.8
     # via

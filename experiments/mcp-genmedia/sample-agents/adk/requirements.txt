@@ -22,7 +22,7 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.5.1
     # via requests
-click==8.4.2
+click==8.5.0
     # via
     #   google-adk
     #   uvicorn
@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.141.1
     # via google-adk
-google-adk==2.7.1
+google-adk==2.8.0
     # via adk-genmedia-agent
 google-api-core==2.34.0
     # via
@@ -127,13 +127,13 @@ grpc-google-iam-v1==0.14.5
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.83.0
+grpcio==1.83.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.83.0
+grpcio-status==1.83.1
     # via google-api-core
 h11==0.16.0
     # via
@@ -300,7 +300,7 @@ uvicorn==0.52.4
     # via
     #   google-adk
     #   mcp
-websockets==17.0.1
+websockets==17.1
     # via google-genai
 wrapt==2.3.0
     # via deprecated
