@@ -4,6 +4,13 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.18.1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.18.0...mcp-v3.18.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **mcp-lyria-go:** preserve MP3/C2PA container when saving generated audio ([#1777](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1777)) ([#1778](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1778)) ([323fc2b](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/323fc2b4d4334546b83ecf95067b4b671babe181))
+
 ## [3.18.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.17.0...mcp-v3.18.0) (2026-08-29)
 
 
