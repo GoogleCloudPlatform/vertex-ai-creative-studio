@@ -313,7 +313,7 @@ func TestChar_Lyria3_SherlogCaptureDisabled(t *testing.T) {
 // TestChar_Lyria3_HandlerResultAndFilename pins the end-to-end tool behavior of
 // the Lyria-3 route through the public handler: the result text, the direct
 // audio content (when neither GCS nor local path is set), and the generated
-// output filename pattern (lyria_output_<id>.wav) via a local save.
+// output filename pattern (lyria_output_<id>.mp3) via a local save.
 func TestChar_Lyria3_HandlerResultAndFilename(t *testing.T) {
 	audio := []byte("handler-level-audio-bytes")
 	ts, _ := newInteractionsTestServer(t, flatAudioResponse("audio/wav", audio), "")
@@ -345,8 +345,10 @@ func TestChar_Lyria3_HandlerResultAndFilename(t *testing.T) {
 			}
 		case mcp.AudioContent:
 			sawAudio = true
-			if cc.MIMEType != audioMIMEType {
-				t.Errorf("audio MIME = %q, want %q", cc.MIMEType, audioMIMEType)
+			// The test payload is not a recognized audio container, so the MIME
+			// falls back to the MP3 default (issue #1777 — Lyria emits MP3, not WAV).
+			if cc.MIMEType != defaultAudioMIMEType {
+				t.Errorf("audio MIME = %q, want %q", cc.MIMEType, defaultAudioMIMEType)
 			}
 			decoded, decErr := base64.StdEncoding.DecodeString(cc.Data)
 			if decErr != nil {
@@ -363,7 +365,7 @@ func TestChar_Lyria3_HandlerResultAndFilename(t *testing.T) {
 		t.Error("expected direct audio content when neither GCS nor local path is set")
 	}
 
-	// (2) Local path, no file_name -> generated filename pattern lyria_output_<id>.wav.
+	// (2) Local path, no file_name -> generated filename pattern lyria_output_<id>.mp3.
 	dir := t.TempDir()
 	reqLocal := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -388,7 +390,9 @@ func TestChar_Lyria3_HandlerResultAndFilename(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("local dir has %d files, want 1", len(entries))
 	}
-	filenamePattern := regexp.MustCompile(`^lyria_output_.+\.wav$`)
+	// No file_name provided + unrecognized payload -> default extension is .mp3
+	// (issue #1777).
+	filenamePattern := regexp.MustCompile(`^lyria_output_.+\.mp3$`)
 	if name := entries[0].Name(); !filenamePattern.MatchString(name) {
 		t.Errorf("generated filename = %q, want to match %s", name, filenamePattern)
 	}

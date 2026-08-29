@@ -21,14 +21,26 @@ import (
 	"testing"
 )
 
-// TestSaveLyriaLocalFileWiring is a handler-level wiring test: it drives
-// saveLyriaLocalFile (the function the handler calls to persist audio locally) with
-// the os.WriteFile seam (writeFileFn) replaced by a recorder, and asserts that the
-// resolved output_filename actually reaches the write. It pairs resolveLyriaOutputFilename
-// with the write so the assertion covers the full name→write path: output_filename
-// wins over the legacy file_name alias, the extension is forced to .wav, and the
-// name is single-artifact (<stem>.wav — lyria returns one artifact; the shared
-// _1..n suffix rule is covered where multi-output happens and in mcp-common).
+// mp3ID3Bytes is a minimal MP3 payload leading with an ID3v2 tag — the shape the
+// Lyria 3 models return, carrying Google's C2PA provenance manifest (issue #1777).
+var mp3ID3Bytes = append([]byte("ID3"), 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+
+// mp3SyncBytes is a payload leading with a bare MPEG-1 Layer 3 frame sync (no ID3).
+var mp3SyncBytes = []byte{0xFF, 0xFB, 0x90, 0x00}
+
+// wavBytes is a minimal RIFF/WAVE header.
+var wavBytes = []byte("RIFF\x00\x00\x00\x00WAVEfmt ")
+
+// unknownBytes are not recognizable as any known audio container.
+var unknownBytes = []byte("not-real-audio-bytes")
+
+// TestSaveLyriaLocalFileWiring is a handler-level wiring test: it drives the
+// name→write path the handler uses (resolveLyriaOutputBase -> finalizeLyriaFilename
+// -> saveLyriaLocalFile) with the os.WriteFile seam (writeFileFn) replaced by a
+// recorder, and asserts the finalized name actually reaches the write. It covers
+// issue #1777: the requested extension is respected, missing extensions default to
+// .mp3, and an MP3 bitstream forces .mp3 regardless of the requested extension so
+// the container matches the bytes and the C2PA/ID3 manifest is preserved.
 func TestSaveLyriaLocalFileWiring(t *testing.T) {
 	const dir = "/out"
 
@@ -45,22 +57,28 @@ func TestSaveLyriaLocalFileWiring(t *testing.T) {
 	cases := []struct {
 		name   string
 		params map[string]any
+		audio  []byte
 		want   string
 	}{
-		{"single artifact, ext kept", map[string]any{"output_filename": "song.wav"}, "song.wav"},
-		{"wrong extension forced to .wav", map[string]any{"output_filename": "song.mp3"}, "song.wav"},
-		{"legacy file_name alias used when output_filename unset", map[string]any{"file_name": "legacy.wav"}, "legacy.wav"},
-		{"output_filename wins over legacy file_name", map[string]any{"output_filename": "new.wav", "file_name": "legacy.wav"}, "new.wav"},
-		{"traversal sanitized before write", map[string]any{"output_filename": "../../etc/song.wav"}, "song.wav"},
+		{"requested .mp3 respected (non-audio bytes)", map[string]any{"output_filename": "song.mp3"}, unknownBytes, "song.mp3"},
+		{"requested .wav respected when bytes are WAV", map[string]any{"output_filename": "song.wav"}, wavBytes, "song.wav"},
+		{"missing extension defaults to .mp3", map[string]any{"output_filename": "song"}, unknownBytes, "song.mp3"},
+		{"MP3 (ID3) bytes force .mp3 over requested .wav", map[string]any{"output_filename": "song.wav"}, mp3ID3Bytes, "song.mp3"},
+		{"MP3 (frame sync) bytes force .mp3 over requested .wav", map[string]any{"output_filename": "song.wav"}, mp3SyncBytes, "song.mp3"},
+		{"requested .mp3 with MP3 bytes not over-corrected", map[string]any{"output_filename": "song.mp3"}, mp3ID3Bytes, "song.mp3"},
+		{"legacy file_name alias used when output_filename unset", map[string]any{"file_name": "legacy.mp3"}, mp3ID3Bytes, "legacy.mp3"},
+		{"output_filename wins over legacy file_name", map[string]any{"output_filename": "new.mp3", "file_name": "legacy.mp3"}, mp3ID3Bytes, "new.mp3"},
+		{"traversal sanitized before write", map[string]any{"output_filename": "../../etc/song.wav"}, mp3ID3Bytes, "song.mp3"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotPath, gotBytes = "", nil
-			base, err := resolveLyriaOutputFilename(tc.params)
+			base, err := resolveLyriaOutputBase(tc.params)
 			if err != nil {
-				t.Fatalf("resolveLyriaOutputFilename error: %v", err)
+				t.Fatalf("resolveLyriaOutputBase error: %v", err)
 			}
-			fullPath, werr := saveLyriaLocalFile(dir, base, []byte("audio"))
+			finalName := finalizeLyriaFilename(base, tc.audio)
+			fullPath, werr := saveLyriaLocalFile(dir, finalName, tc.audio)
 			if werr != nil {
 				t.Fatalf("saveLyriaLocalFile error: %v", werr)
 			}
@@ -68,8 +86,8 @@ func TestSaveLyriaLocalFileWiring(t *testing.T) {
 			if fullPath != want || gotPath != want {
 				t.Errorf("fullPath=%q writeTarget=%q, want %q", fullPath, gotPath, want)
 			}
-			if string(gotBytes) != "audio" {
-				t.Errorf("bytes written = %q, want %q", gotBytes, "audio")
+			if string(gotBytes) != string(tc.audio) {
+				t.Errorf("bytes written = %q, want %q", gotBytes, tc.audio)
 			}
 		})
 	}
@@ -79,24 +97,27 @@ func TestSaveLyriaLocalFileWiring(t *testing.T) {
 		t.Cleanup(func() {
 			writeFileFn = func(name string, data []byte, _ os.FileMode) error { gotPath, gotBytes = name, data; return nil }
 		})
-		base, err := resolveLyriaOutputFilename(map[string]any{"output_filename": "song.wav"})
+		base, err := resolveLyriaOutputBase(map[string]any{"output_filename": "song.wav"})
 		if err != nil {
 			t.Fatalf("resolve error: %v", err)
 		}
-		fullPath, werr := saveLyriaLocalFile(dir, base, []byte("a"))
+		finalName := finalizeLyriaFilename(base, mp3ID3Bytes)
+		fullPath, werr := saveLyriaLocalFile(dir, finalName, mp3ID3Bytes)
 		if werr == nil {
 			t.Fatalf("expected write error")
 		}
-		if fullPath != filepath.Join(dir, "song.wav") {
+		if fullPath != filepath.Join(dir, "song.mp3") {
 			t.Errorf("path should still be reported on write error, got %q", fullPath)
 		}
 	})
 }
 
-// TestResolveLyriaOutputFilename covers the lyria naming decision: output_filename
-// wins over the legacy file_name alias, the extension is forced to the audio MIME,
-// traversal is sanitized, and unset -> "" (caller uses the shortid default).
-func TestResolveLyriaOutputFilename(t *testing.T) {
+// TestResolveLyriaOutputBase covers the base-name decision: output_filename wins
+// over the legacy file_name alias, the client's requested extension is preserved
+// (no longer forced — issue #1777, finalizeLyriaFilename decides the extension),
+// traversal is sanitized, unset -> "" (caller uses the shortid default), and a
+// dot-only name errors.
+func TestResolveLyriaOutputBase(t *testing.T) {
 	tests := []struct {
 		name    string
 		params  map[string]any
@@ -104,19 +125,19 @@ func TestResolveLyriaOutputFilename(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "output_filename honored, extension kept",
+			name:   "output_filename honored, .mp3 extension kept",
+			params: map[string]any{"output_filename": "song.mp3"},
+			want:   "song.mp3",
+		},
+		{
+			name:   "requested .wav extension preserved (not forced)",
 			params: map[string]any{"output_filename": "song.wav"},
 			want:   "song.wav",
 		},
 		{
-			name:   "wrong extension forced to audio MIME",
-			params: map[string]any{"output_filename": "song.mp3"},
-			want:   "song.wav",
-		},
-		{
-			name:   "missing extension gets forced",
+			name:   "missing extension left as-is (finalized later)",
 			params: map[string]any{"output_filename": "song"},
-			want:   "song.wav",
+			want:   "song",
 		},
 		{
 			name:   "legacy file_name alias used when output_filename unset",
@@ -125,8 +146,8 @@ func TestResolveLyriaOutputFilename(t *testing.T) {
 		},
 		{
 			name:   "output_filename wins over legacy file_name",
-			params: map[string]any{"output_filename": "new.wav", "file_name": "legacy.wav"},
-			want:   "new.wav",
+			params: map[string]any{"output_filename": "new.mp3", "file_name": "legacy.wav"},
+			want:   "new.mp3",
 		},
 		{
 			name:   "traversal sanitized",
@@ -146,18 +167,73 @@ func TestResolveLyriaOutputFilename(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := resolveLyriaOutputFilename(tc.params)
+			got, err := resolveLyriaOutputBase(tc.params)
 			if tc.wantErr {
 				if err == nil {
-					t.Fatalf("resolveLyriaOutputFilename(%v) = %q, want error", tc.params, got)
+					t.Fatalf("resolveLyriaOutputBase(%v) = %q, want error", tc.params, got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("resolveLyriaOutputFilename(%v) unexpected error: %v", tc.params, err)
+				t.Fatalf("resolveLyriaOutputBase(%v) unexpected error: %v", tc.params, err)
 			}
 			if got != tc.want {
-				t.Errorf("resolveLyriaOutputFilename(%v) = %q, want %q", tc.params, got, tc.want)
+				t.Errorf("resolveLyriaOutputBase(%v) = %q, want %q", tc.params, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestDetectAudioMIMEType pins the magic-byte sniffing that keeps the saved
+// container matched to the bitstream (issue #1777).
+func TestDetectAudioMIMEType(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want string
+	}{
+		{"ID3v2 tag -> mp3", mp3ID3Bytes, "audio/mpeg"},
+		{"MPEG frame sync -> mp3", mp3SyncBytes, "audio/mpeg"},
+		{"RIFF/WAVE -> wav", wavBytes, "audio/wav"},
+		{"Ogg -> ogg", []byte("OggS\x00\x02"), "audio/ogg"},
+		{"unknown -> empty", unknownBytes, ""},
+		{"empty -> empty", []byte{}, ""},
+		{"single 0xFF (no valid sync) -> empty", []byte{0xFF}, ""},
+		{"0xFF with non-sync second byte -> empty", []byte{0xFF, 0x01}, ""},
+		{"RIFF without WAVE (e.g. AVI) -> empty", []byte("RIFF\x00\x00\x00\x00AVI LIST"), ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := detectAudioMIMEType(tc.data); got != tc.want {
+				t.Errorf("detectAudioMIMEType(%q) = %q, want %q", tc.data, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestFinalizeLyriaFilename covers the extension-resolution contract for issue
+// #1777: detected MP3 bytes force .mp3 regardless of the requested extension;
+// otherwise the requested extension is respected; otherwise the default is .mp3.
+func TestFinalizeLyriaFilename(t *testing.T) {
+	tests := []struct {
+		name  string
+		base  string
+		audio []byte
+		want  string
+	}{
+		{"MP3 (ID3) forces .mp3 over requested .wav", "song.wav", mp3ID3Bytes, "song.mp3"},
+		{"MP3 (frame sync) forces .mp3 over requested .wav", "song.wav", mp3SyncBytes, "song.mp3"},
+		{"requested .mp3 preserved with MP3 bytes (no over-correction)", "song.mp3", mp3ID3Bytes, "song.mp3"},
+		{"WAV bytes keep requested .wav", "song.wav", wavBytes, "song.wav"},
+		{"unknown bytes respect requested extension", "song.aiff", unknownBytes, "song.aiff"},
+		{"unknown bytes, no extension -> default .mp3", "song", unknownBytes, "song.mp3"},
+		{"shortid default stem, MP3 bytes -> .mp3", "lyria_output_abc", mp3ID3Bytes, "lyria_output_abc.mp3"},
+		{"shortid default stem, unknown bytes -> .mp3", "lyria_output_abc", unknownBytes, "lyria_output_abc.mp3"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := finalizeLyriaFilename(tc.base, tc.audio); got != tc.want {
+				t.Errorf("finalizeLyriaFilename(%q, <%d bytes>) = %q, want %q", tc.base, len(tc.audio), got, tc.want)
 			}
 		})
 	}
