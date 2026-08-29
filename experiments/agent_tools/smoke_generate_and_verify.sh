@@ -196,14 +196,12 @@ verify_gcs_response() {
 
 # ---------------------------------------------------------------------------
 # Core: run one tool call and verify its output.
-#   run_case <server> <tool> <params_json> <local_verify_dir> <gcs_prefix> [expected]
+#   run_case <server> <tool> <params_json> <local_verify_dir> <gcs_prefix>
 # `gcs_prefix` is the exact GCS prefix passed to the tool (empty for tools that
-# only write locally, e.g. chirp/avtool). `expected` may be "expected-dead" for
-# servers whose backend is known-dead (Imagen); a failure there is reported as
-# EXPECTED-FAIL, not FAIL.
+# only write locally, e.g. chirp/avtool).
 # ---------------------------------------------------------------------------
 run_case() {
-  local server="$1" tool="$2" params="$3" verify_dir="$4" gcs_prefix="$5" expected="${6:-}"
+  local server="$1" tool="$2" params="$3" verify_dir="$4" gcs_prefix="$5"
 
   info "${server} :: ${tool}"
 
@@ -225,7 +223,7 @@ run_case() {
   printf '%s\n' "$raw" > "${verify_dir}/response.json" 2>/dev/null || true
 
   if [[ "$rc" -eq 124 ]]; then
-    _record "$server" "$tool" "$expected" "call timed out after ${CALL_TIMEOUT}s"
+    _record "$server" "$tool" "call timed out after ${CALL_TIMEOUT}s"
     return
   fi
 
@@ -251,21 +249,16 @@ run_case() {
   else
     local snippet
     snippet="$(printf '%s' "$raw" | tr '\n' ' ' | cut -c1-200)"
-    _record "$server" "$tool" "$expected" "no artifact; response: ${snippet}"
+    _record "$server" "$tool" "no artifact; response: ${snippet}"
   fi
 }
 
-# Record a non-passing outcome, honouring the "expected-dead" disposition.
+# Record a FAIL outcome.
 _record() {
-  local server="$1" tool="$2" expected="$3" detail="$4"
-  if [[ "$expected" == "expected-dead" ]]; then
-    RESULTS+=("${server}|${tool}|EXPECTED-FAIL|${detail}")
-    log "  ${C_YELLOW}EXPECTED-FAIL${C_RESET} (${detail})"
-  else
-    RESULTS+=("${server}|${tool}|FAIL|${detail}")
-    log "  ${C_RED}FAIL${C_RESET} (${detail})"
-    OVERALL_RC=1
-  fi
+  local server="$1" tool="$2" detail="$3"
+  RESULTS+=("${server}|${tool}|FAIL|${detail}")
+  log "  ${C_RED}FAIL${C_RESET} (${detail})"
+  OVERALL_RC=1
 }
 
 # Record a skip.
@@ -315,21 +308,9 @@ smoke_nanobanana() {
   run_case "$server" "nanobanana_image_generation" "$params" "$dir" "$prefix"
 }
 
-smoke_imagen() {
-  # Imagen models were shut down across Google (incl. Vertex AI) on 2026-08-17.
-  # This call is EXPECTED to fail; we include it so its status is reported.
-  local server="mcp-imagen-go" dir="${OUTPUT_DIR}/mcp-imagen-go" prefix params
-  if [[ "$MODE" == "gcs" ]]; then
-    prefix="$(gcs_prefix_for "$server")"
-    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$prefix" \
-      '{prompt:$p, gcs_bucket_uri:$b, output_filename:"smoke_imagen.png"}')"
-  else
-    prefix=""
-    params="$(jq -nc --arg p "$IMG_PROMPT" --arg d "$dir" \
-      '{prompt:$p, output_directory:$d, output_filename:"smoke_imagen.png"}')"
-  fi
-  run_case "$server" "imagen_t2i" "$params" "$dir" "$prefix" "expected-dead"
-}
+# NOTE: mcp-imagen-go is intentionally NOT covered. Imagen models were shut down
+# across Google (incl. Vertex AI) on 2026-08-17 and return HTTP 404, so there is
+# no value in smoke-testing them going forward.
 
 smoke_veo() {
   # An explicit model is required: with no model the server falls back to
@@ -430,7 +411,7 @@ print_report() {
   done
   echo "${C_BOLD}==========================================================${C_RESET}"
   if [[ "$OVERALL_RC" -eq 0 ]]; then
-    echo "${C_GREEN}All non-expected servers produced verified media.${C_RESET}"
+    echo "${C_GREEN}All servers produced verified media.${C_RESET}"
   else
     echo "${C_RED}One or more servers failed (see FAIL rows above).${C_RESET}"
   fi
@@ -445,7 +426,7 @@ main() {
 
   # Map friendly names -> driver functions. avtool runs after chirp so it can
   # consume chirp's output.
-  local -a order=(gemini nanobanana imagen veo lyria chirp omni avtool)
+  local -a order=(gemini nanobanana veo lyria chirp omni avtool)
   local -a requested=("$@")
   [[ ${#requested[@]} -eq 0 ]] && requested=("${order[@]}")
 
@@ -454,7 +435,6 @@ main() {
     case "$name" in
       gemini)     smoke_gemini ;;
       nanobanana) smoke_nanobanana ;;
-      imagen)     smoke_imagen ;;
       veo)        smoke_veo ;;
       lyria)      smoke_lyria ;;
       chirp|chirp3) smoke_chirp ;;

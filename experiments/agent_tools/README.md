@@ -28,7 +28,6 @@ only does a `go build` + `tools/list` liveness check and never produces media.
 |---|---|---|
 | `mcp-gemini-go` | `gemini_image_generation` | |
 | `mcp-nanobanana-go` | `nanobanana_image_generation` | |
-| `mcp-imagen-go` | `imagen_t2i` | **Expected to fail** — Imagen models were shut down across Google (incl. Vertex AI) on 2026-08-17. Reported as `EXPECTED-FAIL`, not a hard error. |
 | `mcp-veo-go` | `veo_t2v` | Video generation; can take minutes. Called with an explicit `model` (`veo-3.1-fast-generate-001`) — with no model the server falls back to `veo-2.0-generate-001`, which rejects the default `generate_audio=true`. Veo writes to GCS, so **GCS mode is recommended** for this server. |
 | `mcp-lyria-go` | `lyria_generate_music` | |
 | `mcp-chirp3-go` | `chirp_tts` | Local output only (no GCS output param). |
@@ -36,6 +35,10 @@ only does a `go build` + `tools/list` liveness check and never produces media.
 | `mcp-avtool-go` | `ffmpeg_convert_audio_wav_to_mp3` | avtool transforms existing media, so this call is **chained off** the chirp output (converts chirp's `.wav` to `.mp3`). Skipped with a clear reason if no chirp `.wav` is available. |
 
 `mcp-common` is a shared library, not a server, and is skipped.
+
+`mcp-imagen-go` is **intentionally not covered**: Imagen models were shut down
+across Google (including Vertex AI) on 2026-08-17 and return HTTP 404, so there
+is no value in smoke-testing them going forward.
 
 ### Requirements
 
@@ -78,13 +81,12 @@ SMOKE_CALL_TIMEOUT=900 ./smoke_generate_and_verify.sh
   ```
   SERVER               TOOL                             RESULT         ARTIFACT / DETAIL
   mcp-gemini-go        gemini_image_generation          PASS           gs://.../smoke_gemini.png
-  mcp-imagen-go        imagen_t2i                       EXPECTED-FAIL  Imagen deprecated (404)
+  mcp-veo-go           veo_t2v                          PASS           gs://.../smoke_veo.mp4
   ...
   ```
 
-Exit code is non-zero if any non-expected server fails to produce verified
-media. `EXPECTED-FAIL` (Imagen) and `SKIP` (e.g. avtool without a chirp input)
-do not fail the run.
+Exit code is non-zero if any server fails to produce verified media. `SKIP`
+(e.g. avtool without a chirp input) does not fail the run.
 
 ### How verification works (and why it's robust)
 
