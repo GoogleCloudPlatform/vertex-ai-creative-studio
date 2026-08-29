@@ -76,6 +76,7 @@ export default defineConfig({
 					label: 'Developer Tools',
 					items: [
 						{ label: 'Promptlandia', slug: 'experiments/promptlandia' },
+						{ label: 'Agent Tools for Genmedia', slug: 'experiments/agent-tools' },
 						{
 							label: 'MCP GenMedia',
 							items: [
