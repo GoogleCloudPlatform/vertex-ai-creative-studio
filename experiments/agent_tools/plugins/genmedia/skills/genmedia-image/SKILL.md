@@ -82,5 +82,9 @@ Credentials (ADC) in its environment for Vertex AI calls.
      ```sh
      gcloud storage ls "gs://<gcs_bucket_uri prefix>"
      ```
+     Note: if you relied on the `GENMEDIA_BUCKET` environment variable instead of
+     passing `gcs_bucket_uri` explicitly, the server writes under a
+     `nanobanana_outputs/` subprefix — list `gs://<GENMEDIA_BUCKET>/nanobanana_outputs/`,
+     not the bare bucket.
    * If no artifact is found, treat the generation as failed and surface the
      tool response for debugging rather than reporting success.
