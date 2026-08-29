@@ -12,8 +12,9 @@ servers.
 
 ## `smoke_generate_and_verify.sh`
 
-A consolidated **generate-and-verify** smoke test across the eight
-`mcp-genmedia-go` servers. For each server it fires one realistic
+A consolidated **generate-and-verify** smoke test across seven of the eight
+`mcp-genmedia-go` servers (Imagen is intentionally excluded — see below). For
+each covered server it fires one realistic
 media-generation `tools/call` (via the external
 [`mcptools`](https://github.com/f/mcptools) CLI) and then **verifies that a
 real media artifact was produced** — a non-empty local file, or a GCS object

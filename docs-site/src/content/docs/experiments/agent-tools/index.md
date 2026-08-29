@@ -15,7 +15,7 @@ time — **Agent Plugins**, gathered together in one place.
 :::note[Scope today]
 Right now this directory holds **one** artifact: a cross-server smoke test for the
 media-generation MCP servers (described below). It does **not** move or replace the
-existing [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia) —
+existing [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia/) —
 those stay where they are and continue to be the way you run the servers. Bringing
 Agent Skills and Agent Plugins into this directory is future work, and the exact
 approach is still being decided; nothing here should be read as a committed migration
@@ -28,7 +28,7 @@ The Model Context Protocol (MCP) servers are the shipped, production way to give
 agent access to Google Cloud genmedia. Each server can be run independently, and
 they cover image, video, speech, music, and audio/video compositing.
 
-➡️ **See the [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia)
+➡️ **See the [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia/)
 overview** for the full list of servers, installation, configuration, and
 per-server documentation.
 
