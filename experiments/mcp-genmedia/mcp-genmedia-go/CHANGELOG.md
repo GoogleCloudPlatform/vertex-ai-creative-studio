@@ -4,6 +4,22 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.18.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.17.0...mcp-v3.18.0) (2026-08-29)
+
+
+### Features
+
+* **mcp-genmedia-go:** support 0/all for Install All in install.sh ([#1769](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1769)) ([#1771](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1771)) ([cd41524](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/cd4152433f2b935d0503c0ea49b0a10def3ab5a3))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#1749](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1749)) ([9b1fb75](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/9b1fb75270729578dec68a083f31db50b4d07220))
+* **deps:** update all non-major dependencies ([#1761](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1761)) ([3fd9da9](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/3fd9da9747950a857b36adb1d3628037320249d8))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 9b1fb75 ([#1762](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1762)) ([1546cf6](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/1546cf6a7c8de545e02e01d3b371d505488d43ab))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to eaa1e8c ([#1755](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1755)) ([c7a2743](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/c7a2743c99f2c45bf0d8a4f75d7742015d193375))
+* **mcp-lyria-go:** parse nested model_output audio content ([#1768](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1768)) ([#1770](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1770)) ([98ded2c](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/98ded2ce6d75431e42791a9efdcfd4c5ec5b6d64))
+
 ## [3.17.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.16.0...mcp-v3.17.0) (2026-08-27)
 
 
