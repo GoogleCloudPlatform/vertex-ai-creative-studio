@@ -174,6 +174,41 @@ func flatAudioResponse(mimeType string, audio []byte) string {
 	}`, mimeType, b64)
 }
 
+// nestedModelOutputAudioResponse builds the live Interactions shape where the
+// audio arrives inside a nested "model_output" step's content[] (issue #1768),
+// rather than as a flat top-level audio step.
+func nestedModelOutputAudioResponse(mimeType string, audio []byte) string {
+	b64 := base64.StdEncoding.EncodeToString(audio)
+	return fmt.Sprintf(`{
+		"id": "lyria-char-nested-1",
+		"object": "interaction",
+		"status": "completed",
+		"role": "model",
+		"steps": [{
+			"type": "model_output",
+			"content": [{"type": "audio", "mime_type": %q, "data": %q}]
+		}]
+	}`, mimeType, b64)
+}
+
+// TestChar_Lyria3_NestedModelOutputAudioDecoded pins the fix for issue #1768:
+// audio nested inside a "model_output" step's content[] (the live Vertex AI
+// Interactions shape) is found and decoded to the exact original bytes, instead
+// of failing with "no audio output found in response".
+func TestChar_Lyria3_NestedModelOutputAudioDecoded(t *testing.T) {
+	audio := []byte{0x49, 0x44, 0x33, 0x04, 0x00, 0x11, 0x22, 0x33, 0xAB, 0xCD}
+	ts, _ := newInteractionsTestServer(t, nestedModelOutputAudioResponse("audio/mpeg", audio), "")
+	ctx := fakeADCContext(t, ts, &common.Config{ProjectID: testProjectID})
+
+	got, _, err := generateAudioWithInteractions(ctx, "lyria-3-clip-preview", "prompt")
+	if err != nil {
+		t.Fatalf("generateAudioWithInteractions returned error: %v", err)
+	}
+	if string(got) != string(audio) {
+		t.Errorf("decoded audio = %v, want %v", got, audio)
+	}
+}
+
 // TestChar_Lyria3_RequestEnvelope pins the CURRENT request envelope of the
 // Lyria-3 Interactions route: POST to the global interactions path with body
 // {model, input:[{type:"text", text:<prompt>}], store:false} and the

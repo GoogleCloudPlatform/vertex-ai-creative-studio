@@ -48,11 +48,14 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 		sherlogLink = resp.SherlogLink
 	}
 
-	// Lyria returns flat audio ({type:"audio", mime_type, data}); the live shape
-	// arrives in outputs[], but tolerate steps[] as well.
-	audioBytes, found, err := extractFlatAudio(resp.Outputs)
+	// Lyria audio arrives in one of two observed shapes: a flat step
+	// ({type:"audio", mime_type, data}) or a nested model_output step whose
+	// audio part lives in content[] ({type:"model_output", content:[{type:"audio",
+	// ...}]}). It may land in outputs[] or steps[]; scan both, tolerating either
+	// shape.
+	audioBytes, found, err := extractAudio(resp.Outputs)
 	if !found && err == nil {
-		audioBytes, found, err = extractFlatAudio(resp.Steps)
+		audioBytes, found, err = extractAudio(resp.Steps)
 	}
 	if err != nil {
 		return nil, "", err
@@ -63,11 +66,14 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 	return audioBytes, sherlogLink, nil
 }
 
-// extractFlatAudio scans a flat outputs[]/steps[] slice for the first audio
-// entry and returns its base64-decoded bytes. found is false when no audio
-// entry is present; a present-but-undecodable entry surfaces the decode error
-// verbatim, matching the pre-seam behavior.
-func extractFlatAudio(steps []common.Step) ([]byte, bool, error) {
+// extractAudio scans an outputs[]/steps[] slice for the first audio entry and
+// returns its base64-decoded bytes. It handles both observed shapes: a flat step
+// carrying the audio directly (s.Type == "audio", s.Data), and a nested step
+// (e.g. type "model_output") whose audio lives in a content[] part (p.Type ==
+// "audio", p.Data). found is false when no audio entry is present; a
+// present-but-undecodable entry surfaces the decode error verbatim, matching the
+// pre-seam behavior.
+func extractAudio(steps []common.Step) ([]byte, bool, error) {
 	for _, s := range steps {
 		if s.Type == "audio" && s.Data != "" {
 			decoded, err := base64.StdEncoding.DecodeString(s.Data)
@@ -75,6 +81,15 @@ func extractFlatAudio(steps []common.Step) ([]byte, bool, error) {
 				return nil, true, fmt.Errorf("failed to decode base64 audio data: %w", err)
 			}
 			return decoded, true, nil
+		}
+		for _, p := range s.Content {
+			if p.Type == "audio" && p.Data != "" {
+				decoded, err := base64.StdEncoding.DecodeString(p.Data)
+				if err != nil {
+					return nil, true, fmt.Errorf("failed to decode base64 audio data: %w", err)
+				}
+				return decoded, true, nil
+			}
 		}
 	}
 	return nil, false, nil
