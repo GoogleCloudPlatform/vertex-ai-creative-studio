@@ -204,7 +204,7 @@ imageio-ffmpeg==0.6.0
     # via moviepy
 iniconfig==2.3.0
     # via pytest
-ipython==9.16.1
+ipython==9.17.0
     # via mediapy
 ipython-pygments-lexers==1.1.1
     # via ipython
@@ -361,7 +361,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0 ; implementation_name != 'PyPy'
     # via cffi
-pydantic==2.13.4
+pydantic==2.13.5
     # via
     #   fastapi
     #   google-cloud-aiplatform
@@ -485,7 +485,7 @@ uvicorn==0.52.4
     # via vertex-ai-genmedia-creative-studio
 watchdog==6.0.0
     # via mesop
-wcwidth==0.8.2
+wcwidth==0.8.3
     # via prompt-toolkit
 websockets==17.1
     # via google-genai

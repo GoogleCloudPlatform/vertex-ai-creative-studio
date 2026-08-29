@@ -10,7 +10,7 @@ require (
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.46.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.294.0
+	google.golang.org/api v0.295.0
 	google.golang.org/protobuf v1.36.12
 )
 
