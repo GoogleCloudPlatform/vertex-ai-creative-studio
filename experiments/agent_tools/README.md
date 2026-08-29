@@ -29,7 +29,7 @@ only does a `go build` + `tools/list` liveness check and never produces media.
 | `mcp-gemini-go` | `gemini_image_generation` | |
 | `mcp-nanobanana-go` | `nanobanana_image_generation` | |
 | `mcp-imagen-go` | `imagen_t2i` | **Expected to fail** — Imagen models were shut down across Google (incl. Vertex AI) on 2026-08-17. Reported as `EXPECTED-FAIL`, not a hard error. |
-| `mcp-veo-go` | `veo_t2v` | Video generation; can take minutes. |
+| `mcp-veo-go` | `veo_t2v` | Video generation; can take minutes. Called with an explicit `model` (`veo-3.1-fast-generate-001`) — with no model the server falls back to `veo-2.0-generate-001`, which rejects the default `generate_audio=true`. Veo writes to GCS, so **GCS mode is recommended** for this server. |
 | `mcp-lyria-go` | `lyria_generate_music` | |
 | `mcp-chirp3-go` | `chirp_tts` | Local output only (no GCS output param). |
 | `mcp-omni-go` | `omni_video_generation` | Video generation; can take minutes. |
@@ -85,3 +85,18 @@ SMOKE_CALL_TIMEOUT=900 ./smoke_generate_and_verify.sh
 Exit code is non-zero if any non-expected server fails to produce verified
 media. `EXPECTED-FAIL` (Imagen) and `SKIP` (e.g. avtool without a chirp input)
 do not fail the run.
+
+### How verification works (and why it's robust)
+
+Verification never trusts the JSON-RPC response alone — it confirms the media
+artifact actually exists:
+
+- **GCS mode:** each server is given a unique destination prefix
+  (`$GENMEDIA_BUCKET/smoke_<timestamp>/<server>/`) and the script lists that
+  prefix with `gcloud storage ls` afterwards. This is deliberately independent
+  of the response body: some servers (notably `mcp-veo-go`) return a
+  `resource_link` content type that the `mcptools` CLI cannot render, so the
+  video is real even though the CLI prints an "unsupported content type" error.
+  Listing the destination catches this correctly.
+- **Local mode:** the script checks for a non-empty file in the server's
+  `smoke_output/<server>/` directory (ignoring the saved `response.json`).

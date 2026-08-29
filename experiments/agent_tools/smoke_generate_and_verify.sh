@@ -60,6 +60,8 @@ TTS_TEXT="Hello from the consolidated MCP generate and verify smoke test."
 # --- Result accumulation ---------------------------------------------------
 declare -a RESULTS   # "server|tool|status|detail"
 OVERALL_RC=0
+RUN_ID="$(date +%Y%m%d-%H%M%S)"   # unique per invocation, for GCS prefixes
+GCS_BASE=""                        # set in check_prereqs when in GCS mode
 
 # --- Colours (only when attached to a terminal) ----------------------------
 if [[ -t 1 ]]; then
@@ -102,6 +104,10 @@ check_prereqs() {
 
   if [[ -n "${GENMEDIA_BUCKET:-}" ]]; then
     MODE="gcs"
+    # Normalise to a gs:// base with no trailing slash, so per-server prefixes
+    # can be composed uniformly.
+    GCS_BASE="${GENMEDIA_BUCKET#gs://}"
+    GCS_BASE="gs://${GCS_BASE%/}"
     if ! command -v gcloud >/dev/null 2>&1; then
       log "${C_RED}ERROR:${C_RESET} GENMEDIA_BUCKET is set (GCS mode) but 'gcloud' is not on PATH."
       missing=1
@@ -140,15 +146,24 @@ build_server() {
 }
 
 # ---------------------------------------------------------------------------
-# Verify a produced artifact.
-#   verify_local <dir>   -> success if dir contains a non-empty regular file
-#   verify_gcs <json>    -> success if any gs:// URI in the JSON exists
-# Echoes the verified artifact reference on success.
+# Verify a produced artifact. Echoes the verified reference on success.
+#
+#   verify_local <dir>          -> non-empty regular file in dir (ignoring our
+#                                  own response.json log)
+#   verify_gcs_prefix <prefix>  -> any object under the GCS prefix we wrote to.
+#                                  This is deliberately independent of the tool
+#                                  response body: some servers (e.g. veo)
+#                                  return a `resource_link` content type that
+#                                  the mcptools CLI cannot render, so parsing
+#                                  the response is unreliable. We instead list
+#                                  the exact destination we asked the tool for.
+#   verify_gcs_response <json>  -> any gs:// URI mentioned in the response that
+#                                  actually exists (last-resort fallback).
 # ---------------------------------------------------------------------------
 verify_local() {
   local dir="$1"
   local f
-  f="$(find "$dir" -type f -size +0c 2>/dev/null | head -n 1)"
+  f="$(find "$dir" -type f -size +0c ! -name 'response.json' 2>/dev/null | head -n 1)"
   if [[ -n "$f" ]]; then
     echo "$f"
     return 0
@@ -156,10 +171,19 @@ verify_local() {
   return 1
 }
 
-verify_gcs() {
-  local json="$1"
-  local uri
-  # Extract candidate gs:// URIs from the raw tool response.
+verify_gcs_prefix() {
+  local prefix="$1" uri
+  uri="$(gcloud storage ls -r "${prefix}**" 2>/dev/null \
+         | grep -E '^gs://' | grep -v '/$' | head -n 1)"
+  if [[ -n "$uri" ]]; then
+    echo "$uri"
+    return 0
+  fi
+  return 1
+}
+
+verify_gcs_response() {
+  local json="$1" uri
   while IFS= read -r uri; do
     [[ -z "$uri" ]] && continue
     if gcloud storage ls "$uri" >/dev/null 2>&1; then
@@ -172,12 +196,14 @@ verify_gcs() {
 
 # ---------------------------------------------------------------------------
 # Core: run one tool call and verify its output.
-#   run_case <server> <tool> <params_json> <local_verify_dir> [expected]
-# `expected` may be "expected-dead" for servers whose backend is known-dead
-# (Imagen); a failure there is reported as EXPECTED-FAIL, not FAIL.
+#   run_case <server> <tool> <params_json> <local_verify_dir> <gcs_prefix> [expected]
+# `gcs_prefix` is the exact GCS prefix passed to the tool (empty for tools that
+# only write locally, e.g. chirp/avtool). `expected` may be "expected-dead" for
+# servers whose backend is known-dead (Imagen); a failure there is reported as
+# EXPECTED-FAIL, not FAIL.
 # ---------------------------------------------------------------------------
 run_case() {
-  local server="$1" tool="$2" params="$3" verify_dir="$4" expected="${5:-}"
+  local server="$1" tool="$2" params="$3" verify_dir="$4" gcs_prefix="$5" expected="${6:-}"
 
   info "${server} :: ${tool}"
 
@@ -192,7 +218,7 @@ run_case() {
 
   local raw rc
   raw="$(cd "$(dirname "$bin")" && timeout "$CALL_TIMEOUT" \
-        mcptools --json call "$tool" --params "$params" "./${server}" 2>&1)"
+        mcptools call "$tool" --format json --params "$params" "./${server}" 2>&1)"
   rc=$?
 
   # Persist the raw response for debugging.
@@ -203,15 +229,20 @@ run_case() {
     return
   fi
 
-  # Verify the artifact is real.
+  # Verify the artifact is real. In GCS mode, primarily list the exact
+  # destination prefix we asked for (robust to unrenderable responses).
   local artifact=""
-  if [[ "$MODE" == "gcs" ]]; then
-    artifact="$(verify_gcs "$raw")" || true
+  if [[ "$MODE" == "gcs" && -n "$gcs_prefix" ]]; then
+    artifact="$(verify_gcs_prefix "$gcs_prefix")" || true
   fi
-  # Fall back to (or primarily use) the local dir. Several servers always
-  # honour output_directory even when a bucket is configured (e.g. chirp).
+  # Fall back to the local dir. Several tools always honour output_directory
+  # even when a bucket is configured (e.g. chirp is local-only).
   if [[ -z "$artifact" ]]; then
     artifact="$(verify_local "$verify_dir")" || true
+  fi
+  # Last resort: any existing gs:// URI mentioned in the response body.
+  if [[ -z "$artifact" && "$MODE" == "gcs" ]]; then
+    artifact="$(verify_gcs_response "$raw")" || true
   fi
 
   if [[ -n "$artifact" ]]; then
@@ -253,96 +284,107 @@ jstr() { printf '%s' "$1" | jq -Rs .; }
 # bucket (chirp) are still verifiable.
 # ---------------------------------------------------------------------------
 
+# Compose the unique GCS prefix for a server (only meaningful in GCS mode).
+gcs_prefix_for() { printf '%s/smoke_%s/%s/' "$GCS_BASE" "$RUN_ID" "$1"; }
+
 smoke_gemini() {
-  local dir="${OUTPUT_DIR}/mcp-gemini-go"
-  local params
+  local server="mcp-gemini-go" dir="${OUTPUT_DIR}/mcp-gemini-go" prefix params
   if [[ "$MODE" == "gcs" ]]; then
-    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$GENMEDIA_BUCKET" \
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$prefix" \
       '{prompt:$p, gcs_bucket_uri:$b, output_filename:"smoke_gemini.png"}')"
   else
+    prefix=""
     params="$(jq -nc --arg p "$IMG_PROMPT" --arg d "$dir" \
       '{prompt:$p, output_directory:$d, output_filename:"smoke_gemini.png"}')"
   fi
-  run_case "mcp-gemini-go" "gemini_image_generation" "$params" "$dir"
+  run_case "$server" "gemini_image_generation" "$params" "$dir" "$prefix"
 }
 
 smoke_nanobanana() {
-  local dir="${OUTPUT_DIR}/mcp-nanobanana-go"
-  local params
+  local server="mcp-nanobanana-go" dir="${OUTPUT_DIR}/mcp-nanobanana-go" prefix params
   if [[ "$MODE" == "gcs" ]]; then
-    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$GENMEDIA_BUCKET" \
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$prefix" \
       '{prompt:$p, gcs_bucket_uri:$b, output_filename:"smoke_nanobanana.png"}')"
   else
+    prefix=""
     params="$(jq -nc --arg p "$IMG_PROMPT" --arg d "$dir" \
       '{prompt:$p, output_directory:$d, output_filename:"smoke_nanobanana.png"}')"
   fi
-  run_case "mcp-nanobanana-go" "nanobanana_image_generation" "$params" "$dir"
+  run_case "$server" "nanobanana_image_generation" "$params" "$dir" "$prefix"
 }
 
 smoke_imagen() {
   # Imagen models were shut down across Google (incl. Vertex AI) on 2026-08-17.
   # This call is EXPECTED to fail; we include it so its status is reported.
-  local dir="${OUTPUT_DIR}/mcp-imagen-go"
-  local params
+  local server="mcp-imagen-go" dir="${OUTPUT_DIR}/mcp-imagen-go" prefix params
   if [[ "$MODE" == "gcs" ]]; then
-    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$GENMEDIA_BUCKET" \
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$IMG_PROMPT" --arg b "$prefix" \
       '{prompt:$p, gcs_bucket_uri:$b, output_filename:"smoke_imagen.png"}')"
   else
+    prefix=""
     params="$(jq -nc --arg p "$IMG_PROMPT" --arg d "$dir" \
       '{prompt:$p, output_directory:$d, output_filename:"smoke_imagen.png"}')"
   fi
-  run_case "mcp-imagen-go" "imagen_t2i" "$params" "$dir" "expected-dead"
+  run_case "$server" "imagen_t2i" "$params" "$dir" "$prefix" "expected-dead"
 }
 
 smoke_veo() {
-  local dir="${OUTPUT_DIR}/mcp-veo-go"
-  local params
+  # An explicit model is required: with no model the server falls back to
+  # veo-2.0-generate-001, which rejects the default generate_audio=true.
+  local server="mcp-veo-go" dir="${OUTPUT_DIR}/mcp-veo-go" prefix params
+  local model="veo-3.1-fast-generate-001"
   if [[ "$MODE" == "gcs" ]]; then
     # veo uses `bucket` (not gcs_bucket_uri) for GCS output.
-    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg b "$GENMEDIA_BUCKET" \
-      '{prompt:$p, bucket:$b, output_filename:"smoke_veo.mp4"}')"
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg b "$prefix" --arg m "$model" \
+      '{prompt:$p, bucket:$b, model:$m, output_filename:"smoke_veo.mp4"}')"
   else
-    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg d "$dir" \
-      '{prompt:$p, output_directory:$d, output_filename:"smoke_veo.mp4"}')"
+    prefix=""
+    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg d "$dir" --arg m "$model" \
+      '{prompt:$p, output_directory:$d, model:$m, output_filename:"smoke_veo.mp4"}')"
   fi
-  run_case "mcp-veo-go" "veo_t2v" "$params" "$dir"
+  run_case "$server" "veo_t2v" "$params" "$dir" "$prefix"
 }
 
 smoke_lyria() {
-  local dir="${OUTPUT_DIR}/mcp-lyria-go"
-  local params
+  local server="mcp-lyria-go" dir="${OUTPUT_DIR}/mcp-lyria-go" prefix params
   if [[ "$MODE" == "gcs" ]]; then
     # lyria uses `output_gcs_bucket` + `file_name`.
-    params="$(jq -nc --arg p "$MUSIC_PROMPT" --arg b "$GENMEDIA_BUCKET" \
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$MUSIC_PROMPT" --arg b "$prefix" \
       '{prompt:$p, output_gcs_bucket:$b, file_name:"smoke_lyria.wav"}')"
   else
     # lyria uses `local_path` for local output.
+    prefix=""
     params="$(jq -nc --arg p "$MUSIC_PROMPT" --arg d "$dir" \
       '{prompt:$p, local_path:$d, file_name:"smoke_lyria.wav"}')"
   fi
-  run_case "mcp-lyria-go" "lyria_generate_music" "$params" "$dir"
+  run_case "$server" "lyria_generate_music" "$params" "$dir" "$prefix"
 }
 
 smoke_chirp() {
   # chirp only writes locally (output_directory); no GCS output param exists.
-  local dir="${OUTPUT_DIR}/mcp-chirp3-go"
-  local params
+  local server="mcp-chirp3-go" dir="${OUTPUT_DIR}/mcp-chirp3-go" params
   params="$(jq -nc --arg t "$TTS_TEXT" --arg d "$dir" \
     '{text:$t, output_directory:$d, output_filename:"smoke_chirp.wav"}')"
-  run_case "mcp-chirp3-go" "chirp_tts" "$params" "$dir"
+  run_case "$server" "chirp_tts" "$params" "$dir" ""
 }
 
 smoke_omni() {
-  local dir="${OUTPUT_DIR}/mcp-omni-go"
-  local params
+  local server="mcp-omni-go" dir="${OUTPUT_DIR}/mcp-omni-go" prefix params
   if [[ "$MODE" == "gcs" ]]; then
-    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg b "$GENMEDIA_BUCKET" \
+    prefix="$(gcs_prefix_for "$server")"
+    params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg b "$prefix" \
       '{prompt:$p, gcs_bucket_uri:$b, output_filename:"smoke_omni.mp4"}')"
   else
+    prefix=""
     params="$(jq -nc --arg p "$VIDEO_PROMPT" --arg d "$dir" \
       '{prompt:$p, output_directory:$d, output_filename:"smoke_omni.mp4"}')"
   fi
-  run_case "mcp-omni-go" "omni_video_generation" "$params" "$dir"
+  run_case "$server" "omni_video_generation" "$params" "$dir" "$prefix"
 }
 
 smoke_avtool() {
@@ -363,7 +405,8 @@ smoke_avtool() {
   local params
   params="$(jq -nc --arg i "$input" --arg d "$dir" \
     '{input_audio_uri:$i, output_local_dir:$d, output_filename:"smoke_avtool.mp3"}')"
-  run_case "mcp-avtool-go" "ffmpeg_convert_audio_wav_to_mp3" "$params" "$dir"
+  # avtool always writes locally here, so no GCS prefix.
+  run_case "mcp-avtool-go" "ffmpeg_convert_audio_wav_to_mp3" "$params" "$dir" ""
 }
 
 # ---------------------------------------------------------------------------
