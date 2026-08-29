@@ -93,7 +93,7 @@ arch_raw="$(uname -m)"
 case "$os_raw" in
   Linux)  os="linux" ;;
   Darwin) os="darwin" ;;
-  *) die "unsupported OS '$os_raw' (linux/darwin only in this phase; Windows is tracked as phase A4)" ;;
+  *) die "unsupported OS '$os_raw' (linux/darwin only; Windows is not yet supported)" ;;
 esac
 
 case "$arch_raw" in

@@ -7,8 +7,8 @@ license: Apache-2.0
 # genmedia Image
 
 This skill generates images by calling the `nanobanana_image_generation` tool
-exposed by the genmedia **Nanobanana** MCP server. It is a Tier-1 primitive: one
-tool, one job. It supports both local workspace execution and remote / managed
+exposed by the genmedia **Nanobanana** MCP server. It is a single-purpose skill:
+one tool, one job. It supports both local workspace execution and remote / managed
 agent execution via GCS staging, and it always verifies that a real artifact was
 produced — never that the call merely returned without error.
 

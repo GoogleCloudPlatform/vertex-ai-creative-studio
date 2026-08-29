@@ -1,14 +1,13 @@
-# genmedia — Agent Plugin (vertical slice)
+# genmedia — Agent Plugin
 
 Packages the Google Cloud **genmedia** MCP servers as an installable
 [Agent Plugin](https://agent-plugins.org) so an Agent-Plugins-aware client can
 install one plugin and get the servers **launchable** — no manual binary build
 and no hand-edited MCP client config.
 
-This directory is **Track A phase A1**: a proven vertical slice wiring **only the
-`nanobanana` image-generation server**. The remaining six genmedia servers
-(veo, chirp3, gemini, lyria, avtool, omni) are added in later phases using the
-same launcher and manifest.
+This plugin currently wires **only the `nanobanana` image-generation server**.
+The remaining six genmedia servers (veo, chirp3, gemini, lyria, avtool, omni)
+are not yet wired; they will be added using the same launcher and manifest.
 
 ## What's here
 
@@ -32,8 +31,7 @@ plugin's `mcp.json` / `.mcp.json`, or a manual MCP config).
 |---|---|---|
 | `genmedia-image` | `nanobanana_image_generation` | Generate a still image from a text prompt (optionally guided by reference images), with control over aspect ratio, resolution, and local vs GCS output; verifies the artifact by existence. |
 
-More genmedia skills (video, speech, and goal-driven orchestrators) are added in
-later phases.
+More genmedia skills (video, speech, and goal-driven orchestrators) are planned.
 
 ## How it works — download on launch
 
@@ -112,7 +110,7 @@ image to your requested `output_directory` / `gcs_bucket_uri`.
 
 Any Agent-Plugins-aware client reads `mcp.json`; the launcher is client-agnostic.
 Native repackaging for Gemini CLI / Antigravity, and manual-config fallback docs
-for other clients, are later phases (design §5.4 / A5).
+for other clients, are planned.
 
 ## Client compatibility
 
@@ -140,8 +138,8 @@ binaries are written only to the client-designated writable cache
 (`${PLUGIN_DATA}` for spec clients, or `~/.cache/genmedia/bin` as a standalone
 fallback) — never via a `../` escape, and the launcher creates no symlinks.
 
-## Scope (A1)
+## Current scope
 
 Only `nanobanana` is wired. `lyria` is deliberately deferred (a client-side
 audio-parsing fix rides in a later pinned release); `avtool` needs `ffmpeg` at
-runtime; Windows launcher parity is phase A4.
+runtime; a Windows launcher is not yet available.
