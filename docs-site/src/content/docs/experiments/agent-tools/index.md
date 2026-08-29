@@ -1,6 +1,6 @@
 ---
 title: "Agent Tools for Genmedia"
-description: "The home for agent-facing tooling — MCP Servers, and, over time, Agent Skills and Agent Plugins — for Google Cloud's generative media APIs."
+description: "The home for agent-facing tooling — MCP Servers and Agent Skills, and, over time, Agent Plugins — for Google Cloud's generative media APIs."
 ---
 
 **Agent Tools for Genmedia** is the entry point for the agent-facing tooling that
@@ -9,8 +9,8 @@ Image, Gemini TTS, Veo, Chirp, Lyria, and audio/video compositing with AVTool).
 
 It corresponds to the [`experiments/agent_tools/`](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/agent_tools)
 directory in the repository, which is the intended home for a consolidated set of
-genmedia agent tooling: the existing **MCP Servers**, and — over time — **Agent
-Skills** and **Agent Plugins**.
+genmedia agent tooling: the existing **MCP Servers** and **Agent Skills**, and — over
+time — **Agent Plugins**, gathered together in one place.
 
 :::note[Scope today]
 Right now this directory holds **one** artifact: a cross-server smoke test for the
@@ -41,8 +41,8 @@ are documented today under the MCP GenMedia section; see
 [Agent Skills](/vertex-ai-creative-studio/experiments/mcp-genmedia/skills/).
 
 Consolidating these skills — and packaging genmedia tooling as **Agent Plugins** —
-into `experiments/agent_tools/` is planned direction, not yet a shipped layout. This
-page will grow to point at them as that work lands.
+into `experiments/agent_tools/` is a direction under exploration, not a decided plan
+or a shipped layout. This page will grow to point at them as that work lands.
 
 ## The generate-and-verify smoke test
 
@@ -67,7 +67,7 @@ does a `go build` + `tools/list` liveness check and never produces media.
 | `mcp-lyria-go` | `lyria_generate_music` | |
 | `mcp-chirp3-go` | `chirp_tts` | Local output only (no GCS output parameter). |
 | `mcp-omni-go` | `omni_video_generation` | Video generation; can take minutes. |
-| `mcp-avtool-go` | `ffmpeg_convert_audio_wav_to_mp3` | Chained off the chirp output (converts chirp's `.wav` to `.mp3`); `SKIP`ped if `ffmpeg` is unavailable. |
+| `mcp-avtool-go` | `ffmpeg_convert_audio_wav_to_mp3` | Chained off the chirp output (converts chirp's `.wav` to `.mp3`); `SKIP`ped if `ffmpeg` is unavailable or no chirp `.wav` was produced. |
 
 `mcp-common` is a shared library, not a server, and is skipped.
 `mcp-imagen-go` is **intentionally not covered**: Imagen models were shut down

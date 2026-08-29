@@ -32,7 +32,7 @@ The experimental folder contains stand-alone applications, demos, and features n
 
 ## Developer Tools & MCP
 
-* [Agent Tools for Genmedia](/vertex-ai-creative-studio/experiments/agent-tools) - The entry point for agent-facing genmedia tooling: the MCP Servers, plus a generate-and-verify smoke test, with Agent Skills and Agent Plugins as planned direction.
+* [Agent Tools for Genmedia](/vertex-ai-creative-studio/experiments/agent-tools) - The entry point for agent-facing genmedia tooling: the MCP Servers, plus a generate-and-verify smoke test, with Agent Skills and Agent Plugins as an area under exploration.
 * [MCP GenMedia](/vertex-ai-creative-studio/experiments/mcp-genmedia) - Model Context Protocol servers for Genmedia services for AI applications to utilize Veo, Imagen, Lyria, Chirp 3 HD.
 
 ## Relocated Experiments
