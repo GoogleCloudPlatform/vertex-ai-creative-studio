@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "genmedia",
+  "version": "3.18.0",
+  "description": "Google Cloud genmedia MCP servers bundled as launchable MCP servers. This vertical slice wires the Nanobanana image-generation server; the remaining genmedia servers are added in later phases.",
+  "author": {
+    "name": "ghchinoy",
+    "url": "https://github.com/ghchinoy"
+  },
+  "homepage": "https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/agent_tools/plugins/genmedia",
+  "repository": "https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio",
+  "license": "Apache-2.0",
+  "keywords": ["genmedia", "mcp", "nanobanana", "image-generation", "gemini", "vertex-ai"]
+}

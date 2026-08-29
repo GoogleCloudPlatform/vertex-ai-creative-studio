@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "nanobanana": {
+      "type": "stdio",
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/genmedia-launch",
+      "args": ["mcp-nanobanana-go", "--transport", "stdio"],
+      "env": {
+        "GENMEDIA_RELEASE_TAG": "v3.18.0"
+      }
+    }
+  }
+}

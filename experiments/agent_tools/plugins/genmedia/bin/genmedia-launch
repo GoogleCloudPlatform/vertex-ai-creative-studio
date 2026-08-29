@@ -1,0 +1,190 @@
+#!/usr/bin/env sh
+#
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ---------------------------------------------------------------------------
+# genmedia-launch — download-on-launch bridge for the genmedia MCP servers.
+#
+# Agent Plugins mcp.json points its `command` at this script (a path INSIDE the
+# plugin root) because the spec has no fetch phase and `command` is a fixed,
+# non-templated string that cannot select an OS/arch binary at runtime. This
+# script fills exactly that gap: it detects the platform, downloads the matching
+# GoReleaser tarball from the pinned GitHub Release, verifies its SHA-256
+# against BOTH a value pinned in this script AND the release's own
+# checksums.txt, extracts the bundled server binaries into a client-managed
+# writable cache, and execs the requested server speaking MCP over stdio.
+#
+#   genmedia-launch <server-binary> [server-args...]
+#     e.g. genmedia-launch mcp-nanobanana-go --transport stdio
+#
+# CONTAINMENT (Agent Plugins §4.1): this script lives inside the plugin root and
+# is reached via `command: ./bin/genmedia-launch` with `cwd: ${PLUGIN_ROOT}`.
+# Downloaded binaries are written ONLY under $GENMEDIA_CACHE, which the plugin
+# manifest sets to ${PLUGIN_DATA}/bin — the client-designated persistent
+# writable directory. No path here resolves outside those two locations; there
+# are no `../` escapes and no symlinks are created.
+#
+# STDOUT DISCIPLINE: stdout is the MCP stdio transport. Every diagnostic this
+# script emits goes to STDERR so it never corrupts the JSON-RPC stream. Only the
+# exec'd server ever writes to stdout.
+# ---------------------------------------------------------------------------
+
+set -eu
+
+log() { printf 'genmedia-launch: %s\n' "$*" >&2; }
+die() { log "ERROR: $*"; exit 1; }
+
+# --- Pinned release --------------------------------------------------------
+# The release tag whose SHA-256s are pinned below. Bumping the pinned release
+# means updating BOTH this tag and the PINNED_SHA256_* values together.
+PINNED_TAG="v3.18.0"
+
+# Expected SHA-256 of each per-platform tarball for PINNED_TAG. Sourced from the
+# release's genmedia-mcp-servers_<version>_checksums.txt and embedded here so a
+# moved/re-tagged release (not just a corrupted download) is rejected.
+PINNED_SHA256_darwin_amd64="b9cb5a15d36468c9c6286bdaa66120f675f4f08b6be485f81ceb3ec4fcbb4b8b"
+PINNED_SHA256_darwin_arm64="738341f24f0887cdcfb9f696e8e50eeb3e20247cec809aff1988f528d13e4582"
+PINNED_SHA256_linux_amd64="ee50975330e67936fe63ee0d88a5982233fdaff6ee83dd65ec2d8b296a443b14"
+PINNED_SHA256_linux_arm64="9ae511298fbf28f578f75ee59ff6c94fb9fb9a4dbec5e26916ed80fc3b4003f7"
+PINNED_SHA256_windows_amd64="226b0fffef826e5fd9478dcdf138ba2a029b29b87da6b16179f0d2d355143fdc"
+PINNED_SHA256_windows_arm64="0027490699868059a5e9712298b7f60058fe769886457d255b80507b4957fdbb"
+
+RELEASE_BASE="https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/releases/download"
+
+# --- Args ------------------------------------------------------------------
+[ "$#" -ge 1 ] || die "usage: genmedia-launch <server-binary> [server-args...]"
+server="$1"
+shift
+
+# --- Release selection -----------------------------------------------------
+# GENMEDIA_RELEASE_TAG selects the release tag (default: the pinned tag). The
+# checksums.txt filename uses the version with the leading 'v' stripped.
+tag="${GENMEDIA_RELEASE_TAG:-$PINNED_TAG}"
+version="${tag#v}"
+
+# --- Cache location --------------------------------------------------------
+# GENMEDIA_CACHE is set by mcp.json to ${PLUGIN_DATA}/bin. Fall back to an
+# XDG-style path for standalone/manual invocation outside a plugin client.
+cache_root="${GENMEDIA_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/genmedia/bin}"
+cache="${cache_root}/${version}"
+bin="${cache}/${server}"
+
+# --- Fast path: already cached ---------------------------------------------
+if [ -x "$bin" ]; then
+  exec "$bin" "$@"
+fi
+
+# --- Platform detection ----------------------------------------------------
+os_raw="$(uname -s)"
+arch_raw="$(uname -m)"
+
+case "$os_raw" in
+  Linux)  os="linux" ;;
+  Darwin) os="darwin" ;;
+  *) die "unsupported OS '$os_raw' (linux/darwin only in this phase; Windows is tracked as phase A4)" ;;
+esac
+
+case "$arch_raw" in
+  x86_64|amd64)        arch="amd64" ;;
+  aarch64|arm64)       arch="arm64" ;;
+  *) die "unsupported architecture '$arch_raw' (amd64/arm64 only)" ;;
+esac
+
+platform="${os}_${arch}"
+tarball="genmedia-mcp-servers_${platform}.tar.gz"
+checksums="genmedia-mcp-servers_${version}_checksums.txt"
+tarball_url="${RELEASE_BASE}/${tag}/${tarball}"
+checksums_url="${RELEASE_BASE}/${tag}/${checksums}"
+
+# --- Tooling ---------------------------------------------------------------
+if command -v curl >/dev/null 2>&1; then
+  fetch() { curl -fsSL "$1" -o "$2"; }
+elif command -v wget >/dev/null 2>&1; then
+  fetch() { wget -q "$1" -O "$2"; }
+else
+  die "need curl or wget to download the release asset"
+fi
+
+# Portable SHA-256: prefer sha256sum, fall back to `shasum -a 256` (macOS).
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256_of() { sha256sum "$1" | awk '{print $1}'; }
+elif command -v shasum >/dev/null 2>&1; then
+  sha256_of() { shasum -a 256 "$1" | awk '{print $1}'; }
+else
+  die "need sha256sum or shasum to verify the download"
+fi
+
+command -v tar >/dev/null 2>&1 || die "need tar to extract the release asset"
+
+# --- Download + verify + extract into a private temp dir -------------------
+mkdir -p "$cache_root"
+tmp="$(mktemp -d "${cache_root}/.dl.XXXXXX")" || die "cannot create temp dir under $cache_root"
+# shellcheck disable=SC2064
+trap "rm -rf \"$tmp\"" EXIT INT TERM
+
+log "server '$server' not cached for ${tag} (${platform}); downloading ${tarball}"
+fetch "$tarball_url" "${tmp}/${tarball}" || die "download failed: $tarball_url"
+fetch "$checksums_url" "${tmp}/${checksums}" || die "download failed: $checksums_url"
+
+actual="$(sha256_of "${tmp}/${tarball}")"
+[ -n "$actual" ] || die "could not compute SHA-256 of ${tarball}"
+
+# 1) Cross-check against the release's own checksums.txt (defends against a
+#    corrupted download).
+expected_txt="$(awk -v f="$tarball" '$2==f {print $1}' "${tmp}/${checksums}")"
+[ -n "$expected_txt" ] || die "no entry for ${tarball} in ${checksums}"
+[ "$actual" = "$expected_txt" ] || die "checksum mismatch vs ${checksums}: expected ${expected_txt}, got ${actual}"
+
+# 2) Cross-check against the SHA-256 pinned in THIS script (defends against a
+#    moved/re-tagged release). Only possible when the requested tag is the
+#    pinned tag; an explicit override to another tag degrades to checksums.txt
+#    verification only, with a clear warning.
+if [ "$tag" = "$PINNED_TAG" ]; then
+  eval "expected_pin=\${PINNED_SHA256_${platform}:-}"
+  [ -n "${expected_pin:-}" ] || die "no pinned SHA-256 for platform ${platform}"
+  [ "$actual" = "$expected_pin" ] || die "checksum mismatch vs pinned value for ${platform}: expected ${expected_pin}, got ${actual}"
+  log "checksum verified (pinned + checksums.txt): ${actual}"
+else
+  log "WARNING: GENMEDIA_RELEASE_TAG=${tag} differs from pinned ${PINNED_TAG}; verified against checksums.txt only (no pinned SHA available)."
+fi
+
+log "extracting ${tarball}"
+tar -xzf "${tmp}/${tarball}" -C "$tmp" || die "extraction failed: $tarball"
+
+# --- Publish into the cache atomically -------------------------------------
+# Extract to a temp dir then move into place so a partially populated cache is
+# never visible. If a concurrent first launch won the race, reuse its result.
+if [ ! -x "$bin" ]; then
+  staging="${tmp}/staged"
+  mkdir -p "$staging"
+  # Move the flat binaries (tarball has all servers at its root, no subdirs).
+  for f in "$tmp"/mcp-*; do
+    [ -e "$f" ] || continue
+    chmod +x "$f" 2>/dev/null || true
+    mv -f "$f" "$staging/" 2>/dev/null || true
+  done
+  mkdir -p "$cache"
+  for f in "$staging"/mcp-*; do
+    [ -e "$f" ] || continue
+    mv -f "$f" "$cache/" 2>/dev/null || true
+  done
+fi
+
+[ -x "$bin" ] || die "server binary '$server' not found in ${tarball} after extraction"
+
+rm -rf "$tmp"
+trap - EXIT INT TERM
+
+exec "$bin" "$@"

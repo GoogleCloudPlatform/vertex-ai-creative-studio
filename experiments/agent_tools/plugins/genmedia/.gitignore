@@ -1,0 +1,9 @@
+# Runtime download cache written by bin/genmedia-launch when a client sets
+# GENMEDIA_CACHE (or a CLAUDE_PLUGIN_ROOT-based cache) inside the plugin tree.
+# The downloaded server binaries must never be committed.
+.cache/
+
+# The repo-root .gitignore ignores every `bin/` directory. Re-include the
+# committed launcher script (only the download cache above is ignored).
+!bin/
+!bin/genmedia-launch

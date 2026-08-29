@@ -1,0 +1,18 @@
+{
+  "name": "vaics-agent-tools",
+  "owner": {
+    "name": "ghchinoy",
+    "url": "https://github.com/ghchinoy"
+  },
+  "description": "Agent tooling for GoogleCloudPlatform/vertex-ai-creative-studio: genmedia MCP servers packaged as installable Agent Plugins.",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "genmedia",
+      "source": "./plugins/genmedia",
+      "description": "Google Cloud genmedia MCP servers (vertical slice: Nanobanana image generation) bundled for one-command install with a download-on-launch binary launcher."
+    }
+  ]
+}
