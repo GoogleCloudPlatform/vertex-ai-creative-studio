@@ -62,6 +62,7 @@ declare -a RESULTS   # "server|tool|status|detail"
 OVERALL_RC=0
 RUN_ID="$(date +%Y%m%d-%H%M%S)"   # unique per invocation, for GCS prefixes
 GCS_BASE=""                        # set in check_prereqs when in GCS mode
+HAVE_FFMPEG=0                      # set in check_prereqs; gates avtool
 
 # --- Colours (only when attached to a terminal) ----------------------------
 if [[ -t 1 ]]; then
@@ -121,6 +122,15 @@ check_prereqs() {
     exit 2
   fi
 
+  # ffmpeg is a hard runtime dependency of avtool only. Its absence must not
+  # abort the run or false-FAIL avtool — instead avtool is SKIPped (see
+  # smoke_avtool). Detect it here so the disposition is decided up front.
+  if command -v ffmpeg >/dev/null 2>&1; then
+    HAVE_FFMPEG=1
+  else
+    HAVE_FFMPEG=0
+  fi
+
   info "Mode: ${C_BOLD}${MODE}${C_RESET} (GENMEDIA_BUCKET=${GENMEDIA_BUCKET:-<unset>})"
   info "Project: ${GOOGLE_CLOUD_PROJECT}"
   info "Servers dir: ${SERVERS_DIR}"
@@ -173,8 +183,12 @@ verify_local() {
 
 verify_gcs_prefix() {
   local prefix="$1" uri
-  uri="$(gcloud storage ls -r "${prefix}**" 2>/dev/null \
-         | grep -E '^gs://' | grep -v '/$' | head -n 1)"
+  # Require a real object of size > 0 (mirrors verify_local's -size +0c), so a
+  # 0-byte object under the prefix cannot report a false PASS. `ls -l` lines are
+  # "<size> <timestamp> <gs://uri>"; directory placeholders have no size / end
+  # in '/', and the trailing "TOTAL:" line is ignored by the numeric guard.
+  uri="$(gcloud storage ls -l -r "${prefix}**" 2>/dev/null \
+         | awk '$1 ~ /^[0-9]+$/ && ($1+0)>0 && $NF ~ /^gs:\/\// && $NF !~ /\/$/ {print $NF; exit}')"
   if [[ -n "$uri" ]]; then
     echo "$uri"
     return 0
@@ -212,6 +226,17 @@ run_case() {
     return
   }
 
+  # Ensure local verification can only ever reflect the CURRENT run — a leftover
+  # artifact from a previous run would otherwise report a false PASS for a
+  # now-broken server. Rather than silently deleting, warn and move any
+  # non-empty prior dir aside (nothing is discarded; the operator can inspect
+  # or remove it). These live under the gitignored smoke_output/.
+  if [[ -d "$verify_dir" && -n "$(ls -A "$verify_dir" 2>/dev/null)" ]]; then
+    local stale="${verify_dir}.stale-${RUN_ID}"
+    log "  ${C_YELLOW}WARN${C_RESET} ${verify_dir} is non-empty from a previous run;" \
+        "moving it aside to ${stale} so this run's verification is not fooled by stale output."
+    mv "$verify_dir" "$stale"
+  fi
   mkdir -p "$verify_dir"
 
   local raw rc
@@ -267,9 +292,6 @@ skip_case() {
   RESULTS+=("${server}|${tool}|SKIP|${reason}")
   log "  ${C_YELLOW}SKIP${C_RESET} ${server} :: ${tool} (${reason})"
 }
-
-# JSON-string helper (escapes a value for embedding in a params payload).
-jstr() { printf '%s' "$1" | jq -Rs .; }
 
 # ---------------------------------------------------------------------------
 # Per-server drivers. Each builds a params payload appropriate to MODE and
@@ -375,6 +397,16 @@ smoke_avtool() {
   # produce a local wav, we skip avtool with a clear reason.
   local dir="${OUTPUT_DIR}/mcp-avtool-go"
   local chirp_dir="${OUTPUT_DIR}/mcp-chirp3-go"
+
+  # ffmpeg is a hard runtime dependency of this tool. Without it the call can
+  # only ever fail for reasons unrelated to the server, so SKIP rather than
+  # false-FAIL the whole suite.
+  if [[ "$HAVE_FFMPEG" -ne 1 ]]; then
+    skip_case "mcp-avtool-go" "ffmpeg_convert_audio_wav_to_mp3" \
+      "ffmpeg not found on PATH (required by avtool)"
+    return
+  fi
+
   local input
   input="$(find "$chirp_dir" -type f -name '*.wav' -size +0c 2>/dev/null | head -n 1)"
   if [[ -z "$input" ]]; then

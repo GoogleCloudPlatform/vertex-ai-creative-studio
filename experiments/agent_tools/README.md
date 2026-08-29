@@ -32,7 +32,7 @@ only does a `go build` + `tools/list` liveness check and never produces media.
 | `mcp-lyria-go` | `lyria_generate_music` | |
 | `mcp-chirp3-go` | `chirp_tts` | Local output only (no GCS output param). |
 | `mcp-omni-go` | `omni_video_generation` | Video generation; can take minutes. |
-| `mcp-avtool-go` | `ffmpeg_convert_audio_wav_to_mp3` | avtool transforms existing media, so this call is **chained off** the chirp output (converts chirp's `.wav` to `.mp3`). Skipped with a clear reason if no chirp `.wav` is available. |
+| `mcp-avtool-go` | `ffmpeg_convert_audio_wav_to_mp3` | avtool transforms existing media, so this call is **chained off** the chirp output (converts chirp's `.wav` to `.mp3`). `SKIP`ped with a clear reason if `ffmpeg` is not installed or no chirp `.wav` is available. |
 
 `mcp-common` is a shared library, not a server, and is skipped.
 
@@ -49,6 +49,8 @@ is no value in smoke-testing them going forward.
 - `jq`.
 - For GCS mode: `gcloud` with application-default credentials.
 - `GOOGLE_CLOUD_PROJECT` must be set (required by every server).
+- `ffmpeg` — only needed by `mcp-avtool-go`. If it is absent, avtool is
+  `SKIP`ped (not failed); every other server runs normally.
 
 ### Usage
 
@@ -101,4 +103,11 @@ artifact actually exists:
   video is real even though the CLI prints an "unsupported content type" error.
   Listing the destination catches this correctly.
 - **Local mode:** the script checks for a non-empty file in the server's
-  `smoke_output/<server>/` directory (ignoring the saved `response.json`).
+  `smoke_output/<server>/` directory (ignoring the saved `response.json`). To
+  prevent a stale artifact from a previous run reporting a false PASS, if that
+  directory already exists and is non-empty the script prints a `WARN` and
+  **moves it aside** to `smoke_output/<server>.stale-<timestamp>/` (nothing is
+  deleted) before the call, so verification reflects only the current run.
+
+In both modes the size check requires a non-zero-byte artifact, so an empty
+placeholder object/file cannot report a false PASS.
