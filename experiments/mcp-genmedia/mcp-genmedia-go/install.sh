@@ -260,6 +260,7 @@ main() {
     # Accept '0', 'a', or 'all' (case-insensitive) as aliases for "Install All",
     # regardless of the number 'select' assigns to that menu item. REPLY holds
     # the raw text the user typed. tr keeps this portable to bash 3.2 (macOS).
+    local reply_lc
     reply_lc=$(printf '%s' "$REPLY" | tr '[:upper:]' '[:lower:]')
     case "$reply_lc" in
       0|a|all)
