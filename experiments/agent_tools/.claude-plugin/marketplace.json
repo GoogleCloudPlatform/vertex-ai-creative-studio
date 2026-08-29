@@ -12,7 +12,10 @@
     {
       "name": "genmedia",
       "source": "./plugins/genmedia",
-      "description": "Google Cloud genmedia MCP servers (vertical slice: Nanobanana image generation) bundled for one-command install with a download-on-launch binary launcher."
+      "description": "Google Cloud genmedia MCP servers (vertical slice: Nanobanana image generation) bundled for one-command install with a download-on-launch binary launcher, plus workflow skills that call the genmedia tools.",
+      "skills": [
+        "./plugins/genmedia/skills/genmedia-image"
+      ]
     }
   ]
 }

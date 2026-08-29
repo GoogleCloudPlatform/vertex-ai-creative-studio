@@ -18,7 +18,22 @@ same launcher and manifest.
 | `mcp.json` | Agent Plugins v1.0.0 MCP launch descriptor (`nanobanana`, stdio). Spec-canonical form. |
 | `.mcp.json` | **Claude Code**-native MCP descriptor (see [Client compatibility](#client-compatibility)). |
 | `bin/genmedia-launch` | POSIX download-on-launch launcher (linux/darwin). |
+| `skills/genmedia-image/SKILL.md` | Agent Skill: generate images via `nanobanana_image_generation` (see [Skills](#skills)). |
 | `.gitignore` | Keeps the runtime download cache out of git. |
+
+## Skills
+
+Alongside the launchable servers, this plugin ships **Agent Skills** — prose
+workflow expertise that *calls* the genmedia MCP tools (modeled on the `ai-pop`
+precedent). A skill assumes the relevant MCP server is already configured (this
+plugin's `mcp.json` / `.mcp.json`, or a manual MCP config).
+
+| Skill | Tool | Purpose |
+|---|---|---|
+| `genmedia-image` | `nanobanana_image_generation` | Generate a still image from a text prompt (optionally guided by reference images), with control over aspect ratio, resolution, and local vs GCS output; verifies the artifact by existence. |
+
+More genmedia skills (video, speech, and goal-driven orchestrators) are added in
+later phases.
 
 ## How it works — download on launch
 
