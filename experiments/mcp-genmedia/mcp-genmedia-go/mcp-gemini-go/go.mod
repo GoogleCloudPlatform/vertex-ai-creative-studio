@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	cloud.google.com/go/texttospeech v1.22.0
-	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260828124448-9b1fb7527072
+	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260829230746-2d2693af8c83
 	github.com/mark3labs/mcp-go v0.58.0
 	go.opentelemetry.io/otel v1.46.0
 	google.golang.org/genai v1.70.0
