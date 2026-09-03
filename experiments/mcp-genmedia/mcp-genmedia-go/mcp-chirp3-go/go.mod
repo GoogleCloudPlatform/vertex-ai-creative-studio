@@ -8,7 +8,7 @@ require (
 	github.com/mark3labs/mcp-go v0.58.0
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.41.0
-	google.golang.org/api v0.295.0
+	google.golang.org/api v0.297.0
 )
 
 require (

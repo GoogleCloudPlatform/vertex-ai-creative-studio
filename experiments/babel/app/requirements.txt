@@ -4,13 +4,13 @@ absl-py==2.5.0
     # via mesop
 annotated-types==0.8.0
     # via pydantic
-anyio==4.14.2
+anyio==4.15.0
     # via
     #   starlette
     #   watchfiles
 blinker==1.9.0
     # via flask
-cachetools==7.1.7
+cachetools==7.1.8
     # via google-auth
 certifi==2026.7.22
     # via requests
@@ -123,7 +123,7 @@ proto-plus==1.28.4
     #   google-api-core
     #   google-cloud-appengine-logging
     #   google-cloud-logging
-protobuf==7.36.0
+protobuf==7.36.1
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
@@ -209,7 +209,7 @@ werkzeug==3.1.8
     #   babel-web (pyproject.toml)
     #   flask
     #   mesop
-wrapt==2.3.0
+wrapt==2.4.0
     # via deprecated
 zipp==4.1.0
     # via importlib-metadata
