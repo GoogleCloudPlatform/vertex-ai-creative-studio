@@ -6,5 +6,5 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dotenv>=0.9.9",
-    "google-adk[gcp]>=1.28.1",
+    "google-adk[gcp,mcp]>=1.28.1",
 ]
