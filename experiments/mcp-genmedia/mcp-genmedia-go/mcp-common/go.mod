@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.66.0
 	github.com/ghchinoy/cloud-interactions-go v0.2.1
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.58.0
+	github.com/mark3labs/mcp-go v1.0.0
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0
