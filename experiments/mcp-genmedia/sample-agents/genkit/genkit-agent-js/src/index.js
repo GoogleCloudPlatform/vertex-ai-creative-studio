@@ -21,13 +21,20 @@ import { mcpClient } from "genkitx-mcp";
 
 logger.setLogLevel("debug");
 
-const imagenClient = mcpClient({
-  name: "imagen",
-  version: "1.0.0",
-  //serverUrl: "http://localhost:8080/sse",
+// The genmedia MCP servers read their Google Cloud project from
+// GOOGLE_CLOUD_PROJECT (LOCATION is optional; the servers default to
+// us-central1). Set it before running, e.g. via `gcloud config get project`.
+const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+const serverEnv = projectId ? { GOOGLE_CLOUD_PROJECT: projectId } : {};
+
+// Nano Banana (Gemini image) is the current text/image->image server.
+// It replaces the retired `imagen` server, which was shut down and removed.
+const nanobananaClient = mcpClient({
+  name: 'nanobanana',
+  version: '1.0.0',
   serverProcess: {
-    command: './mcp-imagen-go',
-    env: {"PROJECT_ID": "ghchinoy-genai-sa"},
+    command: 'mcp-nanobanana-go',
+    env: serverEnv,
   },
 });
 
@@ -36,7 +43,7 @@ const veoClient = mcpClient({
   version: '1.0.0',
   serverProcess: {
     command: 'mcp-veo-go',
-    env: {"PROJECT_ID": "veo-testing"},
+    env: serverEnv,
   },
 });
 
@@ -45,14 +52,14 @@ const chirp3Client = mcpClient({
   version: '1.0.0',
   serverProcess: {
     command: 'mcp-chirp3-go',
-    env: {"PROJECT_ID": "ghchinoy-genai-sa"},
+    env: serverEnv,
   },
 });
 
 const ai = genkit({
-  plugins: [vertexAI({ location: "us-central1" }), 
-    imagenClient, 
-    veoClient, 
+  plugins: [vertexAI({ location: "us-central1" }),
+    nanobananaClient,
+    veoClient,
     chirp3Client
   ],
   model: gemini20Flash,
