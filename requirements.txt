@@ -108,7 +108,7 @@ google-auth==2.57.1
     #   google-cloud-tasks
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.165.1
+google-cloud-aiplatform==2.1.0
     # via vertex-ai-genmedia-creative-studio
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging

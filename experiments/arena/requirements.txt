@@ -30,7 +30,7 @@ google-api-core==2.36.0
 google-api-python-client==2.200.0
 google-auth==2.57.1
 google-auth-httplib2==0.4.2
-google-cloud-aiplatform==1.165.1
+google-cloud-aiplatform==2.1.0
 google-cloud-bigquery==3.45.0
 google-cloud-core==2.7.0
 google-cloud-firestore==2.30.0
