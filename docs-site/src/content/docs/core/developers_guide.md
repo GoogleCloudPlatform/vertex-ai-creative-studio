@@ -267,3 +267,7 @@ Add your new page to `config/navigation.json` to make it accessible in the UI.
   "group": "workflows"
 }
 ```
+
+## Dependency Management (uv & lockfiles)
+
+This project's Python components are managed with [`uv`](https://docs.astral.sh/uv/), and **`uv.lock` is the single source of truth** for dependencies. Some components also commit an exported `requirements.txt`, but that file is a *derived artifact* — never hand-edit a single line in it. When you change dependencies, run a full re-resolve with `uv lock --upgrade`, then regenerate any committed export with that component's exact command. For the full convention, the reasoning, and the real drift incident behind it, see the [uv lockfile conventions](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/blob/main/docs/repo-management/uv-lockfile-conventions.md).
