@@ -6,7 +6,7 @@ annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
-anyio==4.15.0
+anyio==4.15.1
     # via
     #   google-genai
     #   httpx
@@ -23,7 +23,7 @@ black==26.5.1
     # via vertex-ai-genmedia-creative-studio
 blinker==1.9.0
     # via flask
-c2pa-python==0.37.8
+c2pa-python==0.37.10
     # via vertex-ai-genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
@@ -81,7 +81,7 @@ flask==3.1.3
     # via mesop
 fonttools==4.64.0
     # via matplotlib
-google-api-core==2.34.0
+google-api-core==2.36.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
@@ -94,7 +94,7 @@ google-api-core==2.34.0
     #   google-cloud-storage
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-google-auth==2.57.0
+google-auth==2.57.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -114,7 +114,7 @@ google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-bigquery==3.44.0
+google-cloud-bigquery==3.45.0
     # via google-cloud-aiplatform
 google-cloud-core==2.7.0
     # via
@@ -122,7 +122,7 @@ google-cloud-core==2.7.0
     #   google-cloud-firestore
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-firestore==2.29.0 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.30.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-logging==3.16.3
     # via vertex-ai-genmedia-creative-studio
@@ -148,7 +148,7 @@ google-resumable-media==2.10.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.75.2
+googleapis-common-protos==1.75.3
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -407,7 +407,7 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.16.5
+ruff==0.16.6
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio

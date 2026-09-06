@@ -2,7 +2,7 @@
 #    uv export --no-hashes --format requirements-txt
 annotated-types==0.8.0
     # via pydantic
-anyio==4.15.0
+anyio==4.15.1
     # via
     #   google-genai
     #   httpx
@@ -40,7 +40,7 @@ fastapi==0.141.1
     # via google-adk
 google-adk==2.8.0
     # via adk-genmedia-agent
-google-api-core==2.34.0
+google-api-core==2.36.0
     # via
     #   google-api-python-client
     #   google-cloud-aiplatform
@@ -55,7 +55,7 @@ google-api-core==2.34.0
     #   google-cloud-trace
 google-api-python-client==2.200.0
     # via google-adk
-google-auth==2.57.0
+google-auth==2.57.1
     # via
     #   google-api-core
     #   google-api-python-client
@@ -79,7 +79,7 @@ google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-bigquery==3.44.0
+google-cloud-bigquery==3.45.0
     # via google-cloud-aiplatform
 google-cloud-core==2.7.0
     # via
@@ -112,7 +112,7 @@ google-resumable-media==2.10.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.75.2
+googleapis-common-protos==1.75.3
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -263,7 +263,7 @@ sniffio==1.3.1
     # via anyio
 sqlalchemy==2.0.52
     # via google-adk
-sse-starlette==3.4.8
+sse-starlette==3.4.11
     # via mcp
 starlette==1.6.0
     # via
