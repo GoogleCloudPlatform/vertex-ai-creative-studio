@@ -1,0 +1,160 @@
+# Genkit **Go** genmedia example series
+
+A tiered, bottom-up tutorial series that drives the [genmedia MCP servers][genmedia]
+from **Genkit Go**. Each tier is an independently runnable program and an
+independently reviewable PR. The through-line of the whole series is the
+**Genkit Developer UI and per-turn tracing** — every tier is meant to be *run*,
+then *read* at `http://localhost:4000`.
+
+> **You are here: Tier 0.** This is the minimal "one tool, one generate" program.
+> It is also the Go counterpart to the JavaScript [Nano Banana sample](../genkit/)
+> (see [Related samples](#related-samples)).
+
+## The series
+
+| Tier | What it adds | Servers/tools | Status |
+|------|--------------|---------------|--------|
+| **0 · `tier0-image/`** | single tool, single `generate` | `nanobanana` | **STABLE** *(this tier)* |
+| 1 · `tier1-flow/` | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | STABLE *(future PR)* |
+| 2 · `tier2-producer/` | multi-server producer flow | nb → veo → lyria → avtool | STABLE *(future PR)* |
+| 3 · `tier3-preview/` | agents middleware + interrupt | all, partitioned | PREVIEW *(future PR)* |
+
+Only **Tier 0** ships in this PR. It establishes the shared foundation the later
+tiers consume without changes:
+
+```
+genkit-go/
+  go.mod                 module .../sample-agents/genkit-go ; go 1.25 ; genkit/go v1.13.1
+  bin/genmedia-launch    pinned, SHA-256-verifying download-on-launch script (copy of agent_tools')
+  internal/
+    genmedia/            the shared fan-out interface
+      client.go          NewClient(ctx, g, "<server>") over mcp.NewGenkitMCPClient
+      launch.go          StdioFor("<server>") -> mcp.StdioConfig at bin/genmedia-launch
+      quirks.go          QuirksPrompt: the genmedia footguns the LLM cannot see
+    verify/
+      verify.go          Verify(ctx, dest): confirm output by LISTING, not by trusting the tool result
+  tier0-image/main.go    Tier 0
+```
+
+## Why lead with the Dev UI
+
+genmedia calls are slow, expensive, and multi-step. Genkit's Dev UI renders each
+turn as a **trace**: the model call, every tool call nested inside it, the
+arguments, and the timing. For genmedia that trace *is* the product — it is how
+you see what the model asked the tool to do and where the output went. This is
+Genkit's signature asset and has no equivalent in the sibling ADK series's
+samples, so every tier of this series leads with it.
+
+## Prerequisites
+
+- **Go 1.25+** and the **Genkit CLI** (`npm i -g genkit-cli`) for the Dev UI.
+- A **Google Cloud project** with the Vertex AI API enabled, and Application
+  Default Credentials (`gcloud auth application-default login`).
+- **`gcloud`** on your `PATH` — Tier 0 confirms the generated image by running
+  `gcloud storage ls` on the destination (the [verify-by-listing](#the-resource_link-rule)
+  rule below).
+- The genmedia server binary. By default it is fetched for you on first run by
+  `bin/genmedia-launch` (see [Where the genmedia binary comes from](#where-the-genmedia-binary-comes-from)).
+  Tier 0 needs only `mcp-nanobanana-go`; Tiers 1+ that touch `avtool` will also
+  require **`ffmpeg`/`ffprobe`** on `PATH`.
+
+Environment variables Tier 0 reads:
+
+| Variable | Required | Meaning |
+|----------|----------|---------|
+| `GOOGLE_CLOUD_PROJECT` (or `PROJECT_ID`) | **yes** | Vertex AI + genmedia project |
+| `GENMEDIA_BUCKET` | **yes** | `gs://…` URI (or local dir) the image is written to and verified |
+| `GOOGLE_CLOUD_LOCATION` (or `GOOGLE_CLOUD_REGION`) | no | Vertex location; defaults to `us-central1` |
+| `GENMEDIA_RELEASE_TAG` | no | genmedia release the launcher downloads; defaults to `v3.18.0` |
+| `GENMEDIA_LAUNCH` | no | override the launcher (see below) |
+| `GENMEDIA_CACHE` | no | writable cache dir for downloaded binaries |
+
+## Run Tier 0, then read the trace
+
+```bash
+cd experiments/mcp-genmedia/sample-agents/genkit-go
+
+export GOOGLE_CLOUD_PROJECT=your-project
+export GENMEDIA_BUCKET=gs://your-bucket/tier0
+
+# Launch the program under the Dev UI:
+genkit start -- go run ./tier0-image
+```
+
+You can pass a custom subject as arguments:
+`genkit start -- go run ./tier0-image "a watercolor lighthouse at sunset"`.
+
+Then open **`http://localhost:4000`** and open the most recent trace. You are
+reading Tier 0's one new thing:
+
+- **one `generate` span** — the Gemini call, with the `QuirksPrompt` as its
+  system message and the nanobanana tool offered to it; and
+- **one nested tool-call span** — `nanobanana_nanobanana_image_generation`
+  (the MCP tools are namespaced `<client>_<tool>`), showing the arguments the
+  model chose (note `gcs_bucket_uri` and `prompt`) and the raw tool result.
+
+This is what a genmedia tool call looks like from the inside. In the terminal
+you will also see the program's own `verify:` line confirming the image by
+**listing the destination** — which is the point of the next section.
+
+## The `resource_link` rule
+
+The genmedia GCS-writing tools (nanobanana/gemini image, veo, lyria, omni)
+return a **`resource_link`** content item pointing at a `gs://` URI — **not** the
+generated bytes. A `resource_link` in the trace is *not* proof the file exists,
+and it is not renderable. So Tier 0 never claims success from the tool result:
+`internal/verify` runs `gcloud storage ls` on the destination and reports what it
+actually finds. Every later tier verifies every GCS-writing step the same way,
+through the same shared helper.
+
+> **Per-run subprefix.** Because verify-by-listing checks a *prefix*, a re-run
+> against a `GENMEDIA_BUCKET` that already holds a prior run's image would see
+> that old object and report success even if the current run produced nothing.
+> Tier 0 avoids the false positive by writing each run to a unique per-run
+> subprefix (a timestamp + short random id under `GENMEDIA_BUCKET`) and verifying
+> that subprefix, so each run confirms its own output.
+
+The other invisible-to-the-LLM constraints (the Veo-3 model requirement, Lyria's
+dropped parameters, the 3-way parameter-naming crosswalk, …) live in
+`internal/genmedia/quirks.go` as `QuirksPrompt`, injected as the system prompt of
+every tier. The tool schema does not describe them, so the prompt must.
+
+## Where the genmedia binary comes from
+
+Tier 0 launches the nanobanana server through **`bin/genmedia-launch`**, a copy of
+the launcher the [`agent_tools` genmedia plugin][launcher] ships. On first run it
+detects your platform, downloads the pinned GoReleaser tarball, verifies its
+SHA-256 against **both** a value pinned in the script **and** the release's own
+`checksums.txt`, caches the binaries, and execs the requested server over stdio.
+Subsequent runs use the cache. linux/darwin only.
+
+**Already have the binaries?** Put `mcp-nanobanana-go` on your `PATH` and set
+`GENMEDIA_LAUNCH=mcp-nanobanana-go` (or a thin passthrough) to bypass the
+download bridge — `StdioConfig.Command` resolves it directly.
+
+> `bin/genmedia-launch` is a **copy** kept in sync with its canonical source at
+> `experiments/agent_tools/plugins/genmedia/bin/genmedia-launch`; its header
+> records the source commit and the pinned SHA-256s.
+
+## Version pins
+
+| Thing | Pin | Where |
+|-------|-----|-------|
+| Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
+| Go | `go 1.25` | `go.mod` |
+| genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
+| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier0-image/main.go` `modelName` |
+
+## Related samples
+
+- **JavaScript Nano Banana** — [`../genkit/`](../genkit/): the JS peer of this
+  Go Tier 0.
+- **ADK genmedia series** — [`../adk/`](../adk/): the same journey in Python/ADK;
+  a parallel sibling program (declarative agent graphs vs. Genkit's Dev-UI /
+  traced deployable flows).
+- **`agent_tools` genmedia plugin** — [`../../../agent_tools/`](../../../agent_tools/):
+  the packaged plugin/skills distribution surface and the canonical home of the
+  `genmedia-launch` launcher this series reuses.
+
+[genmedia]: ../../mcp-genmedia-go/
+[launcher]: ../../../agent_tools/plugins/genmedia/bin/genmedia-launch
