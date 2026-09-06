@@ -89,6 +89,6 @@ tzdata==2026.3
 uritemplate==4.2.0
 urllib3==2.7.0
 watchdog==6.0.0
-websockets==15.0.1
+websockets==17.1
 werkzeug==3.1.8
 yarl==1.24.5

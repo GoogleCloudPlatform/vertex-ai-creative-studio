@@ -173,7 +173,7 @@ uvicorn==0.52.4
     # via google-adk
 watchdog==6.0.0
     # via google-adk
-websockets==15.0.1
+websockets==17.1
     # via
     #   google-adk
     #   google-genai

@@ -465,7 +465,7 @@ watchdog==6.0.0
     # via mesop
 wcwidth==0.8.3
     # via prompt-toolkit
-websockets==16.1.1
+websockets==17.1
     # via google-genai
 werkzeug==3.1.8
     # via
