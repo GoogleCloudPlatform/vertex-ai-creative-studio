@@ -2,6 +2,17 @@
 title: "Image Generation Arena & Leaderboard"
 ---
 
+:::caution[Deprecation notice]
+This experiment is deprecated and scheduled for archiving.
+
+It relies on unmaintained dependencies and its core image-battle feature is currently broken: the default battle pool depends on Imagen models that were [shut down across Vertex AI on 2026-08-17](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev), so every default battle now fails. The experiment is not actively maintained (recent commits are almost entirely automated dependency bumps) and is not actively used.
+
+- **On or after 2026-09-13**, this experiment will be moved to an archived state.
+- **Approximately 2 months after archiving (around 2026-11-13)**, it will be considered for full removal from the repository.
+
+If you depend on this experiment, please raise an issue before the archiving date.
+:::
+
 This is an example of an arena & leaderboard to compare different image generation tools.
 
 It supports comparing images from a range of image generation models, including Flux1, Stable Diffusion, and Gemini image models (Nano Banana). Note that Imagen models were [deprecated across Google, including Vertex AI, around August 17, 2026](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev); use Gemini Image Generation (Nano Banana) as the replacement.
