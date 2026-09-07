@@ -4,6 +4,7 @@
 This directory contains sample agents which use the Genmedia MCP tools.
 
 * Google Cloud Vertex AI's Agent Development Kit (adk)
+* A guided, multi-part ADK genmedia example series ([adk-genmedia-series](./adk-genmedia-series/README.md))
 * Google Firebase Genkit (genkit)
 * Google Gemini CLI (geminicli)
 * Google Antigravity (antigravity)
