@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1346,6 +1347,204 @@ func ffmpegNormalizeLoudnessHandler(ctx context.Context, request mcp.CallToolReq
 	var messageParts []string
 	messageParts = append(messageParts, fmt.Sprintf("Loudness normalization to %s LUFS (measured input loudness %s LUFS, true peak %s dBTP) completed in %v.",
 		formatLoudnormValue(target.IntegratedLUFS), measurements.InputI, measurements.InputTP, duration))
+	if outputLocalDir != "" && finalLocalPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
+		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
+	}
+	if finalGCSPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output uploaded to GCS: %s.", finalGCSPath))
+	}
+	if len(messageParts) == 1 {
+		messageParts = append(messageParts, "No specific output location requested beyond temporary processing.")
+	}
+	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
+}
+
+// addResizeReframeTool defines and registers the 'ffmpeg_resize_reframe' tool. It
+// resizes an image or video to a target geometry and reconciles any aspect-ratio
+// mismatch by padding (letterbox/pillarbox, the default) or cropping.
+func addResizeReframeTool(s *server.MCPServer, cfg *common.Config) {
+	tool := mcp.NewTool("ffmpeg_resize_reframe",
+		mcp.WithDescription("Resizes and reframes an image OR a video to a target geometry. A single image is treated as a one-frame stream, so the same tool handles both. "+
+			"Specify the target either as an explicit width and/or height in pixels, or as an aspect-ratio shorthand ('16:9', '9:16', '1:1'); the aspect_ratio can be combined with a single width or height (the other side is computed), or used alone (the input's width is kept). Providing both width and height sets the exact frame and ignores aspect_ratio. "+
+			"When the source and target aspect ratios differ, the mismatch is reconciled by 'reframe_mode': 'pad' (default) scales the whole picture to fit and fills the remainder with bars (letterbox/pillarbox), preserving all content; 'crop' scales to fill the frame edge-to-edge and trims the overflow. Pad is the default because it never discards picture content. "+
+			"Target dimensions are automatically rounded to even numbers, which many video codecs require. Works on local paths and gs:// URIs and preserves any audio stream unchanged."),
+		mcp.WithString("input_media_uri", mcp.Required(), mcp.Description("URI of the input image or video file (local path or gs://). Must contain a visual (image or video) stream.")),
+		mcp.WithNumber("width", mcp.Description("Optional. Target width in pixels (must be positive). Combine with 'height' for an exact frame, with 'aspect_ratio' to compute the height, or alone for a proportional resize that keeps the input's aspect ratio.")),
+		mcp.WithNumber("height", mcp.Description("Optional. Target height in pixels (must be positive). Combine with 'width' for an exact frame, with 'aspect_ratio' to compute the width, or alone for a proportional resize that keeps the input's aspect ratio.")),
+		mcp.WithString("aspect_ratio", mcp.Description("Optional. Target aspect ratio shorthand in W:H form (e.g. '16:9', '9:16', '1:1'). Used with a single width or height to size the frame, or alone to reframe at the input's width. Ignored when both width and height are given.")),
+		mcp.WithString("reframe_mode", mcp.DefaultString(defaultReframeMode), mcp.Description("Optional. How to handle an aspect-ratio mismatch: 'pad' (default) keeps the whole frame and adds bars; 'crop' fills the frame and cuts off the excess.")),
+		mcp.WithString("pad_color", mcp.DefaultString(defaultPadColor), mcp.Description("Optional. Fill colour for the bars added in 'pad' mode (e.g. 'black', 'white', '#000000', '0xFFFFFF'). Defaults to black. Ignored in 'crop' mode.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Desired name for the output file (e.g., 'reframed.mp4' or 'thumb.png'). The client-provided extension is honored and selects the output format. Takes precedence over the deprecated output_file_name. If omitted, a unique name is generated and the input's extension is preserved. An existing file of the same name is overwritten.")),
+		mcp.WithString("output_file_name", mcp.Description("Optional (deprecated; use output_filename). Desired name for the output file.")),
+		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
+		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to (uses GENMEDIA_BUCKET if set and this is empty).")),
+	)
+	s.AddTool(tool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return ffmpegResizeReframeHandler(ctx, request, cfg)
+	})
+}
+
+// ffmpegResizeReframeHandler is the handler for the 'ffmpeg_resize_reframe' tool. It
+// validates the requested target geometry, probes the input's visual dimensions
+// (rejecting inputs with no image/video stream), resolves the final even target
+// width/height, and runs the scale+pad/crop filtergraph, writing the result to the
+// requested destination.
+func ffmpegResizeReframeHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "ffmpeg_resize_reframe")
+	defer span.End()
+
+	startTime := time.Now()
+	argsMap, err := getArguments(request)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_resize_reframe", argsMap)
+
+	inputMediaURI, _ := argsMap["input_media_uri"].(string)
+	if strings.TrimSpace(inputMediaURI) == "" {
+		return mcp.NewToolResultError("Parameter 'input_media_uri' is required."), nil
+	}
+
+	// Resolve the requested target components. Numbers arrive as float64 from JSON;
+	// 0 is used internally to mean "not supplied", so a supplied zero or negative
+	// dimension is an explicit error.
+	var reqWidth, reqHeight int
+	if v, ok := argsMap["width"].(float64); ok {
+		if v <= 0 {
+			return mcp.NewToolResultError("Parameter 'width' must be a positive number of pixels."), nil
+		}
+		reqWidth = int(math.Round(v))
+	}
+	if v, ok := argsMap["height"].(float64); ok {
+		if v <= 0 {
+			return mcp.NewToolResultError("Parameter 'height' must be a positive number of pixels."), nil
+		}
+		reqHeight = int(math.Round(v))
+	}
+
+	var aspect float64
+	if raw, ok := argsMap["aspect_ratio"].(string); ok && strings.TrimSpace(raw) != "" {
+		aspect, err = parseAspectRatio(raw)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Parameter 'aspect_ratio' is invalid: %v", err)), nil
+		}
+	}
+
+	if reqWidth == 0 && reqHeight == 0 && aspect == 0 {
+		return mcp.NewToolResultError("Provide at least one of 'width', 'height', or 'aspect_ratio' to define the target."), nil
+	}
+
+	reframeMode := defaultReframeMode
+	if raw, ok := argsMap["reframe_mode"].(string); ok && strings.TrimSpace(raw) != "" {
+		reframeMode = strings.ToLower(strings.TrimSpace(raw))
+	}
+	if reframeMode != reframeModePad && reframeMode != reframeModeCrop {
+		return mcp.NewToolResultError(fmt.Sprintf("Parameter 'reframe_mode' must be %q or %q.", reframeModePad, reframeModeCrop)), nil
+	}
+
+	padColor := defaultPadColor
+	if raw, ok := argsMap["pad_color"].(string); ok && strings.TrimSpace(raw) != "" {
+		padColor = strings.TrimSpace(raw)
+	}
+	if !isValidPadColor(padColor) {
+		return mcp.NewToolResultError("Parameter 'pad_color' must be a simple colour name or hex value (e.g. 'black', '#000000', '0xFFFFFF')."), nil
+	}
+
+	outputFileName := resolveAVToolOutputFilename(argsMap)
+	outputLocalDir, _ := argsMap["output_local_dir"].(string)
+	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && cfg.GenmediaBucket != "" {
+		outputGCSBucket = cfg.GenmediaBucket
+		log.Printf("Handler ffmpeg_resize_reframe: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
+
+	span.SetAttributes(
+		attribute.String("input_media_uri", inputMediaURI),
+		attribute.Int("requested_width", reqWidth),
+		attribute.Int("requested_height", reqHeight),
+		attribute.Float64("aspect_ratio", aspect),
+		attribute.String("reframe_mode", reframeMode),
+		attribute.String("output_file_name", outputFileName),
+		attribute.String("output_local_dir", outputLocalDir),
+		attribute.String("output_gcs_bucket", outputGCSBucket),
+	)
+
+	localInputMedia, inputCleanup, err := common.PrepareInputFile(ctx, inputMediaURI, "resize_input", cfg.ProjectID)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare input media: %v", err)), nil
+	}
+	defer inputCleanup()
+
+	inWidth, inHeight, err := probeVideoDimensions(ctx, localInputMedia)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Cannot resize this input: %v", err)), nil
+	}
+
+	targetWidth, targetHeight, err := resolveTargetDimensions(reqWidth, reqHeight, aspect, inWidth, inHeight)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Could not resolve target dimensions: %v", err)), nil
+	}
+	span.SetAttributes(
+		attribute.Int("target_width", targetWidth),
+		attribute.Int("target_height", targetHeight),
+	)
+
+	// Whether the input carries an audio stream determines if we stream-copy audio
+	// through a video resize. Failure to probe this is non-fatal: assume no audio.
+	hasAudio := false
+	if streamInfo, probeErr := probeMediaStreamInfo(ctx, localInputMedia); probeErr != nil {
+		log.Printf("Handler ffmpeg_resize_reframe: could not determine audio presence, proceeding without audio copy: %v", probeErr)
+	} else {
+		hasAudio = streamInfo.HasAudio
+	}
+
+	// Preserve the input's container/extension by default; a client-provided output
+	// filename extension overrides it and selects the output format.
+	defaultOutputExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(localInputMedia), "."))
+	if defaultOutputExt == "" {
+		defaultOutputExt = "mp4"
+	}
+	if outputFileName != "" {
+		if userExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(outputFileName), ".")); userExt != "" {
+			defaultOutputExt = userExt
+		}
+	}
+
+	tempOutputFile, finalOutputFilename, outputCleanup, err := common.HandleOutputPreparation(outputFileName, defaultOutputExt)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare output file: %v", err)), nil
+	}
+	defer outputCleanup()
+
+	target := reframeTarget{Width: targetWidth, Height: targetHeight, Mode: reframeMode, PadColor: padColor}
+	if ffmpegErr := executeResizeReframe(ctx, localInputMedia, tempOutputFile, target, hasAudio); ffmpegErr != nil {
+		span.RecordError(ffmpegErr)
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg resize/reframe failed: %v", ffmpegErr)), nil
+	}
+
+	finalLocalPath, finalGCSPath, processErr := common.ProcessOutputAfterFFmpeg(ctx, tempOutputFile, finalOutputFilename, outputLocalDir, outputGCSBucket, cfg.ProjectID)
+	if processErr != nil {
+		span.RecordError(processErr)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to process FFMpeg output: %v", processErr)), nil
+	}
+
+	duration := time.Since(startTime)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
+
+	var messageParts []string
+	messageParts = append(messageParts, fmt.Sprintf("Resized from %dx%d to %dx%d (%s mode) in %v.",
+		inWidth, inHeight, targetWidth, targetHeight, reframeMode, duration))
 	if outputLocalDir != "" && finalLocalPath != "" {
 		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
 	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
