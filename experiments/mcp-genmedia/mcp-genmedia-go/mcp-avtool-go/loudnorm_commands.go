@@ -53,14 +53,15 @@ func formatLoudnormValue(v float64) string {
 // not write a media file: it runs the loudnorm filter in analysis mode against the
 // requested targets and asks it to print the measured integrated loudness, true
 // peak, loudness range and threshold as JSON (to stderr). The decode is discarded
-// via the null muxer.
+// via the null muxer. Only audio is analyzed, so -vn disables the video stream to
+// avoid decoding it — a meaningful saving on large video inputs.
 func buildLoudnormMeasureArgs(input string, target loudnormTarget) []string {
 	filter := fmt.Sprintf("loudnorm=I=%s:TP=%s:LRA=%s:print_format=json",
 		formatLoudnormValue(target.IntegratedLUFS),
 		formatLoudnormValue(target.TruePeakDBTP),
 		formatLoudnormValue(target.LoudnessRangeLU),
 	)
-	return []string{"-hide_banner", "-i", input, "-af", filter, "-f", "null", "-"}
+	return []string{"-hide_banner", "-i", input, "-af", filter, "-vn", "-f", "null", "-"}
 }
 
 // buildLoudnormApplyArgs builds the second-pass ffmpeg arguments. It applies the

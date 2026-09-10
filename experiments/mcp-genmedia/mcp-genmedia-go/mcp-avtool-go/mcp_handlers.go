@@ -1485,10 +1485,17 @@ func ffmpegResizeReframeHandler(ctx context.Context, request mcp.CallToolRequest
 	}
 	defer inputCleanup()
 
-	inWidth, inHeight, err := probeVideoDimensions(ctx, localInputMedia)
+	// A single ffprobe call yields both the input's dimensions and whether it carries
+	// an audio stream (used to decide if audio is stream-copied through the resize).
+	streamInfo, err := probeMediaStreamInfo(ctx, localInputMedia)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Cannot resize this input: %v", err)), nil
 	}
+	if streamInfo.Width <= 0 || streamInfo.Height <= 0 {
+		return mcp.NewToolResultError("Cannot resize this input: it has no video or image stream with usable dimensions"), nil
+	}
+	inWidth, inHeight := streamInfo.Width, streamInfo.Height
+	hasAudio := streamInfo.HasAudio
 
 	targetWidth, targetHeight, err := resolveTargetDimensions(reqWidth, reqHeight, aspect, inWidth, inHeight)
 	if err != nil {
@@ -1498,15 +1505,6 @@ func ffmpegResizeReframeHandler(ctx context.Context, request mcp.CallToolRequest
 		attribute.Int("target_width", targetWidth),
 		attribute.Int("target_height", targetHeight),
 	)
-
-	// Whether the input carries an audio stream determines if we stream-copy audio
-	// through a video resize. Failure to probe this is non-fatal: assume no audio.
-	hasAudio := false
-	if streamInfo, probeErr := probeMediaStreamInfo(ctx, localInputMedia); probeErr != nil {
-		log.Printf("Handler ffmpeg_resize_reframe: could not determine audio presence, proceeding without audio copy: %v", probeErr)
-	} else {
-		hasAudio = streamInfo.HasAudio
-	}
 
 	// Preserve the input's container/extension by default; a client-provided output
 	// filename extension overrides it and selects the output format.

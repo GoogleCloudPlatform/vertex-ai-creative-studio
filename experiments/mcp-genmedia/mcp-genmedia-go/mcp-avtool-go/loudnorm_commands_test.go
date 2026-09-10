@@ -28,7 +28,7 @@ func TestFormatLoudnormValue(t *testing.T) {
 func TestBuildLoudnormMeasureArgs(t *testing.T) {
 	target := loudnormTarget{IntegratedLUFS: -16, TruePeakDBTP: -1.5, LoudnessRangeLU: 11}
 	got := buildLoudnormMeasureArgs("in.wav", target)
-	want := []string{"-hide_banner", "-i", "in.wav", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"}
+	want := []string{"-hide_banner", "-i", "in.wav", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-vn", "-f", "null", "-"}
 	if strings.Join(got, " ") != strings.Join(want, " ") {
 		t.Errorf("buildLoudnormMeasureArgs = %v, want %v", got, want)
 	}

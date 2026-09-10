@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -171,33 +170,6 @@ func buildResizeArgs(input, output string, t reframeTarget, hasAudio bool) []str
 func executeResizeReframe(ctx context.Context, input, output string, t reframeTarget, hasAudio bool) error {
 	_, err := runFFmpegCommand(ctx, buildResizeArgs(input, output, t, hasAudio)...)
 	return err
-}
-
-// probeVideoDimensions returns the pixel width and height of the first video (or
-// image) stream in a media file. An image is treated as a single-frame video stream,
-// so this works for both. A non-nil error indicates the file has no dimensioned
-// visual stream (e.g. audio-only input), which resize cannot operate on.
-func probeVideoDimensions(ctx context.Context, localInputMedia string) (int, int, error) {
-	infoJSON, err := executeGetMediaInfo(ctx, localInputMedia)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to probe media info: %w", err)
-	}
-	var info struct {
-		Streams []struct {
-			CodecType string `json:"codec_type"`
-			Width     int    `json:"width"`
-			Height    int    `json:"height"`
-		} `json:"streams"`
-	}
-	if err := json.Unmarshal([]byte(infoJSON), &info); err != nil {
-		return 0, 0, fmt.Errorf("failed to parse media info: %w", err)
-	}
-	for _, stream := range info.Streams {
-		if stream.CodecType == "video" && stream.Width > 0 && stream.Height > 0 {
-			return stream.Width, stream.Height, nil
-		}
-	}
-	return 0, 0, fmt.Errorf("input has no video or image stream with usable dimensions")
 }
 
 // isValidPadColor restricts the caller-supplied pad colour to characters that appear

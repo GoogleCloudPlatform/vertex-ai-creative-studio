@@ -77,10 +77,7 @@ func executeTrimMedia(ctx context.Context, localInput, tempOutput string, startS
 		log.Printf("Stream-copy trim failed (%v); retrying with a re-encode fallback.", err)
 	}
 	_, err := runFFmpegCommand(ctx, buildTrimArgs(localInput, tempOutput, startSeconds, durationSeconds, false)...)
-	if err != nil {
-		return true, err
-	}
-	return true, nil
+	return true, err
 }
 
 // Note: Specific ffmpeg command functions (like convertAudioToMP3, createGIF etc.) will be added here later.
