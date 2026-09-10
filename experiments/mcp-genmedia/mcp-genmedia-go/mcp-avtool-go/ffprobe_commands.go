@@ -50,6 +50,51 @@ func executeGetMediaInfo(ctx context.Context, localInputMedia string) (string, e
 	return runFFprobeCommand(ctx, ffprobeArgs...)
 }
 
+// mediaStreamInfo summarizes the stream layout of a media file: whether it carries
+// audio and/or video, plus the first audio stream's sample rate (empty when unknown).
+type mediaStreamInfo struct {
+	HasAudio   bool
+	HasVideo   bool
+	SampleRate string
+}
+
+// probeMediaStreamInfo inspects a media file with ffprobe and reports which stream
+// types it contains and the audio sample rate. Callers use it to reject inputs that
+// have no audio stream and to preserve the source sample rate through filters that
+// would otherwise resample.
+func probeMediaStreamInfo(ctx context.Context, localInputMedia string) (mediaStreamInfo, error) {
+	var result mediaStreamInfo
+
+	infoJSON, err := executeGetMediaInfo(ctx, localInputMedia)
+	if err != nil {
+		return result, fmt.Errorf("failed to probe media info: %w", err)
+	}
+
+	var info struct {
+		Streams []struct {
+			CodecType  string `json:"codec_type"`
+			SampleRate string `json:"sample_rate"`
+		} `json:"streams"`
+	}
+	if err := json.Unmarshal([]byte(infoJSON), &info); err != nil {
+		return result, fmt.Errorf("failed to parse media info: %w", err)
+	}
+
+	for _, stream := range info.Streams {
+		switch stream.CodecType {
+		case "audio":
+			result.HasAudio = true
+			if result.SampleRate == "" {
+				result.SampleRate = strings.TrimSpace(stream.SampleRate)
+			}
+		case "video":
+			result.HasVideo = true
+		}
+	}
+
+	return result, nil
+}
+
 // probeMediaDurationSeconds returns the total duration of a media file in seconds,
 // parsed from the container's format metadata. It is used to validate trim ranges
 // against the actual length of the input. A non-nil error indicates the duration

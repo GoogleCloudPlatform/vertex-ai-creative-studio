@@ -1197,6 +1197,169 @@ func ffmpegTrimMediaHandler(ctx context.Context, request mcp.CallToolRequest, cf
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
+// addNormalizeLoudnessTool defines and registers the 'ffmpeg_normalize_loudness' tool.
+// It performs EBU R128 loudness normalization on any audio (or audio-containing video)
+// file using the accurate two-pass loudnorm method.
+func addNormalizeLoudnessTool(s *server.MCPServer, cfg *common.Config) {
+	tool := mcp.NewTool("ffmpeg_normalize_loudness",
+		mcp.WithDescription("Normalizes the perceived loudness of an audio file (or the audio track of a video file) to a target level using EBU R128 loudness normalization. "+
+			"This uses the accurate two-pass method: a first pass measures the input's actual integrated loudness, true peak, loudness range and threshold, and a second pass applies a linear correction toward the target using those measurements. This is more accurate than a single-pass normalize and avoids over- or under-correction. "+
+			"Useful for levelling recordings or generated speech so that quiet inputs are brought up and loud inputs are brought down to a consistent playback loudness. "+
+			"Defaults target -16 LUFS integrated loudness, -1.5 dBTP true peak and 11 LU loudness range, which suit streaming and web playback; all three can be overridden. When the input is a video its video stream is copied unchanged and only the audio is normalized. Fails if the input has no audio stream."),
+		mcp.WithString("input_media_uri", mcp.Required(), mcp.Description("URI of the input audio or video file (local path or gs://). Must contain an audio stream.")),
+		mcp.WithNumber("target_loudness", mcp.DefaultNumber(defaultTargetLoudnessLUFS), mcp.Description("Optional. Target integrated loudness in LUFS (EBU R128 'I'). Defaults to -16 (common for streaming/web/podcast). Use -23 for EBU R128 broadcast delivery. Valid range: -70 to -5.")),
+		mcp.WithNumber("target_true_peak", mcp.DefaultNumber(defaultTargetTruePeakDBTP), mcp.Description("Optional. Maximum true peak in dBTP (loudnorm 'TP'). Defaults to -1.5. Valid range: -9 to 0.")),
+		mcp.WithNumber("target_loudness_range", mcp.DefaultNumber(defaultTargetLoudnessRangeLU), mcp.Description("Optional. Target loudness range in LU (loudnorm 'LRA'). Defaults to 11. Valid range: 1 to 50.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Desired name for the output file (e.g., 'normalized.wav'). The client-provided extension is honored and selects the output format. Takes precedence over the deprecated output_file_name. If omitted, a unique name is generated and the input's extension is preserved. An existing file of the same name is overwritten.")),
+		mcp.WithString("output_file_name", mcp.Description("Optional (deprecated; use output_filename). Desired name for the output file (e.g., 'normalized.wav').")),
+		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
+		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to (uses GENMEDIA_BUCKET if set and this is empty).")),
+	)
+	s.AddTool(tool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return ffmpegNormalizeLoudnessHandler(ctx, request, cfg)
+	})
+}
+
+// ffmpegNormalizeLoudnessHandler is the handler for the 'ffmpeg_normalize_loudness'
+// tool. It prepares the input, verifies it has an audio stream, resolves the target
+// loudness parameters (falling back to sensible defaults), runs the two-pass EBU R128
+// normalization and writes the result to the requested destination.
+func ffmpegNormalizeLoudnessHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "ffmpeg_normalize_loudness")
+	defer span.End()
+
+	startTime := time.Now()
+	argsMap, err := getArguments(request)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_normalize_loudness", argsMap)
+
+	inputMediaURI, _ := argsMap["input_media_uri"].(string)
+	if strings.TrimSpace(inputMediaURI) == "" {
+		return mcp.NewToolResultError("Parameter 'input_media_uri' is required."), nil
+	}
+
+	target := loudnormTarget{
+		IntegratedLUFS:  defaultTargetLoudnessLUFS,
+		TruePeakDBTP:    defaultTargetTruePeakDBTP,
+		LoudnessRangeLU: defaultTargetLoudnessRangeLU,
+	}
+	if v, ok := argsMap["target_loudness"].(float64); ok {
+		target.IntegratedLUFS = v
+	}
+	if v, ok := argsMap["target_true_peak"].(float64); ok {
+		target.TruePeakDBTP = v
+	}
+	if v, ok := argsMap["target_loudness_range"].(float64); ok {
+		target.LoudnessRangeLU = v
+	}
+
+	if target.IntegratedLUFS < -70 || target.IntegratedLUFS > -5 {
+		return mcp.NewToolResultError("Parameter 'target_loudness' must be between -70 and -5 LUFS."), nil
+	}
+	if target.TruePeakDBTP < -9 || target.TruePeakDBTP > 0 {
+		return mcp.NewToolResultError("Parameter 'target_true_peak' must be between -9 and 0 dBTP."), nil
+	}
+	if target.LoudnessRangeLU < 1 || target.LoudnessRangeLU > 50 {
+		return mcp.NewToolResultError("Parameter 'target_loudness_range' must be between 1 and 50 LU."), nil
+	}
+
+	outputFileName := resolveAVToolOutputFilename(argsMap)
+	outputLocalDir, _ := argsMap["output_local_dir"].(string)
+	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && cfg.GenmediaBucket != "" {
+		outputGCSBucket = cfg.GenmediaBucket
+		log.Printf("Handler ffmpeg_normalize_loudness: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
+
+	span.SetAttributes(
+		attribute.String("input_media_uri", inputMediaURI),
+		attribute.Float64("target_loudness", target.IntegratedLUFS),
+		attribute.Float64("target_true_peak", target.TruePeakDBTP),
+		attribute.Float64("target_loudness_range", target.LoudnessRangeLU),
+		attribute.String("output_file_name", outputFileName),
+		attribute.String("output_local_dir", outputLocalDir),
+		attribute.String("output_gcs_bucket", outputGCSBucket),
+	)
+
+	localInputMedia, inputCleanup, err := common.PrepareInputFile(ctx, inputMediaURI, "loudnorm_input", cfg.ProjectID)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare input media: %v", err)), nil
+	}
+	defer inputCleanup()
+
+	streamInfo, err := probeMediaStreamInfo(ctx, localInputMedia)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to inspect input media: %v", err)), nil
+	}
+	if !streamInfo.HasAudio {
+		return mcp.NewToolResultError("The input has no audio stream to normalize."), nil
+	}
+
+	// Preserve the input's container by default so the output format is predictable;
+	// a client-provided output filename extension overrides it.
+	defaultOutputExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(localInputMedia), "."))
+	if defaultOutputExt == "" {
+		if streamInfo.HasVideo {
+			defaultOutputExt = "mp4"
+		} else {
+			defaultOutputExt = "wav"
+		}
+	}
+	if outputFileName != "" {
+		if userExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(outputFileName), ".")); userExt != "" {
+			defaultOutputExt = userExt
+		}
+	}
+
+	tempOutputFile, finalOutputFilename, outputCleanup, err := common.HandleOutputPreparation(outputFileName, defaultOutputExt)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare output file: %v", err)), nil
+	}
+	defer outputCleanup()
+
+	measurements, ffmpegErr := executeNormalizeLoudness(ctx, localInputMedia, tempOutputFile, target, streamInfo.HasVideo, streamInfo.SampleRate)
+	if ffmpegErr != nil {
+		span.RecordError(ffmpegErr)
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg loudness normalization failed: %v", ffmpegErr)), nil
+	}
+
+	finalLocalPath, finalGCSPath, processErr := common.ProcessOutputAfterFFmpeg(ctx, tempOutputFile, finalOutputFilename, outputLocalDir, outputGCSBucket, cfg.ProjectID)
+	if processErr != nil {
+		span.RecordError(processErr)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to process FFMpeg output: %v", processErr)), nil
+	}
+
+	duration := time.Since(startTime)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
+
+	var messageParts []string
+	messageParts = append(messageParts, fmt.Sprintf("Loudness normalization to %s LUFS (measured input loudness %s LUFS, true peak %s dBTP) completed in %v.",
+		formatLoudnormValue(target.IntegratedLUFS), measurements.InputI, measurements.InputTP, duration))
+	if outputLocalDir != "" && finalLocalPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
+		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
+	}
+	if finalGCSPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output uploaded to GCS: %s.", finalGCSPath))
+	}
+	if len(messageParts) == 1 {
+		messageParts = append(messageParts, "No specific output location requested beyond temporary processing.")
+	}
+	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
+}
+
 // addAdjustVolumeTool defines and registers the 'ffmpeg_adjust_volume' tool.
 // This tool allows for changing the volume of an audio file by a specified decibel (dB) level.
 func addAdjustVolumeTool(s *server.MCPServer, cfg *common.Config) {
