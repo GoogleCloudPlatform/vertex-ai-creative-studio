@@ -51,17 +51,21 @@ func executeGetMediaInfo(ctx context.Context, localInputMedia string) (string, e
 }
 
 // mediaStreamInfo summarizes the stream layout of a media file: whether it carries
-// audio and/or video, plus the first audio stream's sample rate (empty when unknown).
+// audio and/or video, the first audio stream's sample rate (empty when unknown), and
+// the first video (or image) stream's pixel dimensions (zero when there is none).
 type mediaStreamInfo struct {
 	HasAudio   bool
 	HasVideo   bool
 	SampleRate string
+	Width      int
+	Height     int
 }
 
 // probeMediaStreamInfo inspects a media file with ffprobe and reports which stream
-// types it contains and the audio sample rate. Callers use it to reject inputs that
-// have no audio stream and to preserve the source sample rate through filters that
-// would otherwise resample.
+// types it contains, the audio sample rate, and the first visual stream's pixel
+// dimensions. Callers use it to reject inputs that have no audio stream, to preserve
+// the source sample rate through filters that would otherwise resample, and to size a
+// resize/reframe against the input's own dimensions — all from a single ffprobe call.
 func probeMediaStreamInfo(ctx context.Context, localInputMedia string) (mediaStreamInfo, error) {
 	var result mediaStreamInfo
 
@@ -74,6 +78,8 @@ func probeMediaStreamInfo(ctx context.Context, localInputMedia string) (mediaStr
 		Streams []struct {
 			CodecType  string `json:"codec_type"`
 			SampleRate string `json:"sample_rate"`
+			Width      int    `json:"width"`
+			Height     int    `json:"height"`
 		} `json:"streams"`
 	}
 	if err := json.Unmarshal([]byte(infoJSON), &info); err != nil {
@@ -89,6 +95,10 @@ func probeMediaStreamInfo(ctx context.Context, localInputMedia string) (mediaStr
 			}
 		case "video":
 			result.HasVideo = true
+			if result.Width == 0 && stream.Width > 0 && stream.Height > 0 {
+				result.Width = stream.Width
+				result.Height = stream.Height
+			}
 		}
 	}
 
