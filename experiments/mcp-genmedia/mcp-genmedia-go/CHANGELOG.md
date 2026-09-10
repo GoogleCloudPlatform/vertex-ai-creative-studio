@@ -4,6 +4,20 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.19.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.18.2...mcp-v3.19.0) (2026-09-10)
+
+
+### Features
+
+* **mcp-avtool-go:** add EBU R128 loudness normalization tool ([#1838](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1838)) ([65e3cab](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/65e3cab8a3ea641b530b8f40fb52390c425fc8fb))
+* **mcp-avtool-go:** add media trim/cut tool ([#1836](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1836)) ([39d70e0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/39d70e07f47071069f0a5af1094ea4774e37ae24))
+* **mcp-avtool-go:** add resize/reframe tool for images and video ([#1839](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1839)) ([48d16d5](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/48d16d5a83970e8810ddcb98c430f29c8f261ebb))
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 39d70e0 ([#1833](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1833)) ([0755fa1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/0755fa1e1c8de40dc2e99f6ee2742d855e724c51))
+
 ## [3.18.2](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.18.1...mcp-v3.18.2) (2026-09-10)
 
 
