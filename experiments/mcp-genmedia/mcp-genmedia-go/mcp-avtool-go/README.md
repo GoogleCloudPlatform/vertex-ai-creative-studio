@@ -69,6 +69,13 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
     *   When the input is a video, its video stream is copied unchanged and only the audio is normalized. The audio sample rate is preserved. Fails if the input has no audio stream.
     *   Output: The loudness-normalized media file (input container/extension preserved by default). Can be saved locally and/or to a GCS bucket.
 
+*   **`ffmpeg_resize_reframe`**:
+    *   Resizes and reframes an image or a video to a target geometry. A single image is treated as a one-frame stream, so the same tool handles both image and video inputs.
+    *   Inputs: URI of the input image or video file, plus a target specified as an explicit `width` and/or `height` (pixels) and/or an `aspect_ratio` shorthand (`16:9`, `9:16`, `1:1`). Providing both `width` and `height` sets the exact frame (any `aspect_ratio` is ignored). An `aspect_ratio` combined with a single `width` or `height` computes the other side; used alone it keeps the input's width. A single `width` or `height` alone performs a proportional resize that keeps the input's aspect ratio.
+    *   `reframe_mode` selects how an aspect-ratio mismatch is reconciled: `pad` (default) scales the whole picture to fit and fills the remainder with bars (letterbox/pillarbox), preserving all content; `crop` scales to fill the frame edge-to-edge and trims the overflow. `pad` is the default because it never discards picture content. The pad fill colour is configurable via `pad_color` (default `black`).
+    *   Target dimensions are automatically rounded to even numbers, which many video codecs (e.g. H.264/yuv420p) require. Any audio stream is copied through unchanged.
+    *   Output: The resized/reframed media file (input container/extension preserved by default). Can be saved locally and/or to a GCS bucket.
+
 ## Requirements
 
 *   **Go**: Version 1.18 or higher (as per `go.mod` if specified, otherwise latest stable).

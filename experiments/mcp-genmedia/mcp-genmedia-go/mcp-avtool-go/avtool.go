@@ -100,6 +100,7 @@ func main() {
 	addGetMediaInfoTool(s, cfg)
 	addTrimMediaTool(s, cfg)
 	addNormalizeLoudnessTool(s, cfg)
+	addResizeReframeTool(s, cfg)
 
 	switch transport {
 	case "sse":
