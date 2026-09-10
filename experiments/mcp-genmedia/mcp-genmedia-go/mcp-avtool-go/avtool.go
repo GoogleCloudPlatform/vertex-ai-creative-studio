@@ -98,6 +98,7 @@ func main() {
 	addLayerAudioTool(s, cfg)
 	addCreateGifTool(s, cfg)
 	addGetMediaInfoTool(s, cfg)
+	addTrimMediaTool(s, cfg)
 
 	switch transport {
 	case "sse":

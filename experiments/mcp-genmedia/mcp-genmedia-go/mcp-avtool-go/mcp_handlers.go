@@ -1029,6 +1029,174 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
+// addTrimMediaTool defines and registers the 'ffmpeg_trim_media' tool.
+// This tool extracts a single contiguous segment (a cut/trim) from an audio or video
+// file. It works identically for audio and video because it operates on ffmpeg's
+// -ss/-t seek-and-duration options, which apply to any stream type.
+func addTrimMediaTool(s *server.MCPServer, cfg *common.Config) {
+	tool := mcp.NewTool("ffmpeg_trim_media",
+		mcp.WithDescription("Trims (cuts) a single segment from an audio or video file, keeping only the portion between a start time and an end time (or for a given duration). Works for both audio and video inputs. "+
+			"By default the segment is extracted with a fast, lossless stream copy (no re-encode). Because a stream copy can only begin on a keyframe, the actual cut may start at the nearest keyframe at or before the requested start time, so it may not be exactly frame-accurate. "+
+			"Set re_encode=true for a frame-accurate cut at the exact start time; this re-encodes the segment, which is slower and slightly lossy. If a stream copy is not possible for the chosen output container, the tool automatically falls back to a re-encode."),
+		mcp.WithString("input_media_uri", mcp.Required(), mcp.Description("URI of the input audio or video file (local path or gs://).")),
+		mcp.WithNumber("start_time", mcp.Required(), mcp.Description("Start time of the segment to keep, in seconds from the beginning of the file (e.g., 5 or 12.5). Must be within the file's duration.")),
+		mcp.WithNumber("duration", mcp.Description("Optional. Length of the segment to keep, in seconds (e.g., 10). Provide either 'duration' or 'end_time'. If both are given, 'duration' takes precedence.")),
+		mcp.WithNumber("end_time", mcp.Description("Optional. End time of the segment to keep, in seconds from the beginning of the file. Must be greater than 'start_time'. Used only when 'duration' is not provided.")),
+		mcp.WithBoolean("re_encode", mcp.DefaultBool(false), mcp.Description("Optional. When true, re-encodes the segment for a frame-accurate cut at the exact start time instead of the default fast, lossless stream copy. Defaults to false.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Desired name for the output file (e.g., 'clip.mp4'). The client-provided extension is honored and selects the output format. Takes precedence over the deprecated output_file_name. If omitted, a unique name is generated and the input's extension is preserved. An existing file of the same name is overwritten.")),
+		mcp.WithString("output_file_name", mcp.Description("Optional (deprecated; use output_filename). Desired name for the output file (e.g., 'clip.mp4').")),
+		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
+		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to (uses GENMEDIA_BUCKET if set and this is empty).")),
+	)
+	s.AddTool(tool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return ffmpegTrimMediaHandler(ctx, request, cfg)
+	})
+}
+
+// ffmpegTrimMediaHandler is the handler for the 'ffmpeg_trim_media' tool. It prepares
+// the input, resolves the requested time range (start plus either an explicit duration
+// or an end time), validates the range against the file's actual duration, and then
+// extracts the segment. The output container defaults to the input's extension so a
+// stream copy stays valid, unless the caller specifies an output filename with its own
+// extension.
+func ffmpegTrimMediaHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "ffmpeg_trim_media")
+	defer span.End()
+
+	startTime := time.Now()
+	argsMap, err := getArguments(request)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_trim_media", argsMap)
+
+	inputMediaURI, _ := argsMap["input_media_uri"].(string)
+	if strings.TrimSpace(inputMediaURI) == "" {
+		return mcp.NewToolResultError("Parameter 'input_media_uri' is required."), nil
+	}
+
+	startSeconds, hasStart := argsMap["start_time"].(float64)
+	if !hasStart {
+		return mcp.NewToolResultError("Parameter 'start_time' is required and must be a number (seconds)."), nil
+	}
+	if startSeconds < 0 {
+		return mcp.NewToolResultError("Parameter 'start_time' must not be negative."), nil
+	}
+
+	durationSeconds, hasDuration := argsMap["duration"].(float64)
+	endSeconds, hasEnd := argsMap["end_time"].(float64)
+
+	switch {
+	case hasDuration:
+		if durationSeconds <= 0 {
+			return mcp.NewToolResultError("Parameter 'duration' must be greater than 0."), nil
+		}
+	case hasEnd:
+		if endSeconds <= startSeconds {
+			return mcp.NewToolResultError("Parameter 'end_time' must be greater than 'start_time'."), nil
+		}
+		durationSeconds = endSeconds - startSeconds
+	default:
+		return mcp.NewToolResultError("Either 'duration' or 'end_time' must be provided."), nil
+	}
+
+	reEncode, _ := argsMap["re_encode"].(bool)
+	outputFileName := resolveAVToolOutputFilename(argsMap)
+	outputLocalDir, _ := argsMap["output_local_dir"].(string)
+	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && cfg.GenmediaBucket != "" {
+		outputGCSBucket = cfg.GenmediaBucket
+		log.Printf("Handler ffmpeg_trim_media: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
+
+	span.SetAttributes(
+		attribute.String("input_media_uri", inputMediaURI),
+		attribute.Float64("start_time", startSeconds),
+		attribute.Float64("duration", durationSeconds),
+		attribute.Bool("re_encode", reEncode),
+		attribute.String("output_file_name", outputFileName),
+		attribute.String("output_local_dir", outputLocalDir),
+		attribute.String("output_gcs_bucket", outputGCSBucket),
+	)
+
+	localInputMedia, inputCleanup, err := common.PrepareInputFile(ctx, inputMediaURI, "trim_input", cfg.ProjectID)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare input media: %v", err)), nil
+	}
+	defer inputCleanup()
+
+	// Validate the requested range against the file's actual duration when it can be
+	// determined. If the duration is unknown (some streams don't report one), skip
+	// validation and let ffmpeg handle it rather than rejecting a valid request.
+	if mediaDuration, probeErr := probeMediaDurationSeconds(ctx, localInputMedia); probeErr != nil {
+		log.Printf("Handler ffmpeg_trim_media: could not determine input duration, skipping range validation: %v", probeErr)
+	} else if startSeconds >= mediaDuration {
+		return mcp.NewToolResultError(fmt.Sprintf("Parameter 'start_time' (%.3fs) is at or beyond the input's duration (%.3fs).", startSeconds, mediaDuration)), nil
+	}
+
+	// Default the output container to the input's extension so a stream copy remains
+	// valid. A client-provided output filename extension overrides this.
+	defaultOutputExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(localInputMedia), "."))
+	if defaultOutputExt == "" {
+		defaultOutputExt = "mp4"
+	}
+	if outputFileName != "" {
+		if userExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(outputFileName), ".")); userExt != "" {
+			defaultOutputExt = userExt
+		}
+	}
+
+	tempOutputFile, finalOutputFilename, outputCleanup, err := common.HandleOutputPreparation(outputFileName, defaultOutputExt)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare output file: %v", err)), nil
+	}
+	defer outputCleanup()
+
+	usedReEncode, ffmpegErr := executeTrimMedia(ctx, localInputMedia, tempOutputFile, startSeconds, durationSeconds, reEncode)
+	if ffmpegErr != nil {
+		span.RecordError(ffmpegErr)
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg trim failed: %v", ffmpegErr)), nil
+	}
+	span.SetAttributes(attribute.Bool("used_re_encode", usedReEncode))
+
+	finalLocalPath, finalGCSPath, processErr := common.ProcessOutputAfterFFmpeg(ctx, tempOutputFile, finalOutputFilename, outputLocalDir, outputGCSBucket, cfg.ProjectID)
+	if processErr != nil {
+		span.RecordError(processErr)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to process FFMpeg output: %v", processErr)), nil
+	}
+
+	duration := time.Since(startTime)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
+
+	var messageParts []string
+	mode := "stream copy (no re-encode)"
+	if usedReEncode {
+		mode = "re-encode"
+	}
+	messageParts = append(messageParts, fmt.Sprintf("Trim of %.3fs starting at %.3fs (%s) completed in %v.", durationSeconds, startSeconds, mode, duration))
+	if outputLocalDir != "" && finalLocalPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
+		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
+	}
+	if finalGCSPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output uploaded to GCS: %s.", finalGCSPath))
+	}
+	if len(messageParts) == 1 {
+		messageParts = append(messageParts, "No specific output location requested beyond temporary processing.")
+	}
+	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
+}
+
 // addAdjustVolumeTool defines and registers the 'ffmpeg_adjust_volume' tool.
 // This tool allows for changing the volume of an audio file by a specified decibel (dB) level.
 func addAdjustVolumeTool(s *server.MCPServer, cfg *common.Config) {

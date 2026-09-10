@@ -85,3 +85,25 @@ This command is used to layer multiple audio files together.
 ```
 ffmpeg -y -i <input_audio_uri_1> -i <input_audio_uri_2> ... -filter_complex "amix=inputs=<number_of_inputs>:duration=longest" <output_file_name>.mp3
 ```
+
+### Trim Media
+
+This command extracts a single segment from an audio or video file, keeping only the
+portion beginning at `<start_time>` (in seconds) and lasting `<duration>` seconds. The
+same recipe works for both audio and video because `-ss`/`-t` operate on any stream
+type.
+
+Fast, lossless stream copy (default). Seeking to a keyframe means the cut may not be
+exactly frame-accurate; `-avoid_negative_ts make_zero` normalizes the copied
+timestamps to start at zero:
+
+```
+ffmpeg -y -ss <start_time> -i <input_media_uri> -t <duration> -c copy -avoid_negative_ts make_zero <output_file_name>
+```
+
+Frame-accurate re-encode (used when `re_encode` is requested, or automatically as a
+fallback when a stream copy is not possible for the chosen output container):
+
+```
+ffmpeg -y -ss <start_time> -i <input_media_uri> -t <duration> <output_file_name>
+```
