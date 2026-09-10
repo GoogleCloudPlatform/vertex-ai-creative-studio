@@ -99,6 +99,7 @@ func main() {
 	addCreateGifTool(s, cfg)
 	addGetMediaInfoTool(s, cfg)
 	addTrimMediaTool(s, cfg)
+	addNormalizeLoudnessTool(s, cfg)
 
 	switch transport {
 	case "sse":
