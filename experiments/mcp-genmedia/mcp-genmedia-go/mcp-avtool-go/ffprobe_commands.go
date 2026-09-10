@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -47,4 +48,32 @@ func executeGetMediaInfo(ctx context.Context, localInputMedia string) (string, e
 		localInputMedia,
 	}
 	return runFFprobeCommand(ctx, ffprobeArgs...)
+}
+
+// probeMediaDurationSeconds returns the total duration of a media file in seconds,
+// parsed from the container's format metadata. It is used to validate trim ranges
+// against the actual length of the input. A non-nil error indicates the duration
+// could not be determined (e.g. a stream without a known duration), in which case
+// callers should skip range validation rather than reject the request.
+func probeMediaDurationSeconds(ctx context.Context, localInputMedia string) (float64, error) {
+	infoJSON, err := executeGetMediaInfo(ctx, localInputMedia)
+	if err != nil {
+		return 0, fmt.Errorf("failed to probe media info: %w", err)
+	}
+	var info struct {
+		Format struct {
+			Duration string `json:"duration"`
+		} `json:"format"`
+	}
+	if err := json.Unmarshal([]byte(infoJSON), &info); err != nil {
+		return 0, fmt.Errorf("failed to parse media info: %w", err)
+	}
+	if strings.TrimSpace(info.Format.Duration) == "" {
+		return 0, fmt.Errorf("media info did not report a container duration")
+	}
+	seconds, err := strconv.ParseFloat(info.Format.Duration, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse duration %q: %w", info.Format.Duration, err)
+	}
+	return seconds, nil
 }

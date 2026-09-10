@@ -56,6 +56,12 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
     *   Input: Array of URIs for the input audio files.
     *   Output: Mixed audio file. Can be saved locally and/or to a GCS bucket.
 
+*   **`ffmpeg_trim_media`**:
+    *   Trims (cuts) a single segment from an audio or video file, keeping only the portion between a start time and an end time (or for a given duration). Works identically for audio and video.
+    *   Inputs: URI of the input media file, start time (seconds), and either a duration or an end time (seconds). Optional `re_encode` flag.
+    *   By default the segment is extracted with a fast, lossless stream copy (`-c copy`). Because a stream copy can only begin on a keyframe, the cut may start at the nearest keyframe at or before the requested start time, so it may not be exactly frame-accurate. Set `re_encode=true` for a frame-accurate cut (slower, slightly lossy). If a stream copy is not possible for the chosen output container, the tool automatically falls back to a re-encode.
+    *   Output: The trimmed media file (input container/extension preserved by default). Can be saved locally and/or to a GCS bucket.
+
 ## Requirements
 
 *   **Go**: Version 1.18 or higher (as per `go.mod` if specified, otherwise latest stable).
