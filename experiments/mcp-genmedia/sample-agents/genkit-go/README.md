@@ -6,20 +6,21 @@ independently reviewable PR. The through-line of the whole series is the
 **Genkit Developer UI and per-turn tracing** — every tier is meant to be *run*,
 then *read* at `http://localhost:4000`.
 
-> **You are here: Tier 0.** This is the minimal "one tool, one generate" program.
-> It is also the Go counterpart to the JavaScript [Nano Banana sample](../genkit/)
-> (see [Related samples](#related-samples)).
+> **You are here: Tier 1.** A two-step `genkit.DefineFlow` that chains
+> `nanobanana` → `veo_i2v` (image → video). It builds directly on **Tier 0**, the
+> minimal "one tool, one generate" program (also the Go counterpart to the
+> JavaScript [Nano Banana sample](../genkit/); see [Related samples](#related-samples)).
 
 ## The series
 
 | Tier | What it adds | Servers/tools | Status |
 |------|--------------|---------------|--------|
-| **0 · `tier0-image/`** | single tool, single `generate` | `nanobanana` | **STABLE** *(this tier)* |
-| 1 · `tier1-flow/` | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | STABLE *(future PR)* |
+| 0 · `tier0-image/` | single tool, single `generate` | `nanobanana` | STABLE |
+| **1 · `tier1-video/`** | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | **STABLE** *(this tier)* |
 | 2 · `tier2-producer/` | multi-server producer flow | nb → veo → lyria → avtool | STABLE *(future PR)* |
 | 3 · `tier3-preview/` | agents middleware + interrupt | all, partitioned | PREVIEW *(future PR)* |
 
-Only **Tier 0** ships in this PR. It establishes the shared foundation the later
+Tiers land one per PR. They share the foundation Tier 0 established and later
 tiers consume without changes:
 
 ```
@@ -33,7 +34,8 @@ genkit-go/
       quirks.go          QuirksPrompt: the genmedia footguns the LLM cannot see
     verify/
       verify.go          Verify(ctx, dest): confirm output by LISTING, not by trusting the tool result
-  tier0-image/main.go    Tier 0
+  tier0-image/main.go    Tier 0 — single tool, single generate
+  tier1-video/main.go    Tier 1 — DefineFlow: nanobanana -> veo_i2v
 ```
 
 ## Why lead with the Dev UI
@@ -55,10 +57,11 @@ samples, so every tier of this series leads with it.
   rule below).
 - The genmedia server binary. By default it is fetched for you on first run by
   `bin/genmedia-launch` (see [Where the genmedia binary comes from](#where-the-genmedia-binary-comes-from)).
-  Tier 0 needs only `mcp-nanobanana-go`; Tiers 1+ that touch `avtool` will also
-  require **`ffmpeg`/`ffprobe`** on `PATH`.
+  Tier 0 needs `mcp-nanobanana-go`; Tier 1 also uses `mcp-veo-go` (both ship in
+  the same pinned tarball, so no extra install). Tiers 2+ that touch `avtool` will
+  also require **`ffmpeg`/`ffprobe`** on `PATH`.
 
-Environment variables Tier 0 reads:
+Environment variables the tiers read (Tier 1 requires `GENMEDIA_BUCKET` to be `gs://`):
 
 | Variable | Required | Meaning |
 |----------|----------|---------|
@@ -96,6 +99,65 @@ reading Tier 0's one new thing:
 This is what a genmedia tool call looks like from the inside. In the terminal
 you will also see the program's own `verify:` line confirming the image by
 **listing the destination** — which is the point of the next section.
+
+## Run Tier 1, then read the flow trace
+
+Tier 1 wraps two tool calls in one **`genkit.DefineFlow`** named `image-to-clip`.
+The flow runs four steps in a fixed Go order — it is *deterministic*, not
+LLM-sequenced: the flow decides the order; the model only fills in each tool's
+arguments.
+
+```
+generate-image  ->  nanobanana_image_generation writes a still to GCS
+verify-image    ->  LIST the destination: confirm the still, learn its gs:// URI
+generate-video  ->  veo_i2v turns that still into a clip (explicit Veo-3 model)
+verify-video    ->  LIST the destination: confirm the clip
+```
+
+```bash
+cd experiments/mcp-genmedia/sample-agents/genkit-go
+
+export GOOGLE_CLOUD_PROJECT=your-project
+export GENMEDIA_BUCKET=gs://your-bucket/tier1   # must be gs:// for Tier 1 (see below)
+export GOOGLE_CLOUD_LOCATION=us-central1
+
+# Launch the flow under the Dev UI:
+genkit start -- go run ./tier1-video
+```
+
+Pass a custom subject as arguments to change what gets drawn (then animated):
+`genkit start -- go run ./tier1-video "a paper boat on a rain-soaked street"`.
+
+Then open **`http://localhost:4000`**. Tier 1's one new thing is the **flow span**:
+
+- a single **`image-to-clip` flow span** wrapping the whole run, with the four
+  named step spans nested inside it in order;
+- inside `generate-image` and `generate-video`, the **`generate` span** and its
+  nested tool-call span (`nanobanana_nanobanana_image_generation`, then
+  `veo_veo_i2v`) — so you can see the still's `gcs_bucket_uri`, then the clip's
+  `image_uri`/`bucket`/`model` arguments the model chose; and
+- the **GCS write between the two steps**: `verify-image` is where the still's
+  `gs://` URI is confirmed by listing and carried into `veo_i2v` as `image_uri`.
+
+**The flow is the deterministic contract; the trace is the receipt.** The order
+you read in the trace is the order the Go code fixed, every run.
+
+### Two veo footguns Tier 1 bakes in
+
+- **Explicit Veo-3 model.** `veo_i2v` defaults to `veo-2.0-generate-001` when no
+  `model` is passed, and Veo-2 **rejects** `generate_audio=true` (the tool's own
+  default) — so a "minimal" call fails. `QuirksPrompt` tells the model to pass an
+  explicit Veo-3 model; Tier 1 uses `veo-3.1-fast-generate-001`
+  (`veoModel` in `tier1-video/main.go`).
+- **`resource_link`, carried across a step.** The still's real location is learned
+  by **listing** (`verify-image`), never from nanobanana's `resource_link`, and
+  that listed `gs://` URI is what feeds `veo_i2v`. veo then returns its own
+  `resource_link` for the clip, which `verify-video` again confirms by listing.
+
+> **GCS is required for Tier 1.** `veo_i2v` only accepts a `gs://` input image
+> (the server rejects a non-GCS `image_uri`), so `GENMEDIA_BUCKET` must be a
+> `gs://` URI — a local directory works for Tier 0 but cannot carry the still into
+> the video step here. Tier 1 fails fast with a clear message if it is not `gs://`.
 
 ## The `resource_link` rule
 
@@ -143,7 +205,8 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
 | Go | `go 1.25` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
-| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier0-image/main.go` `modelName` |
+| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1}-*/main.go` `modelName` |
+| Veo model (Tier 1) | `veo-3.1-fast-generate-001` | `tier1-video/main.go` `veoModel` |
 
 ## Related samples
 

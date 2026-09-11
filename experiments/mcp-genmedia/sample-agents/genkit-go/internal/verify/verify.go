@@ -24,6 +24,7 @@
 package verify
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -104,12 +105,17 @@ func verifyGCS(ctx context.Context, uri string) (Result, error) {
 	}
 
 	cmd := exec.CommandContext(ctx, "gcloud", "storage", "ls", uri)
-	// CombinedOutput so a non-zero exit's diagnostic (on stderr) is available to
-	// tell "nothing there" apart from a real failure (auth/ADC expiry, denied).
-	out, err := cmd.CombinedOutput()
-	if err != nil {
+	// Keep stdout (the object listing) and stderr (diagnostics) in separate
+	// buffers: on success we parse stdout for the found objects without stderr
+	// noise polluting the listing; on failure we inspect stderr for gcloud's
+	// not-found signature to tell "nothing there" apart from a real failure
+	// (auth/ADC expiry, permission denied, network).
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
 		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && isGCSNotFound(out) {
+		if errors.As(err, &exitErr) && isGCSNotFound(stderr.Bytes()) {
 			// A non-zero exit whose diagnostic is gcloud's "no objects matched"
 			// signature is a legitimate "not found", not a tooling failure.
 			return res, nil
@@ -117,17 +123,26 @@ func verifyGCS(ctx context.Context, uri string) (Result, error) {
 		// Anything else (auth/permission/network, or a non-exec error) is a real
 		// failure: surface it so the caller does not misread it as "no output".
 		return res, fmt.Errorf("verify: gcloud storage ls %s failed: %w: %s",
-			uri, err, strings.TrimSpace(string(out)))
+			uri, err, strings.TrimSpace(stderr.String()))
 	}
 
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			res.Entries = append(res.Entries, line)
-		}
-	}
+	res.Entries = parseGCSListing(stdout.Bytes())
 	res.Exists = len(res.Entries) > 0
 	return res, nil
+}
+
+// parseGCSListing turns `gcloud storage ls` stdout into the non-empty, trimmed
+// object/prefix lines it reported. Factored out as a pure function so the
+// success-path parsing is unit-testable without shelling to gcloud.
+func parseGCSListing(stdout []byte) []string {
+	var entries []string
+	for _, line := range strings.Split(strings.TrimSpace(string(stdout)), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			entries = append(entries, line)
+		}
+	}
+	return entries
 }
 
 // isGCSNotFound reports whether gcloud's diagnostic output is its
@@ -137,7 +152,7 @@ func verifyGCS(ctx context.Context, uri string) (Result, error) {
 func isGCSNotFound(output []byte) bool {
 	msg := strings.ToLower(string(output))
 	return strings.Contains(msg, "matched no objects") ||
-		strings.Contains(msg, "no url") && strings.Contains(msg, "matched")
+		(strings.Contains(msg, "no url") && strings.Contains(msg, "matched"))
 }
 
 // verifyLocal stats a local path. If it is a directory, its entries are listed.
