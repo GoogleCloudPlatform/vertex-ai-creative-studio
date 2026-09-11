@@ -12,12 +12,11 @@
   "author": "Google Cloud Applied AI Engineering",
   "license": "ISC",
   "dependencies": {
-    "@genkit-ai/googleai": "^1.7.0",
-    "@genkit-ai/vertexai": "^1.7.0",
-    "genkit": "^1.7.0",
-    "genkitx-mcp": "^1.7.0"
+    "@genkit-ai/vertexai": "^1.42.0",
+    "genkit": "^1.42.0",
+    "genkitx-mcp": "^1.14.1"
   },
   "devDependencies": {
-    "genkit-cli": "^1.7.0"
+    "genkit-cli": "^1.42.0"
   }
 }
