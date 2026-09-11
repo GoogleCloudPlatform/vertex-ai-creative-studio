@@ -91,9 +91,13 @@ func Verify(ctx context.Context, dest string) (Result, error) {
 //     finalized from the audio bytes (.mp3/.wav) and is not known ahead of time.
 //     VerifyRecursive matches it by prefix, so the caller need not guess.
 //
-// For gs:// destinations it runs `gcloud storage ls <dest>**` (the `**` wildcard
-// matches every object whose path begins with dest, at any depth, and returns
-// leaf object URIs without the folder-header lines a plain `-r` listing prints).
+// For gs:// destinations it runs `gcloud storage ls <dest>**`. Note `**` is a
+// PREFIX glob, not a strict directory-contents match: it matches every object
+// whose path BEGINS WITH dest, at any depth (so a dest of ".../image" would also
+// match a sibling object ".../imageXYZ"), returning leaf object URIs without the
+// folder-header lines a plain `-r` listing prints. Tier 2's runID-stamped, unique
+// prefixes make this exact in practice; a caller relying on it must likewise use a
+// prefix that cannot collide with a sibling object's name.
 // For local paths it walks the tree and returns the files found. Semantics
 // otherwise match Verify: a non-nil error means the check could not be performed;
 // Result.Exists == false with a nil error means nothing was found.
@@ -170,6 +174,17 @@ func parseGCSListing(stdout []byte) []string {
 	return entries
 }
 
+// gcsRecursivePattern turns a gs:// prefix into the `gcloud storage ls` argument
+// that matches every object at or under it: the prefix with any trailing slash
+// trimmed, then `**` appended. `**` is a PREFIX glob (see VerifyRecursive) — it
+// matches by string prefix at any depth, not strict directory contents. Factored
+// out as a pure function so the pattern construction is unit-testable without
+// shelling to gcloud (the shell-out itself follows the same no-direct-test
+// convention as verifyGCS).
+func gcsRecursivePattern(uri string) string {
+	return strings.TrimRight(uri, "/") + "**"
+}
+
 // verifyGCSRecursive lists every object under a gs:// prefix with the `**`
 // recursive wildcard, returning the leaf object URIs (never subfolder prefixes).
 func verifyGCSRecursive(ctx context.Context, uri string) (Result, error) {
@@ -181,7 +196,7 @@ func verifyGCSRecursive(ctx context.Context, uri string) (Result, error) {
 
 	// Append the `**` recursive wildcard to the (slash-trimmed) prefix so gcloud
 	// returns matching leaf objects at any depth, without folder-header lines.
-	pattern := strings.TrimRight(uri, "/") + "**"
+	pattern := gcsRecursivePattern(uri)
 	cmd := exec.CommandContext(ctx, "gcloud", "storage", "ls", pattern)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

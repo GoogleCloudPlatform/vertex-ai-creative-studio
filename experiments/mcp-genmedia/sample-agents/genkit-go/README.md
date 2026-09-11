@@ -234,6 +234,13 @@ asserts every required tool is present before the flow runs.
 > structure itself and fails fast with a clear message if a path is present.
 > `avtool` also needs **`ffmpeg`/`ffprobe`** on your `PATH`.
 
+> **Teaching caveat — prompt-injection surface.** As in Tiers 0-1, the positional
+> CLI argument is fed as free text into the model prompt, which then calls tools —
+> a (benign here, local-dev) prompt-injection surface, called out in
+> `tier2-producer/main.go`. A production caller should treat any untrusted input as
+> adversarial: constrain it and/or validate the tool arguments the model chooses,
+> rather than trusting free text.
+
 ## The `resource_link` rule
 
 The genmedia GCS-writing tools (nanobanana/gemini image, veo, lyria, omni)

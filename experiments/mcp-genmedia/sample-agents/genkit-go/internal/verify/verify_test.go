@@ -145,6 +145,31 @@ func TestParseGCSListing(t *testing.T) {
 	}
 }
 
+// TestGCSRecursivePattern pins the one new pure bit of the gs:// recursive path:
+// the prefix is slash-normalized and the `**` recursive wildcard appended. `**` is
+// a PREFIX glob (matches by string prefix, not strict directory contents) — the
+// "prefix, not a subfolder boundary" case documents that on purpose.
+func TestGCSRecursivePattern(t *testing.T) {
+	cases := []struct {
+		name string
+		uri  string
+		want string
+	}{
+		{"no trailing slash", "gs://b/p/image", "gs://b/p/image**"},
+		{"one trailing slash trimmed", "gs://b/p/video/", "gs://b/p/video**"},
+		{"multiple trailing slashes trimmed", "gs://b/p///", "gs://b/p**"},
+		{"bare bucket", "gs://b", "gs://b**"},
+		{"prefix, not a subfolder boundary", "gs://b/img", "gs://b/img**"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := gcsRecursivePattern(tc.uri); got != tc.want {
+				t.Errorf("gcsRecursivePattern(%q) = %q, want %q", tc.uri, got, tc.want)
+			}
+		})
+	}
+}
+
 // TestVerifyRecursiveLocal pins the recursive local walk that Tier 2 relies on:
 // it returns every file at any depth (never directories), reports a missing path
 // as not-found with a nil error, and a single file as itself.
