@@ -22,47 +22,64 @@
 //
 // Command tier3-preview is the PREVIEW capstone of the Genkit Go genmedia
 // series: an "agentic producer". Where Tier 2 sequenced four servers in a fixed
-// Go order (the CODE picks the order, the MODEL picks each tool), Tier 3 hands
-// the sequencing to an ORCHESTRATOR agent that DELEGATES to specialist
-// sub-agents, and PAUSES for human approval (a tool interrupt) before the
-// expensive Veo render.
+// Go order (the CODE picks the order, the MODEL picks each tool's arguments),
+// Tier 3 hands the sequencing to an ORCHESTRATOR agent that DELEGATES to
+// specialist sub-agents, and PAUSES for human approval (a tool interrupt) before
+// the expensive Veo render.
 //
 // The distinctively-Genkit shape this tier shows in the Dev-UI trace:
 //
-//	orchestrator (agent, Agents middleware)
-//	  ├─ delegate_to_image   -> image-agent : nanobanana still  + verify_by_listing
-//	  ├─ approve_video_render -> INTERRUPT: pause for human approve/reject
-//	  ├─ delegate_to_video   -> video-agent : veo_render (GATED) + verify_by_listing
-//	  ├─ delegate_to_music   -> music-agent : lyria score       + verify_by_listing
-//	  └─ delegate_to_av      -> av-agent    : avtool mux         + verify_by_listing
+//	producer (agent, Agents middleware)
+//	  ├─ delegate_to_image-agent   -> image-agent : generate_image (nanobanana)
+//	  ├─ approve_video_render       -> INTERRUPT: pause for human approve/reject
+//	  ├─ delegate_to_video-agent   -> video-agent : veo_render (GATED, Veo 3)
+//	  ├─ delegate_to_music-agent   -> music-agent : compose_music (lyria)
+//	  └─ delegate_to_av-agent      -> av-agent    : combine_av (avtool mux)
 //
-// TWO EXPERIMENTAL-API CORRECTIONS vs the design (verified against the real
-// v1.13.1 source; see tier3-dev-notes.md for the full list):
+// THREE EXPERIMENTAL-API / INTEGRATION CORRECTIONS vs the design (verified
+// against the real v1.13.1 source and proven by the live run; see
+// tier3-dev-notes.md for the full list):
 //
 //  1. FileSessionStore is constructed with
 //     localstore.NewFileSessionStore[State](dir) from
-//     github.com/firebase/genkit/go/ai/exp/localstore, not a bare
-//     `FileSessionStore{}`.
+//     github.com/firebase/genkit/go/ai/exp/localstore — not a bare struct
+//     literal. The store is generic over the agent's session-state type.
+//
 //  2. INTERACTIVE SUB-AGENT INTERRUPTS ARE NOT SUPPORTED in v1.13.1. The Agents
 //     middleware turns a sub-agent's interrupt into a plain tool response to the
-//     orchestrator ("interactive sub-agent interaction is a future feature" —
-//     plugins/middleware/exp/agents.go). So the human-in-the-loop interrupt
-//     CANNOT live inside the video sub-agent. It lives on the ORCHESTRATOR as an
-//     interruptible tool (approve_video_render), which is where interrupts DO
-//     surface to the client. The Veo render is then made impossible-without-
-//     approval by a process-level gate the approval flips (see renderGate): the
-//     video-agent's veo_render tool refuses until the gate is open. This is the
-//     bulletproof, honest adaptation of "an interrupt on the video step".
+//     orchestrator ("Interactive sub-agent interrupts are not currently
+//     supported" — plugins/middleware/exp/agents.go). So the human-in-the-loop
+//     interrupt CANNOT live inside the video sub-agent. It lives on the
+//     ORCHESTRATOR as an interruptible tool (approve_video_render), which is
+//     where interrupts DO surface to the client. The Veo render is then made
+//     impossible-without-approval by a process-level gate the approval flips
+//     (see renderGate): the video-agent's veo_render tool refuses until the gate
+//     is open. This is the honest, bulletproof adaptation of "an interrupt on
+//     the video step".
+//
+//  3. MCP TOOLS ARE DYNAMIC (unregistered) AND DO NOT RESOLVE BY NAME INSIDE A
+//     SUB-AGENT. plugins/mcp builds each tool with ai.NewTool, which sets
+//     metadata["dynamic"]=true and does NOT register it in the Genkit registry.
+//     A top-level genkit.Generate (Tiers 0-2) works because the tool OBJECT is
+//     passed directly, but an exp sub-agent resolves its tools by NAME from the
+//     registry, so a delegated agent reports the MCP tool "not found" (observed
+//     live on the first run). The fix used here: wrap each genmedia MCP tool in
+//     a REGISTERED genkitx.DefineTool that invokes the underlying MCP tool via
+//     ai.Tool.RunRaw with footgun-correct arguments, then verifies the output by
+//     LISTING it. The wrappers are what the sub-agents call; this also moves the
+//     Tier 2 footguns from fragile prompt text into code (the honest place for
+//     them) and pins the write destinations so the run is deterministic and
+//     provable.
 //
 // Run it with the Dev UI to watch the delegation + the interrupt pause/resume:
 //
 //	export GOOGLE_CLOUD_PROJECT=your-project
-//	export GENMEDIA_BUCKET=gs://your-bare-bucket   # bare bucket, NO path
-//	export GOOGLE_CLOUD_LOCATION=us-central1
-//	genkit start -- go run ./tier3-preview            # then open localhost:4000
+//	export GOOGLE_CLOUD_LOCATION=us-central1               # NOT "global"
+//	export GENMEDIA_BUCKET=gs://your-bare-bucket           # bare bucket, NO path
+//	genkit start -- go run ./tier3-preview                 # open localhost:4000
 //
 // Or headless (this program drives the approve/reject resume programmatically,
-// because the genkit CLI/Dev-UI is not required to run it):
+// so no genkit CLI is required to run it):
 //
 //	go run ./tier3-preview            # approve path: renders the video
 //	go run ./tier3-preview -reject    # reject path: halts before the render
@@ -95,15 +112,15 @@ import (
 	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// modelName orchestrates delegation and drives each specialist. Single-sourced
+// defaultModel orchestrates delegation and drives each specialist. Single-sourced
 // here; matches Tiers 0-2 ("vertexai/..." is the googlegenai plugin's Vertex
 // provider). Overridable via TIER3_MODEL for experimentation.
 const defaultModel = "vertexai/gemini-2.5-flash"
 
-// Load-bearing genmedia model ids (same footguns as Tier 2, distributed into the
-// specialists). veo with no model falls back to veo-2.0 which rejects
-// generate_audio=true; lyria's clip-preview routes through the global
-// Interactions API so it runs alongside the us-central1 image/video steps.
+// Load-bearing genmedia model ids (same footguns as Tier 2). veo with no model
+// falls back to veo-2.0, which rejects generate_audio=true; lyria's clip-preview
+// routes through the global Interactions API so it runs alongside the
+// us-central1 image/video steps.
 const (
 	veoModel   = "veo-3.1-fast-generate-001"
 	lyriaModel = "lyria-3-clip-preview"
@@ -112,7 +129,7 @@ const (
 // producerServers are the four genmedia servers, partitioned across sub-agents.
 var producerServers = []string{"nanobanana", "veo", "lyria", "avtool"}
 
-// requiredTools are the exact namespaced tool names each specialist depends on.
+// requiredTools are the exact namespaced MCP tool names the wrappers depend on.
 // mcp.NewMCPHost logs-and-continues on a failed connect, so we PROVE every
 // server is present before defining any agent (same guard as Tier 2).
 var requiredTools = []string{
@@ -140,7 +157,6 @@ func (g *renderGate) isOpen() bool { g.mu.Lock(); defer g.mu.Unlock(); return g.
 type RenderApproval struct {
 	ImageURI    string `json:"imageUri"`
 	VideoPrompt string `json:"videoPrompt"`
-	VideoDest   string `json:"videoDest"`
 	Model       string `json:"model"`
 }
 
@@ -154,34 +170,42 @@ type ApprovalDecision struct {
 type ApproveInput struct {
 	ImageURI    string `json:"imageUri" jsonschema_description:"The confirmed gs:// URI of the still to animate"`
 	VideoPrompt string `json:"videoPrompt" jsonschema_description:"The motion/camera description for the clip"`
-	VideoDest   string `json:"videoDest" jsonschema_description:"The gs:// destination the clip will be written to"`
 }
 type ApproveOutput struct {
 	Decision string `json:"decision"`
 	Detail   string `json:"detail"`
 }
 
-// RenderInput / RenderOutput are the video-agent's veo_render tool contract.
-type RenderInput struct {
-	ImageURI string `json:"imageUri" jsonschema_description:"The confirmed gs:// URI of the still to animate"`
-	Motion   string `json:"motion" jsonschema_description:"The motion/camera description for the clip"`
-	Dest     string `json:"dest" jsonschema_description:"The gs:// destination (bucket+prefix) to write the clip to"`
-}
-type RenderOutput struct {
-	VideoURI string `json:"videoUri"`
+// ImageInput is the image specialist's generate_image contract. The write
+// destination is fixed by the code (closure), so the model supplies only the
+// creative prompt.
+type ImageInput struct {
+	Prompt string `json:"prompt" jsonschema_description:"The full text prompt describing the still image to generate"`
 }
 
-// VerifyInput / VerifyOutput are the shared verify_by_listing tool contract. It
-// is the heart of the series' discipline: prove an artifact by LISTING its
-// destination, never by trusting a tool's resource_link.
-type VerifyInput struct {
-	Dest       string `json:"dest" jsonschema_description:"The gs:// destination or prefix to list"`
-	WantSuffix string `json:"wantSuffix,omitempty" jsonschema_description:"Optional: return the leaf ending with this suffix (e.g. \".mp4\")"`
+// RenderInput is the video specialist's veo_render contract.
+type RenderInput struct {
+	ImageURI string `json:"imageUri" jsonschema_description:"The confirmed gs:// URI of the still to animate"`
+	Motion   string `json:"motion" jsonschema_description:"The motion/camera description for the clip (e.g. 'slow push-in with drifting mist')"`
 }
-type VerifyOutput struct {
-	Found   bool     `json:"found"`
-	URI     string   `json:"uri,omitempty"`
-	Entries []string `json:"entries,omitempty"`
+
+// MusicInput is the music specialist's compose_music contract.
+type MusicInput struct {
+	Prompt string `json:"prompt" jsonschema_description:"The text prompt describing the music to compose (mood, instruments, tempo)"`
+}
+
+// CombineInput is the av specialist's combine_av contract. Both URIs are
+// runtime values threaded from the video and music steps.
+type CombineInput struct {
+	VideoURI string `json:"videoUri" jsonschema_description:"The confirmed gs:// URI of the rendered video clip"`
+	AudioURI string `json:"audioUri" jsonschema_description:"The confirmed gs:// URI of the composed music score"`
+}
+
+// URIOutput is the shared, confirmed-by-listing result every specialist tool
+// returns. The URI is proven to exist (the tool listed it) — never a bare
+// resource_link.
+type URIOutput struct {
+	URI string `json:"uri"`
 }
 
 func main() {
@@ -203,8 +227,10 @@ func run(ctx context.Context, reject bool, subject string) error {
 	if project == "" {
 		return fmt.Errorf("set GOOGLE_CLOUD_PROJECT (or PROJECT_ID) to your Google Cloud project")
 	}
-	location := firstEnv("GOOGLE_CLOUD_LOCATION", "GOOGLE_CLOUD_REGION")
-	if location == "" {
+	location := firstEnv("GOOGLE_CLOUD_LOCATION")
+	if location == "" || location == "global" {
+		// The image/video models are regional; "global" (a common default) makes
+		// Vertex reject them. Standardize on us-central1 unless told otherwise.
 		location = "us-central1"
 	}
 	base := os.Getenv("GENMEDIA_BUCKET")
@@ -224,8 +250,8 @@ func run(ctx context.Context, reject bool, subject string) error {
 	}
 
 	// Per-run destinations. The CODE owns these so it can prove every artifact by
-	// listing at the end, independent of what the LLM reports. The orchestrator
-	// is TOLD these destinations and passes them to each specialist.
+	// listing at the end, independent of what the LLM reports, and so the wrapper
+	// tools write deterministically.
 	id := runID()
 	imageDest := gcsJoin(base, id, "image")           // nanobanana: gcs_bucket_uri (bucket+prefix OK)
 	videoDest := gcsJoin(base, id, "video")           // veo: bucket (bucket+prefix OK; writes <jobid>/ under it)
@@ -235,10 +261,9 @@ func run(ctx context.Context, reject bool, subject string) error {
 	finalURI := "gs://" + bucket + "/" + finalName    // where avtool writes
 
 	// EXPERIMENTAL: genkit.WithExperimental() is REQUIRED for the exp agent APIs
-	// (genkitx.DefineAgent / DefineInterruptibleTool, the Agents/Artifacts
-	// middleware). Registering the middleware plugin makes the middleware
-	// resolvable by name in the Dev UI; using them via ai.WithUse does not
-	// require it, but it keeps `genkit start` reflection tidy.
+	// (genkitx.DefineAgent / DefineTool / DefineInterruptibleTool, the
+	// Agents/Artifacts middleware). Registering the middleware plugin keeps the
+	// Dev-UI reflection tidy.
 	g := genkit.Init(ctx,
 		genkit.WithPlugins(
 			&googlegenai.VertexAI{ProjectID: project, Location: location},
@@ -265,122 +290,146 @@ func run(ctx context.Context, reject bool, subject string) error {
 	}
 	log.Printf("connected: %d server(s), %d tool(s) total", len(producerServers), len(tools))
 
-	veoTool := findTool(tools, "veo_veo_i2v")
-	if veoTool == nil {
-		return fmt.Errorf("veo_veo_i2v tool not found after requireTools passed (should be impossible)")
+	imageMCP := findTool(tools, "nanobanana_nanobanana_image_generation")
+	veoMCP := findTool(tools, "veo_veo_i2v")
+	lyriaMCP := findTool(tools, "lyria_lyria_generate_music")
+	avMCP := findTool(tools, "avtool_ffmpeg_combine_audio_and_video")
+	if imageMCP == nil || veoMCP == nil || lyriaMCP == nil || avMCP == nil {
+		return fmt.Errorf("a required MCP tool was missing after requireTools passed (should be impossible)")
 	}
 
 	gate := &renderGate{}
 
-	// ------------------------------------------------------------------ tools
-	// verify_by_listing: the shared verify-by-listing tool. Every specialist
-	// calls it to CONFIRM its output exists and get the exact leaf gs:// URI to
-	// report upward — never trusting the media tool's resource_link.
-	verifyTool := genkitx.DefineTool(g, "verify_by_listing",
-		"Confirm a generated artifact by LISTING its Google Cloud Storage destination and return its exact gs:// leaf URI. "+
-			"ALWAYS call this after generating media; a tool's resource_link is NOT proof of success.",
-		func(ctx context.Context, in VerifyInput) (VerifyOutput, error) {
-			res, err := verify.VerifyRecursive(ctx, in.Dest)
+	// ------------------------------------------------------------ specialist tools
+	// Each is a REGISTERED wrapper (see banner correction #3) that invokes its
+	// genmedia MCP tool via RunRaw with footgun-correct arguments, then proves
+	// the output by LISTING it and returns the confirmed leaf gs:// URI.
+
+	// generate_image: nanobanana still -> fixed imageDest (bucket+prefix OK).
+	generateImageTool := genkitx.DefineTool(g, "generate_image",
+		"Generate ONE still image from a text prompt and return its confirmed gs:// URI (verified by listing).",
+		func(ctx context.Context, in ImageInput) (URIOutput, error) {
+			log.Printf("generate_image: nanobanana -> %s", imageDest)
+			args := map[string]any{
+				"prompt":          in.Prompt,
+				"gcs_bucket_uri":  imageDest,
+				"output_filename": "still.png",
+			}
+			if _, err := imageMCP.RunRaw(ctx, args); err != nil {
+				return URIOutput{}, fmt.Errorf("nanobanana image generation failed: %w", err)
+			}
+			uri, err := confirmLeaf(ctx, "image", imageDest, "")
 			if err != nil {
-				return VerifyOutput{}, fmt.Errorf("verify_by_listing %s: %w", in.Dest, err)
+				return URIOutput{}, err
 			}
-			log.Printf("verify_by_listing: %s", res)
-			for _, e := range res.Entries {
-				log.Printf("  - %s", e)
-			}
-			if !res.Exists || len(res.Entries) == 0 {
-				return VerifyOutput{Found: false}, nil
-			}
-			uri := res.Entries[0]
-			if in.WantSuffix != "" {
-				uri = ""
-				for _, e := range res.Entries {
-					if strings.HasSuffix(e, in.WantSuffix) {
-						uri = e
-						break
-					}
-				}
-				if uri == "" {
-					return VerifyOutput{Found: false, Entries: res.Entries}, nil
-				}
-			}
-			return VerifyOutput{Found: true, URI: uri, Entries: res.Entries}, nil
+			return URIOutput{URI: uri}, nil
 		})
 
-	// veo_render: the GATED Veo render. It refuses until a human has approved via
-	// approve_video_render (the gate). This is what guarantees "the Veo render
-	// only runs post-approval" even though the interrupt itself cannot live in
-	// this sub-agent (v1.13.1 limitation). Params are hand-set (verified against
-	// the veo server source: image_uri/prompt/model/bucket/num_videos/
-	// generate_audio) so the render is deterministic, then verified by listing.
+	// veo_render: GATED Veo 3 render -> fixed videoDest. Refuses until a human has
+	// approved via approve_video_render. This is what guarantees the render only
+	// runs post-approval even though the interrupt itself lives on the
+	// orchestrator (v1.13.1 limitation, correction #2).
 	renderTool := genkitx.DefineTool(g, "veo_render",
 		"Render a short video clip from an input still using Veo 3. REQUIRES prior human approval; "+
-			"it will refuse if the render has not been approved. Returns the confirmed gs:// URI of the clip.",
-		func(ctx context.Context, in RenderInput) (RenderOutput, error) {
+			"it refuses if the render has not been approved. Returns the confirmed gs:// URI of the clip.",
+		func(ctx context.Context, in RenderInput) (URIOutput, error) {
 			if !gate.isOpen() {
-				return RenderOutput{}, fmt.Errorf("veo_render refused: the human has not approved this render. " +
+				return URIOutput{}, fmt.Errorf("veo_render refused: the human has not approved this render. " +
 					"The orchestrator must call approve_video_render and receive approval first")
 			}
-			log.Printf("veo_render: APPROVED — calling veo_veo_i2v (image=%s dest=%s)", in.ImageURI, in.Dest)
+			log.Printf("veo_render: APPROVED — veo_veo_i2v (image=%s -> %s)", in.ImageURI, videoDest)
 			args := map[string]any{
 				"image_uri":      in.ImageURI,
 				"prompt":         in.Motion,
 				"model":          veoModel,
-				"bucket":         in.Dest,
+				"bucket":         videoDest,
 				"num_videos":     1,
 				"generate_audio": true,
 			}
-			if _, err := veoTool.RunRaw(ctx, args); err != nil {
-				return RenderOutput{}, fmt.Errorf("veo render failed: %w", err)
+			if _, err := veoMCP.RunRaw(ctx, args); err != nil {
+				return URIOutput{}, fmt.Errorf("veo render failed: %w", err)
 			}
 			// veo writes into a server-assigned <jobid>/ subfolder; list recursively
 			// for the .mp4 leaf.
-			res, err := verify.VerifyRecursive(ctx, in.Dest)
+			uri, err := confirmLeaf(ctx, "video", videoDest, ".mp4")
 			if err != nil {
-				return RenderOutput{}, fmt.Errorf("verifying veo output: %w", err)
+				return URIOutput{}, err
 			}
-			log.Printf("veo_render verify: %s", res)
-			for _, e := range res.Entries {
-				log.Printf("  - %s", e)
+			return URIOutput{URI: uri}, nil
+		})
+
+	// compose_music: lyria score -> fixed BARE bucket + musicName (ext forced by
+	// server; model_id must be the clip-preview to route through global).
+	composeMusicTool := genkitx.DefineTool(g, "compose_music",
+		"Compose ONE short instrumental music score from a text prompt and return its confirmed gs:// URI (verified by listing).",
+		func(ctx context.Context, in MusicInput) (URIOutput, error) {
+			log.Printf("compose_music: lyria -> gs://%s/%s.*", bucket, musicName)
+			args := map[string]any{
+				"prompt":            in.Prompt,
+				"output_gcs_bucket": bucket, // BARE bucket name (footgun)
+				"output_filename":   musicName,
+				"model_id":          lyriaModel,
 			}
-			for _, e := range res.Entries {
-				if strings.HasSuffix(e, ".mp4") {
-					return RenderOutput{VideoURI: e}, nil
-				}
+			if _, err := lyriaMCP.RunRaw(ctx, args); err != nil {
+				return URIOutput{}, fmt.Errorf("lyria music generation failed: %w", err)
 			}
-			return RenderOutput{}, fmt.Errorf("no .mp4 found under %s after veo render", in.Dest)
+			uri, err := confirmLeaf(ctx, "music", musicPrefix, "")
+			if err != nil {
+				return URIOutput{}, err
+			}
+			return URIOutput{URI: uri}, nil
+		})
+
+	// combine_av: avtool mux of the clip + score -> fixed BARE bucket + finalName.
+	combineTool := genkitx.DefineTool(g, "combine_av",
+		"Mux a video clip and a music score into ONE scored video and return its confirmed gs:// URI (verified by listing).",
+		func(ctx context.Context, in CombineInput) (URIOutput, error) {
+			log.Printf("combine_av: avtool %s + %s -> %s", in.VideoURI, in.AudioURI, finalURI)
+			args := map[string]any{
+				"input_video_uri":   in.VideoURI,
+				"input_audio_uri":   in.AudioURI,
+				"output_gcs_bucket": bucket, // BARE bucket name (footgun)
+				"output_filename":   finalName,
+			}
+			if _, err := avMCP.RunRaw(ctx, args); err != nil {
+				return URIOutput{}, fmt.Errorf("avtool combine failed: %w", err)
+			}
+			uri, err := confirmLeaf(ctx, "final", finalURI, "")
+			if err != nil {
+				return URIOutput{}, err
+			}
+			return URIOutput{URI: uri}, nil
 		})
 
 	// approve_video_render: the ORCHESTRATOR's interruptible tool. On the first
 	// call (res==nil) it PAUSES with a typed RenderApproval payload; the client
 	// resolves the interrupt with an ApprovalDecision. On approval it OPENS the
 	// gate; on rejection it leaves it shut. This is the human-in-the-loop step,
-	// and it lives on the orchestrator because that is where interrupts surface.
+	// on the orchestrator because that is where interrupts surface.
 	approveTool := genkitx.DefineInterruptibleTool(g, "approve_video_render",
 		"Ask a human to approve the expensive Veo video render before it runs. Call this AFTER the still "+
 			"is ready and BEFORE delegating to the video agent. Pass the still URI and the motion prompt.",
 		func(ctx context.Context, in ApproveInput, res *ApprovalDecision) (ApproveOutput, error) {
 			if res == nil {
-				log.Printf("approve_video_render: PAUSING for human approval (image=%s dest=%s)", in.ImageURI, in.VideoDest)
+				log.Printf("approve_video_render: PAUSING for human approval (image=%s)", in.ImageURI)
 				return ApproveOutput{}, tool.Interrupt(RenderApproval{
 					ImageURI:    in.ImageURI,
 					VideoPrompt: in.VideoPrompt,
-					VideoDest:   in.VideoDest,
 					Model:       veoModel,
 				})
 			}
 			if res.Approved {
 				gate.open()
 				log.Printf("approve_video_render: APPROVED by human — render gate opened")
-				return ApproveOutput{Decision: "approved", Detail: "The human APPROVED the render. You may now delegate_to_video."}, nil
+				return ApproveOutput{Decision: "approved", Detail: "The human APPROVED the render. You may now delegate to the video agent."}, nil
 			}
 			log.Printf("approve_video_render: REJECTED by human — render gate stays shut")
-			return ApproveOutput{Decision: "rejected", Detail: "The human REJECTED the render. Do NOT delegate_to_video; stop and report that the render was declined."}, nil
+			return ApproveOutput{Decision: "rejected", Detail: "The human REJECTED the render. Do NOT delegate to the video agent; stop and report that the render was declined."}, nil
 		})
 
 	// ------------------------------------------------------------ sub-agents
-	// Each specialist gets the shared quirks fragment (the footguns the LLM can't
-	// see), its own server's tool(s), the shared verify_by_listing tool, and the
+	// Each specialist gets the shared quirks fragment (context on the genmedia
+	// footguns the wrappers already enforce), its own wrapper tool, and the
 	// Artifacts middleware so its output can be merged into the orchestrator's
 	// session (ArtifactStrategySession). Sub-agents have NO session store: each
 	// delegation runs them one-shot (client-managed), which is what lets the
@@ -388,111 +437,99 @@ func run(ctx context.Context, reject bool, subject string) error {
 	imageAgent := genkitx.DefineAgent(g, "image-agent",
 		aix.InlinePrompt{
 			ai.WithModelName(modelName),
-			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE IMAGE SPECIALIST. Generate ONE still image with the tool " +
-				"nanobanana_nanobanana_image_generation, writing it to Google Cloud Storage via gcs_bucket_uri set to the " +
-				"destination in your task. Then call verify_by_listing on that same destination to confirm it and get the exact " +
-				"gs:// URI. Report that URI on its own line as: IMAGE_URI=<uri>. Be brief."),
-			ai.WithTools(append(refsWithPrefix(tools, "nanobanana_"), verifyTool)...),
+			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE IMAGE SPECIALIST. Generate ONE still image by calling the " +
+				"generate_image tool with a vivid, detailed prompt for the subject in your task. The tool writes to Google Cloud " +
+				"Storage and returns the CONFIRMED gs:// URI (it has already verified the file by listing). Report that URI on its own " +
+				"line as: IMAGE_URI=<uri>. Be brief."),
+			ai.WithTools(generateImageTool),
 			ai.WithToolChoice(ai.ToolChoiceAuto),
-			ai.WithMaxTurns(8),
+			ai.WithMaxTurns(6),
 			ai.WithUse(&middlewarex.Artifacts{}),
 		},
-		aix.WithDescription[any]("Generates a still image with nanobanana and confirms it by listing."),
+		aix.WithDescription[any]("Generates a still image from a prompt and returns a listing-confirmed gs:// URI."),
 	)
 
 	videoAgent := genkitx.DefineAgent(g, "video-agent",
 		aix.InlinePrompt{
 			ai.WithModelName(modelName),
-			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE VIDEO SPECIALIST. Render ONE clip from the input still using the " +
-				"tool veo_render. Pass imageUri, motion, and dest exactly as given in your task. veo_render is human-gated and will " +
-				"refuse if the render was not approved; if it refuses, report the refusal and stop. On success it returns the confirmed " +
-				"clip URI — report it on its own line as: VIDEO_URI=<uri>. Be brief."),
+			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE VIDEO SPECIALIST. Render ONE clip from the input still by calling " +
+				"the veo_render tool with imageUri and motion exactly as given in your task. veo_render is human-gated and will refuse " +
+				"if the render was not approved; if it refuses, report the refusal and stop. On success it returns the CONFIRMED clip " +
+				"URI — report it on its own line as: VIDEO_URI=<uri>. Be brief."),
 			ai.WithTools(renderTool),
 			ai.WithToolChoice(ai.ToolChoiceAuto),
 			ai.WithMaxTurns(6),
 			ai.WithUse(&middlewarex.Artifacts{}),
 		},
-		aix.WithDescription[any]("Renders a video clip from a still with Veo — human-gated before the render."),
+		aix.WithDescription[any]("Renders a video clip from a still with Veo 3 — human-gated before the render."),
 	)
 
 	musicAgent := genkitx.DefineAgent(g, "music-agent",
 		aix.InlinePrompt{
 			ai.WithModelName(modelName),
-			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE MUSIC SPECIALIST. Compose ONE short score with the tool " +
-				"lyria_lyria_generate_music, using model_id " + lyriaModel + ", output_gcs_bucket set to the BARE bucket name in your " +
-				"task, and output_filename set to the base name in your task. Then call verify_by_listing on the gs:// prefix in your " +
-				"task to confirm it and get the exact gs:// URI (lyria forces the extension, so list by prefix). Report it on its own " +
-				"line as: MUSIC_URI=<uri>. Be brief."),
-			ai.WithTools(append(refsWithPrefix(tools, "lyria_"), verifyTool)...),
+			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE MUSIC SPECIALIST. Compose ONE short instrumental score by calling " +
+				"the compose_music tool with a prompt for the mood in your task. The tool returns the CONFIRMED gs:// URI. Report it on " +
+				"its own line as: MUSIC_URI=<uri>. Be brief."),
+			ai.WithTools(composeMusicTool),
 			ai.WithToolChoice(ai.ToolChoiceAuto),
-			ai.WithMaxTurns(8),
+			ai.WithMaxTurns(6),
 			ai.WithUse(&middlewarex.Artifacts{}),
 		},
-		aix.WithDescription[any]("Composes a music score with lyria and confirms it by listing."),
+		aix.WithDescription[any]("Composes a music score from a prompt and returns a listing-confirmed gs:// URI."),
 	)
 
 	avAgent := genkitx.DefineAgent(g, "av-agent",
 		aix.InlinePrompt{
 			ai.WithModelName(modelName),
 			ai.WithSystem(genmedia.QuirksPrompt + "\n\nYOU ARE THE AUDIO/VIDEO SPECIALIST. Mux the given clip and score into one scored " +
-				"video with the tool avtool_ffmpeg_combine_audio_and_video: set input_video_uri and input_audio_uri to the URIs in your " +
-				"task, output_gcs_bucket to the BARE bucket name, and output_filename to the name in your task. Then call verify_by_listing " +
-				"on the output gs:// URI to confirm it. Report it on its own line as: FINAL_URI=<uri>. Be brief."),
-			ai.WithTools(append(refsWithPrefix(tools, "avtool_"), verifyTool)...),
+				"video by calling the combine_av tool with videoUri and audioUri exactly as given in your task. The tool returns the " +
+				"CONFIRMED gs:// URI. Report it on its own line as: FINAL_URI=<uri>. Be brief."),
+			ai.WithTools(combineTool),
 			ai.WithToolChoice(ai.ToolChoiceAuto),
-			ai.WithMaxTurns(8),
+			ai.WithMaxTurns(6),
 			ai.WithUse(&middlewarex.Artifacts{}),
 		},
-		aix.WithDescription[any]("Muxes a clip and a score into one scored video with avtool and confirms it by listing."),
+		aix.WithDescription[any]("Muxes a clip and a score into one scored video with avtool and returns a listing-confirmed gs:// URI."),
 	)
 
 	// ---------------------------------------------------------- orchestrator
 	// The orchestrator uses the Agents middleware (auto-injects delegate_to_<name>
 	// tools + lists the sub-agents in its system prompt) with ArtifactStrategySession
 	// (merge sub-agent artifacts into this session), plus the Artifacts middleware
-	// read-only (so it can review merged artifacts) and the approve_video_render
-	// interrupt. A FileSessionStore persists the conversation so the Dev UI can
-	// resume it. The system prompt hard-codes this run's destinations so the
-	// orchestrator threads exact gs:// URIs between specialists.
+	// read-only and the approve_video_render interrupt. A FileSessionStore persists
+	// the conversation so the Dev UI can resume it.
 	store, err := localstore.NewFileSessionStore[any]("./.genkit/snapshots/producer")
 	if err != nil {
 		return fmt.Errorf("creating session store: %w", err)
 	}
 
-	orchestratorSystem := fmt.Sprintf(`You are an agentic video PRODUCER. You do not call media tools yourself; you
+	orchestratorSystem := `You are an agentic video PRODUCER. You do not call media tools yourself; you
 DELEGATE to specialist sub-agents (image, video, music, av) via their
 delegate_to_<name> tools, and you PAUSE for human approval before the expensive
 video render.
 
-This run's fixed destinations (pass them verbatim in each delegation task):
-- IMAGE  -> gcs_bucket_uri = %q
-- VIDEO  -> dest           = %q
-- MUSIC  -> output_gcs_bucket = %q  (BARE bucket) ; output_filename = %q
-- FINAL  -> output_gcs_bucket = %q  (BARE bucket) ; output_filename = %q
-
 Follow these steps IN ORDER, one tool call per turn, and copy each returned
 gs:// URI VERBATIM into the next step:
 
-1. delegate_to_image: ask it to generate the still (subject in the user's
-   request) at the IMAGE destination and report IMAGE_URI.
-2. approve_video_render: pass imageUri=<the IMAGE_URI>, the motion/camera
-   videoPrompt, and videoDest=<the VIDEO dest>. This PAUSES for a human.
+1. delegate to the image agent: ask it to generate the still (use the subject in
+   the user's request). It reports IMAGE_URI.
+2. approve_video_render: pass imageUri=<the IMAGE_URI> and the motion/camera
+   videoPrompt. This PAUSES for a human.
    - If the result decision is "approved": continue to step 3.
-   - If the result decision is "rejected": STOP. Do not delegate_to_video.
-     Give a brief final answer saying the render was declined and list the
-     still you did produce.
-3. delegate_to_video: pass imageUri=<the IMAGE_URI>, the motion, and
-   dest=<the VIDEO dest>. It returns VIDEO_URI.
-4. delegate_to_music: ask it to compose a score (mood in the user's request)
-   to the MUSIC destination and report MUSIC_URI.
-5. delegate_to_av: pass input_video_uri=<VIDEO_URI>, input_audio_uri=<MUSIC_URI>,
-   and the FINAL destination. It returns FINAL_URI.
+   - If the result decision is "rejected": STOP. Do not delegate to the video
+     agent. Give a brief final answer saying the render was declined and list
+     the still you did produce.
+3. delegate to the video agent: pass the still's imageUri and the motion. It
+   returns VIDEO_URI.
+4. delegate to the music agent: ask it to compose a score (use the mood in the
+   user's request). It returns MUSIC_URI.
+5. delegate to the av agent: pass videoUri=<VIDEO_URI> and audioUri=<MUSIC_URI>.
+   It returns FINAL_URI.
 6. Give a brief final answer listing IMAGE_URI, VIDEO_URI, MUSIC_URI, FINAL_URI.
 
 Before each delegation or the approval call, send one short sentence saying what
 you are about to do. Never skip the approval step, and never delegate to the
-video agent before approval.`,
-		imageDest, videoDest, bucket, musicName, bucket, finalName)
+video agent before approval.`
 
 	orchestrator := genkitx.DefineAgent(g, "producer",
 		aix.InlinePrompt{
@@ -608,7 +645,6 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 
 	for {
 		var interrupts []*ai.Part
-		var ended bool
 		for chunk, rerr := range conn.Receive() {
 			if rerr != nil {
 				return nil, fmt.Errorf("receiving from orchestrator: %w", rerr)
@@ -630,22 +666,18 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 				log.Printf("[producer] artifact: %s", chunk.Artifact.Name)
 			}
 			if chunk.TurnEnd != nil {
-				ended = true
 				break
 			}
 		}
 		if len(interrupts) == 0 {
-			if ended {
-				break
-			}
 			break
 		}
 		// Resolve every interrupt with the approve/reject decision.
 		resume := &aix.ToolResume{}
 		for _, ip := range interrupts {
 			if meta, ok := tool.InterruptAs[RenderApproval](ip); ok {
-				log.Printf("[human] approval requested: render %s -> %s (%s); deciding: %s",
-					meta.ImageURI, meta.VideoDest, meta.Model, decisionWord(approve))
+				log.Printf("[human] approval requested: render %s (%s); deciding: %s",
+					meta.ImageURI, meta.Model, decisionWord(approve))
 			}
 			part, perr := approveTool.Resume(ip, ApprovalDecision{Approved: approve})
 			if perr != nil {
@@ -662,9 +694,10 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 	return conn.Output()
 }
 
-// reportLeaf lists dest and returns the chosen leaf URI (by suffix, else first),
-// logging what it found. It is the authoritative, code-owned verify-by-listing.
-func reportLeaf(ctx context.Context, label, dest, wantSuffix string) (string, error) {
+// confirmLeaf lists dest and returns the chosen leaf URI (by suffix, else
+// first), erroring if nothing is there. Used inside the specialist tools so each
+// tool's success is proven by listing, not by a resource_link.
+func confirmLeaf(ctx context.Context, label, dest, wantSuffix string) (string, error) {
 	res, err := verify.VerifyRecursive(ctx, dest)
 	if err != nil {
 		return "", fmt.Errorf("verify %s at %s: %w", label, dest, err)
@@ -674,7 +707,7 @@ func reportLeaf(ctx context.Context, label, dest, wantSuffix string) (string, er
 		log.Printf("  - %s", e)
 	}
 	if !res.Exists || len(res.Entries) == 0 {
-		return "", fmt.Errorf("no %s artifact found at %s", label, dest)
+		return "", fmt.Errorf("no %s artifact found at %s (listing returned nothing)", label, dest)
 	}
 	if wantSuffix != "" {
 		for _, e := range res.Entries {
@@ -687,6 +720,12 @@ func reportLeaf(ctx context.Context, label, dest, wantSuffix string) (string, er
 	return res.Entries[0], nil
 }
 
+// reportLeaf is confirmLeaf used for the final authoritative, code-owned
+// verify-by-listing pass (identical mechanics; named for the call site).
+func reportLeaf(ctx context.Context, label, dest, wantSuffix string) (string, error) {
+	return confirmLeaf(ctx, label, dest, wantSuffix)
+}
+
 // findTool returns the aggregated tool with the exact namespaced name, or nil.
 func findTool(tools []ai.Tool, name string) ai.Tool {
 	for _, t := range tools {
@@ -695,18 +734,6 @@ func findTool(tools []ai.Tool, name string) ai.Tool {
 		}
 	}
 	return nil
-}
-
-// refsWithPrefix returns the tools whose namespaced name starts with prefix, as
-// []ai.ToolRef ready for ai.WithTools.
-func refsWithPrefix(tools []ai.Tool, prefix string) []ai.ToolRef {
-	var refs []ai.ToolRef
-	for _, t := range tools {
-		if strings.HasPrefix(t.Name(), prefix) {
-			refs = append(refs, t)
-		}
-	}
-	return refs
 }
 
 // requireTools confirms every required namespaced tool name is present.
