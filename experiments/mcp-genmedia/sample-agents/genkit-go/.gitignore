@@ -1,0 +1,7 @@
+# bin/genmedia-launch is SOURCE (a POSIX shell launcher), not a build artifact,
+# and must ship with this module so the series runs from a fresh checkout. The
+# repo-root .gitignore excludes any `bin/` directory; re-include this one and its
+# launcher script. (Downloaded genmedia binaries live in $GENMEDIA_CACHE, not
+# here, so nothing built ever lands in this dir.)
+!bin/
+!bin/genmedia-launch
