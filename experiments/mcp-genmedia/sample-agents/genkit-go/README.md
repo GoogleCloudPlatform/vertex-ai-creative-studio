@@ -22,7 +22,7 @@ then *read* at `http://localhost:4000`.
 | 0 · `tier0-image/` | single tool, single `generate` | `nanobanana` | STABLE |
 | 1 · `tier1-video/` | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | STABLE |
 | **2 · `tier2-producer/`** | multi-server producer flow + in-prompt crosswalk | nb → veo → lyria → avtool | **STABLE** *(this tier)* |
-| 3 · `tier3-preview/` | agents middleware + interrupt | all, partitioned | PREVIEW *(future PR)* |
+| 3 · `tier3-preview/` | **agents middleware** (delegation) + **tool interrupt** (human approval) | all, partitioned across sub-agents | **PREVIEW** — see [Tier 3](#run-tier-3-preview--agentic-producer-with-delegation--a-human-approval-interrupt) |
 
 Tiers land one per PR. They share the foundation Tier 0 established and later
 tiers consume without changes:
@@ -41,6 +41,7 @@ genkit-go/
   tier0-image/main.go    Tier 0 — single tool, single generate
   tier1-video/main.go    Tier 1 — DefineFlow: nanobanana -> veo_i2v
   tier2-producer/main.go Tier 2 — DefineFlow: nanobanana -> veo_i2v -> lyria -> avtool (one shared toolset)
+  tier3-preview/main.go  Tier 3 — PREVIEW: orchestrator agent delegates to image/video/music/av sub-agents; pauses on a human-approval interrupt before Veo (experimental .../exp APIs)
 ```
 
 ## Why lead with the Dev UI
@@ -241,6 +242,90 @@ asserts every required tool is present before the flow runs.
 > adversarial: constrain it and/or validate the tool arguments the model chooses,
 > rather than trusting free text.
 
+## Run Tier 3 (PREVIEW) — agentic producer with delegation + a human-approval interrupt
+
+> ### ⚠️ PREVIEW — experimental APIs, not stable
+> Tier 3 is a **PREVIEW capstone**. It uses the **experimental Genkit `.../exp`
+> packages** (`genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`,
+> `plugins/middleware/exp`) behind **`genkit.WithExperimental()`**. That API is
+> **not stable**, is **pinned to `genkit/go v1.13.1`**, and **may break on
+> upgrade**. Tier 3 is **additive and self-contained**: nothing in Tiers 0–2
+> depends on it, and the dependency floor is unchanged (`genkit/go v1.13.1` +
+> `mcp-go v0.33.0`, no `replace` directives). Treat it as a flourish that shows
+> where Genkit Go is going — not as the series' foundation.
+
+Where Tier 2's **code** fixes the order of the four servers (still → clip → score
+→ mux) and the **model** only picks each tool's arguments, Tier 3 hands the
+sequencing to an **orchestrator agent**. It **delegates** to four specialist
+sub-agents through the experimental **Agents middleware**, and it **pauses for a
+human** — a **tool interrupt** — before the expensive Veo render.
+
+```
+producer (agent, Agents middleware)
+  ├─ delegate_to_image-agent   -> image-agent : generate_image (nanobanana)
+  ├─ approve_video_render       -> INTERRUPT: pause for human approve/reject
+  ├─ delegate_to_video-agent   -> video-agent : veo_render (GATED, Veo 3)
+  ├─ delegate_to_music-agent   -> music-agent : compose_music (lyria)
+  └─ delegate_to_av-agent      -> av-agent    : combine_av (avtool mux)
+```
+
+Run it under the Dev UI to watch the delegation spans and the interrupt
+pause/resume:
+
+```bash
+export GOOGLE_CLOUD_PROJECT=your-project
+export GOOGLE_CLOUD_LOCATION=us-central1        # NOT "global" — the image/video models are regional
+export GENMEDIA_BUCKET=gs://your-bare-bucket     # BARE bucket, no path (lyria/avtool write at the root)
+
+genkit start -- go run ./tier3-preview           # then open http://localhost:4000
+```
+
+In the Dev UI trace you see the orchestrator turn with a `delegate_to_<name>`
+span per sub-agent nested inside it, each sub-agent's own tool call nested under
+that, and — between the image and video delegations — the `approve_video_render`
+tool **pausing** the run. Approve it in the UI and the trace resumes into the
+video delegation; reject it and the run stops before Veo ever executes.
+
+**No Dev UI? Drive it headless.** The program also drives the approve/reject
+resume itself (the stand-in for a human), so it runs with no CLI installed:
+
+```bash
+go run ./tier3-preview            # approve path: image -> (approve) -> video -> music -> mux
+go run ./tier3-preview -reject    # reject path: image -> (reject) -> STOP, no video
+```
+
+### The two things Tier 3 shows (and one honest adaptation)
+
+- **Delegation (Agents middleware).** The orchestrator holds only the sub-agents
+  (via `middlewarex.Agents{Agents: […Ref()], ArtifactStrategy: session}`) and an
+  approval tool. The middleware injects one `delegate_to_<name>` tool per
+  sub-agent and lists them in the orchestrator's system prompt; each specialist
+  owns exactly one genmedia step.
+- **Human-in-the-loop (tool interrupt).** `approve_video_render` is an
+  interruptible tool: it **pauses** with a typed payload (the still URI + motion
+  prompt), and the client resumes it with an approve/reject decision.
+- **The honest adaptation.** In `v1.13.1`, a **sub-agent cannot itself hold an
+  interactive interrupt** — the Agents middleware turns a sub-agent interrupt
+  into a plain tool response ("Interactive sub-agent interrupts are not currently
+  supported"). So the interrupt lives on the **orchestrator**, and the Veo render
+  is gated on a process flag the approval flips: the video specialist's
+  `veo_render` **refuses** until approval has opened the gate. This guarantees —
+  provably, by listing — that **Veo only ever runs after approval**. The
+  top-of-file comment in `tier3-preview/main.go` records the full list of
+  experimental-API corrections found against the real `v1.13.1` source.
+
+Tier 3 keeps the series' discipline intact: it reuses `internal/genmedia` and
+`internal/verify`, carries the same [footguns](#the-resource_link-rule) (bare
+bucket; explicit Veo-3 model; Lyria's forced extension + global region), and
+**proves every artifact by verify-by-listing** — each specialist tool confirms
+its own output, and the program independently lists every destination at the end.
+
+> **The same journey elsewhere.** Delegation + human approval is a shape you can
+> also build in the sibling **ADK genmedia series** ([`../adk/`](../adk/)) and,
+> stably, atop **Tier 2** ([`tier2-producer/`](tier2-producer/)) in this same
+> Genkit Go series — see [Related samples](#related-samples). Tier 3 is the
+> *preview* of doing it with Genkit's first-class agent primitives.
+
 ## The `resource_link` rule
 
 The genmedia GCS-writing tools (nanobanana/gemini image, veo, lyria, omni)
@@ -287,9 +372,10 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
 | Go | `go 1.25` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
-| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1,2}-*/main.go` `modelName` |
-| Veo model (Tiers 1-2) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` `veoModel` |
-| Lyria model (Tier 2) | `lyria-3-clip-preview` | `tier2-producer/main.go` `lyriaModel` |
+| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
+| Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
+| Lyria model (Tiers 2-3) | `lyria-3-clip-preview` | `tier2-producer/main.go` + `tier3-preview/main.go` `lyriaModel` |
+| **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`, `plugins/middleware/exp` behind `WithExperimental()` — **pinned to `genkit/go v1.13.1`, may break on upgrade** | `tier3-preview/main.go` |
 
 ## Related samples
 
