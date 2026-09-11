@@ -6,18 +6,22 @@ independently reviewable PR. The through-line of the whole series is the
 **Genkit Developer UI and per-turn tracing** — every tier is meant to be *run*,
 then *read* at `http://localhost:4000`.
 
-> **You are here: Tier 1.** A two-step `genkit.DefineFlow` that chains
-> `nanobanana` → `veo_i2v` (image → video). It builds directly on **Tier 0**, the
-> minimal "one tool, one generate" program (also the Go counterpart to the
-> JavaScript [Nano Banana sample](../genkit/); see [Related samples](#related-samples)).
+> **You are here: Tier 2.** A multi-server **producer** flow: one
+> `genkit.DefineFlow` that composes **four** genmedia MCP servers —
+> `nanobanana` → `veo_i2v` → `lyria` → `avtool` — into a single traced production
+> line (still → clip → score → **muxed scored video**), with every artifact proven
+> by verify-by-listing. It builds on **Tier 1** (the two-server chain) and
+> **Tier 0** (the minimal "one tool, one generate" program, also the Go
+> counterpart to the JavaScript [Nano Banana sample](../genkit/); see
+> [Related samples](#related-samples)).
 
 ## The series
 
 | Tier | What it adds | Servers/tools | Status |
 |------|--------------|---------------|--------|
 | 0 · `tier0-image/` | single tool, single `generate` | `nanobanana` | STABLE |
-| **1 · `tier1-video/`** | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | **STABLE** *(this tier)* |
-| 2 · `tier2-producer/` | multi-server producer flow | nb → veo → lyria → avtool | STABLE *(future PR)* |
+| 1 · `tier1-video/` | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | STABLE |
+| **2 · `tier2-producer/`** | multi-server producer flow + in-prompt crosswalk | nb → veo → lyria → avtool | **STABLE** *(this tier)* |
 | 3 · `tier3-preview/` | agents middleware + interrupt | all, partitioned | PREVIEW *(future PR)* |
 
 Tiers land one per PR. They share the foundation Tier 0 established and later
@@ -33,9 +37,10 @@ genkit-go/
       launch.go          StdioFor("<server>") -> mcp.StdioConfig at bin/genmedia-launch
       quirks.go          QuirksPrompt: the genmedia footguns the LLM cannot see
     verify/
-      verify.go          Verify(ctx, dest): confirm output by LISTING, not by trusting the tool result
+      verify.go          Verify / VerifyRecursive(ctx, dest): confirm output by LISTING, not by trusting the tool result
   tier0-image/main.go    Tier 0 — single tool, single generate
   tier1-video/main.go    Tier 1 — DefineFlow: nanobanana -> veo_i2v
+  tier2-producer/main.go Tier 2 — DefineFlow: nanobanana -> veo_i2v -> lyria -> avtool (one shared toolset)
 ```
 
 ## Why lead with the Dev UI
@@ -159,6 +164,83 @@ you read in the trace is the order the Go code fixed, every run.
 > `gs://` URI — a local directory works for Tier 0 but cannot carry the still into
 > the video step here. Tier 1 fails fast with a clear message if it is not `gs://`.
 
+## Run Tier 2, then read the producer trace
+
+Tier 2 is the **capstone**: one **`genkit.DefineFlow`** named `produce-scored-clip`
+that composes **four** genmedia servers into a production line. As in Tier 1 the
+order is fixed in Go (deterministic, not LLM-sequenced), but now **all four
+servers' tools are offered to every step at once** — the model, not the code,
+picks which tool to call from a single shared toolset:
+
+```
+generate-image  ->  nanobanana writes a still to GCS
+verify-image    ->  LIST: confirm the still, carry its gs:// URI forward
+generate-video  ->  veo_i2v turns that still into a clip (explicit Veo-3 model)
+verify-video    ->  LIST recursively: carry the clip's .mp4 leaf forward
+generate-music  ->  lyria composes a score to GCS
+verify-music    ->  LIST recursively: carry the score's audio leaf forward
+generate-final  ->  avtool muxes the clip + score into one scored video
+verify-final    ->  LIST: confirm the finished artifact
+```
+
+```bash
+cd experiments/mcp-genmedia/sample-agents/genkit-go
+
+export GOOGLE_CLOUD_PROJECT=your-project
+export GENMEDIA_BUCKET=gs://your-bare-bucket   # BARE bucket, no path (see below)
+export GOOGLE_CLOUD_LOCATION=us-central1
+
+# Launch the flow under the Dev UI:
+genkit start -- go run ./tier2-producer
+```
+
+Pass a custom subject as arguments to change what gets drawn, animated, and scored:
+`genkit start -- go run ./tier2-producer "a paper boat on a rain-soaked street"`.
+
+Then open **`http://localhost:4000`**. Tier 2's one new thing is the **multi-server
+producer trace**: a single `produce-scored-clip` flow span wrapping **eight** named
+step spans, with **four** `generate` spans — and each one shows *which tool the
+model chose out of all sixteen* offered from the four servers. That is the tier's
+whole lesson made visible.
+
+### The in-prompt crosswalk (Tier 2's one new idea)
+
+Four servers put sixteen tools into one toolset, several with lookalike names
+(`veo` alone contributes six variants). Tier 2 does **not** rename or prefix them.
+Instead the **system prompt** — `QuirksPrompt` plus a `producerCrosswalk` fragment
+in `tier2-producer/main.go` — tells the model which namespaced tool does which job:
+
+```
+IMAGE (text -> still): nanobanana_nanobanana_image_generation
+VIDEO (still -> clip): veo_veo_i2v         (not veo_veo_t2v, veo_veo_extend_video, …)
+MUSIC (text -> score): lyria_lyria_generate_music
+MUX  (clip+score -> scored video): avtool_ffmpeg_combine_audio_and_video
+```
+
+The MCP client's `<server>_<tool>` namespacing keeps the names *unique*; the prompt
+tells the model which name to *pick*. This is the deliberate contrast with the ADK
+genmedia sibling, which resolves the same collision **structurally** with
+`tool_name_prefix` on each toolset. Same problem, two philosophies: **ADK renames
+the tools; Tier 2 instructs the model.** The producer also guards startup —
+`mcp.NewMCPHost` logs-and-continues when a server fails to connect, so Tier 2
+asserts every required tool is present before the flow runs.
+
+> **A BARE bucket is required for Tier 2.** `nanobanana` and `veo` accept a
+> bucket **and** a path prefix (Tier 2 writes them under `…/<runID>/image` and
+> `…/<runID>/video`), but `lyria` and `avtool` take a bucket **name only** — they
+> strip `gs://` and upload the object at the bucket root using just the filename, so
+> a prefixed value becomes an invalid bucket name and the upload fails. Set
+> `GENMEDIA_BUCKET` to a bare `gs://bucket` (no path); the producer adds all per-run
+> structure itself and fails fast with a clear message if a path is present.
+> `avtool` also needs **`ffmpeg`/`ffprobe`** on your `PATH`.
+
+> **Teaching caveat — prompt-injection surface.** As in Tiers 0-1, the positional
+> CLI argument is fed as free text into the model prompt, which then calls tools —
+> a (benign here, local-dev) prompt-injection surface, called out in
+> `tier2-producer/main.go`. A production caller should treat any untrusted input as
+> adversarial: constrain it and/or validate the tool arguments the model chooses,
+> rather than trusting free text.
+
 ## The `resource_link` rule
 
 The genmedia GCS-writing tools (nanobanana/gemini image, veo, lyria, omni)
@@ -205,8 +287,9 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
 | Go | `go 1.25` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
-| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1}-*/main.go` `modelName` |
-| Veo model (Tier 1) | `veo-3.1-fast-generate-001` | `tier1-video/main.go` `veoModel` |
+| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1,2}-*/main.go` `modelName` |
+| Veo model (Tiers 1-2) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` `veoModel` |
+| Lyria model (Tier 2) | `lyria-3-clip-preview` | `tier2-producer/main.go` `lyriaModel` |
 
 ## Related samples
 

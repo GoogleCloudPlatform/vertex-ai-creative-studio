@@ -15,7 +15,11 @@
 package verify
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -139,4 +143,91 @@ func TestParseGCSListing(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestGCSRecursivePattern pins the one new pure bit of the gs:// recursive path:
+// the prefix is slash-normalized and the `**` recursive wildcard appended. `**` is
+// a PREFIX glob (matches by string prefix, not strict directory contents) — the
+// "prefix, not a subfolder boundary" case documents that on purpose.
+func TestGCSRecursivePattern(t *testing.T) {
+	cases := []struct {
+		name string
+		uri  string
+		want string
+	}{
+		{"no trailing slash", "gs://b/p/image", "gs://b/p/image**"},
+		{"one trailing slash trimmed", "gs://b/p/video/", "gs://b/p/video**"},
+		{"multiple trailing slashes trimmed", "gs://b/p///", "gs://b/p**"},
+		{"bare bucket", "gs://b", "gs://b**"},
+		{"prefix, not a subfolder boundary", "gs://b/img", "gs://b/img**"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := gcsRecursivePattern(tc.uri); got != tc.want {
+				t.Errorf("gcsRecursivePattern(%q) = %q, want %q", tc.uri, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestVerifyRecursiveLocal pins the recursive local walk that Tier 2 relies on:
+// it returns every file at any depth (never directories), reports a missing path
+// as not-found with a nil error, and a single file as itself.
+func TestVerifyRecursiveLocal(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nested files are returned as leaves", func(t *testing.T) {
+		root := t.TempDir()
+		want := []string{
+			filepath.Join(root, "a.mp3"),
+			filepath.Join(root, "sub", "b.mp4"),
+			filepath.Join(root, "sub", "deep", "c.wav"),
+		}
+		for _, f := range want {
+			if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		res, err := VerifyRecursive(ctx, root)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", root, err)
+		}
+		if !res.Exists {
+			t.Fatalf("VerifyRecursive(%q).Exists = false, want true", root)
+		}
+		got := append([]string(nil), res.Entries...)
+		sort.Strings(got)
+		sort.Strings(want)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("VerifyRecursive(%q).Entries = %#v, want %#v", root, got, want)
+		}
+	})
+
+	t.Run("missing path is not-found with nil error", func(t *testing.T) {
+		missing := filepath.Join(t.TempDir(), "does-not-exist")
+		res, err := VerifyRecursive(ctx, missing)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", missing, err)
+		}
+		if res.Exists || len(res.Entries) != 0 {
+			t.Errorf("VerifyRecursive(%q) = %+v, want empty not-found", missing, res)
+		}
+	})
+
+	t.Run("single file returns itself", func(t *testing.T) {
+		f := filepath.Join(t.TempDir(), "only.mp4")
+		if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		res, err := VerifyRecursive(ctx, f)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", f, err)
+		}
+		if !res.Exists || !reflect.DeepEqual(res.Entries, []string{f}) {
+			t.Errorf("VerifyRecursive(%q) = %+v, want single entry %q", f, res, f)
+		}
+	})
 }
