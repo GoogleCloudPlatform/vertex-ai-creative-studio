@@ -583,7 +583,7 @@ video agent before approval.`
 	// the LLM's textual report. This is the success gate, same discipline as
 	// Tiers 0-2.
 	log.Printf("==== VERIFY-BY-LISTING (authoritative) ====")
-	imageURI, imgErr := reportLeaf(ctx, "image", imageDest, "")
+	imageURI, imgErr := confirmLeaf(ctx, "image", imageDest, "")
 	if !approve {
 		// Reject path: the video, and therefore the mux, must NOT exist.
 		videoRes, _ := verify.VerifyRecursive(ctx, videoDest)
@@ -603,15 +603,15 @@ video agent before approval.`
 	}
 
 	// Approve path: every artifact must exist.
-	videoURI, err := reportLeaf(ctx, "video", videoDest, ".mp4")
+	videoURI, err := confirmLeaf(ctx, "video", videoDest, ".mp4")
 	if err != nil {
 		return err
 	}
-	musicURI, err := reportLeaf(ctx, "music", musicPrefix, "")
+	musicURI, err := confirmLeaf(ctx, "music", musicPrefix, "")
 	if err != nil {
 		return err
 	}
-	finalConfirmed, err := reportLeaf(ctx, "final", finalURI, "")
+	finalConfirmed, err := confirmLeaf(ctx, "final", finalURI, "")
 	if err != nil {
 		return err
 	}
@@ -658,7 +658,7 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 					case p.IsInterrupt():
 						interrupts = append(interrupts, p)
 					case p.IsToolRequest() && !p.ToolRequest.Partial:
-						log.Printf("[producer] -> tool %s %s", p.ToolRequest.Name, compactJSON(p.ToolRequest.Input))
+						log.Printf("[producer] -> tool %s %s", p.ToolRequest.Name, compactArgs(p.ToolRequest.Input))
 					}
 				}
 			}
@@ -695,8 +695,10 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 }
 
 // confirmLeaf lists dest and returns the chosen leaf URI (by suffix, else
-// first), erroring if nothing is there. Used inside the specialist tools so each
-// tool's success is proven by listing, not by a resource_link.
+// first), erroring if nothing is there. It is used in two places, both proving
+// output by listing rather than by a resource_link: inside each specialist tool
+// (so a tool's success is a real object), and in the final authoritative,
+// code-owned verify pass in run (independent of what the LLM reported).
 func confirmLeaf(ctx context.Context, label, dest, wantSuffix string) (string, error) {
 	res, err := verify.VerifyRecursive(ctx, dest)
 	if err != nil {
@@ -718,12 +720,6 @@ func confirmLeaf(ctx context.Context, label, dest, wantSuffix string) (string, e
 		return "", fmt.Errorf("no %s%s artifact found under %s", label, wantSuffix, dest)
 	}
 	return res.Entries[0], nil
-}
-
-// reportLeaf is confirmLeaf used for the final authoritative, code-owned
-// verify-by-listing pass (identical mechanics; named for the call site).
-func reportLeaf(ctx context.Context, label, dest, wantSuffix string) (string, error) {
-	return confirmLeaf(ctx, label, dest, wantSuffix)
 }
 
 // findTool returns the aggregated tool with the exact namespaced name, or nil.
@@ -804,8 +800,10 @@ func decisionWord(approve bool) string {
 	return "REJECTED"
 }
 
-// compactJSON renders a tool input as compact single-line text for logs.
-func compactJSON(v any) string {
+// compactArgs renders a tool input as compact single-line text for logs. It is
+// deliberately not JSON: fmt's %v gives Go map syntax (e.g. map[task:...]),
+// which is enough to see what the model asked for without a marshal step.
+func compactArgs(v any) string {
 	if v == nil {
 		return "{}"
 	}
