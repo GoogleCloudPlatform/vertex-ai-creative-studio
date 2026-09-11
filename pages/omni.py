@@ -698,7 +698,7 @@ def on_request_signed_url_video(e: me.WebEvent) -> Generator[None]:
     """Generate GCS Signed URL for video upload."""
     state = me.state(PageState)
     try:
-        data = json.loads(e.value)
+        data = json.loads(e.value["value"])
         filename = data["filename"]
         content_type = data["contentType"]
 
@@ -725,8 +725,9 @@ def on_request_signed_url_video(e: me.WebEvent) -> Generator[None]:
 def on_upload_complete_video(e: me.WebEvent) -> Generator[None]:
     """Handle successful direct upload of base video."""
     state = me.state(PageState)
-    state.reference_video_gcs = e.value
-    state.reference_video_uri = create_display_url(e.value)
+    gcs_uri = e.value["value"]
+    state.reference_video_gcs = gcs_uri
+    state.reference_video_uri = create_display_url(gcs_uri)
     state.reference_video_mime_type = "video/mp4"
 
     state.video_upload_signed_url = ""
@@ -738,14 +739,14 @@ def on_upload_complete_video(e: me.WebEvent) -> Generator[None]:
 def on_upload_progress_video(e: me.WebEvent) -> Generator[None]:
     """Handle direct upload progress updates."""
     state = me.state(PageState)
-    state.video_upload_progress = int(e.value)
+    state.video_upload_progress = int(e.value["value"])
     yield
 
 
 def on_upload_error_video(e: me.WebEvent) -> Generator[None]:
     """Handle direct upload errors."""
     state = me.state(PageState)
-    state.error_message = f"Video upload failed: {e.value}"
+    state.error_message = f"Video upload failed: {e.value['value']}"
     state.show_error_dialog = True
 
     state.video_upload_signed_url = ""

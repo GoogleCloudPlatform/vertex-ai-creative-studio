@@ -284,9 +284,13 @@ def test_on_request_signed_url_video(
     mock_sign.return_value = "https://gcs-signed-url.com/upload"
 
     event = MagicMock()
-    event.value = (
-        '{"filename": "test_video.mp4", "contentType": "video/mp4", "fileSize": 1024}'
-    )
+    # Mesop's WebEvent mapper json.loads()s the whole dispatched object, so the
+    # handler receives the wrapper dict the JS component sent, not the inner value.
+    event.value = {
+        "value": (
+            '{"filename": "test_video.mp4", "contentType": "video/mp4", "fileSize": 1024}'
+        ),
+    }
 
     gen = on_request_signed_url_video(event)
     list(gen)
@@ -308,7 +312,7 @@ def test_on_upload_complete_video(mock_state: MagicMock) -> None:
     mock_state.return_value = mock_page_state
 
     event = MagicMock()
-    event.value = "gs://bucket/uploads/uuid_test_video.mp4"
+    event.value = {"value": "gs://bucket/uploads/uuid_test_video.mp4"}
 
     gen = on_upload_complete_video(event)
     list(gen)
@@ -329,7 +333,7 @@ def test_on_upload_progress_video(mock_state: MagicMock) -> None:
     mock_state.return_value = mock_page_state
 
     event = MagicMock()
-    event.value = "45"
+    event.value = {"value": "45"}
 
     gen = on_upload_progress_video(event)
     list(gen)
@@ -346,7 +350,7 @@ def test_on_upload_error_video(mock_state: MagicMock) -> None:
     mock_state.return_value = mock_page_state
 
     event = MagicMock()
-    event.value = "Network timeout"
+    event.value = {"value": "Network timeout"}
 
     gen = on_upload_error_video(event)
     list(gen)
