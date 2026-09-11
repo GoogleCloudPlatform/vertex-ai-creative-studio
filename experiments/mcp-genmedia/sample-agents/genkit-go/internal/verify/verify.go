@@ -79,6 +79,31 @@ func Verify(ctx context.Context, dest string) (Result, error) {
 	return verifyLocal(dest)
 }
 
+// VerifyRecursive confirms artifacts at or under dest by listing RECURSIVELY,
+// returning only the leaf object URIs / file paths — never intermediate
+// subfolder prefixes. Use it (instead of Verify) when a genmedia tool writes
+// into a server-assigned subfolder and a later step needs the EXACT leaf file:
+//
+//   - veo writes gs://<prefix>/<jobid>/sample_0.mp4 — a plain `gcloud storage ls
+//     <prefix>` reports the <jobid>/ subfolder, not the mp4. avtool muxing needs
+//     the mp4 leaf, so Tier 2 lists it recursively.
+//   - lyria writes gs://<bucket>/<runID>-score.<ext>, where the extension is
+//     finalized from the audio bytes (.mp3/.wav) and is not known ahead of time.
+//     VerifyRecursive matches it by prefix, so the caller need not guess.
+//
+// For gs:// destinations it runs `gcloud storage ls <dest>**` (the `**` wildcard
+// matches every object whose path begins with dest, at any depth, and returns
+// leaf object URIs without the folder-header lines a plain `-r` listing prints).
+// For local paths it walks the tree and returns the files found. Semantics
+// otherwise match Verify: a non-nil error means the check could not be performed;
+// Result.Exists == false with a nil error means nothing was found.
+func VerifyRecursive(ctx context.Context, dest string) (Result, error) {
+	if IsGCS(dest) {
+		return verifyGCSRecursive(ctx, dest)
+	}
+	return verifyLocalRecursive(dest)
+}
+
 // VerifyAll runs Verify for each destination and returns the results in order.
 // It does not short-circuit: every destination is checked so a tier can report
 // each GCS-writing step. The returned error is the first check that could not be
@@ -143,6 +168,71 @@ func parseGCSListing(stdout []byte) []string {
 		}
 	}
 	return entries
+}
+
+// verifyGCSRecursive lists every object under a gs:// prefix with the `**`
+// recursive wildcard, returning the leaf object URIs (never subfolder prefixes).
+func verifyGCSRecursive(ctx context.Context, uri string) (Result, error) {
+	res := Result{Destination: uri}
+
+	if _, err := exec.LookPath("gcloud"); err != nil {
+		return res, fmt.Errorf("verify: gcloud not found on PATH (needed to list %s): %w", uri, err)
+	}
+
+	// Append the `**` recursive wildcard to the (slash-trimmed) prefix so gcloud
+	// returns matching leaf objects at any depth, without folder-header lines.
+	pattern := strings.TrimRight(uri, "/") + "**"
+	cmd := exec.CommandContext(ctx, "gcloud", "storage", "ls", pattern)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && isGCSNotFound(stderr.Bytes()) {
+			return res, nil
+		}
+		return res, fmt.Errorf("verify: gcloud storage ls %s failed: %w: %s",
+			pattern, err, strings.TrimSpace(stderr.String()))
+	}
+
+	res.Entries = parseGCSListing(stdout.Bytes())
+	res.Exists = len(res.Entries) > 0
+	return res, nil
+}
+
+// verifyLocalRecursive walks a local path and returns the files found (never
+// directories). A missing path is reported as Exists == false with a nil error,
+// matching verifyLocal.
+func verifyLocalRecursive(path string) (Result, error) {
+	res := Result{Destination: path}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return res, nil
+		}
+		return res, fmt.Errorf("verify: stat %s failed: %w", path, err)
+	}
+	if !info.IsDir() {
+		res.Entries = []string{path}
+		res.Exists = true
+		return res, nil
+	}
+
+	walkErr := filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			res.Entries = append(res.Entries, p)
+		}
+		return nil
+	})
+	if walkErr != nil {
+		return res, fmt.Errorf("verify: walk %s failed: %w", path, walkErr)
+	}
+	res.Exists = len(res.Entries) > 0
+	return res, nil
 }
 
 // isGCSNotFound reports whether gcloud's diagnostic output is its

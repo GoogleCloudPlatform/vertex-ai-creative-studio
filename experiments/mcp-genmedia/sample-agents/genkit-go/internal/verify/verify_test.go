@@ -15,7 +15,11 @@
 package verify
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -139,4 +143,66 @@ func TestParseGCSListing(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestVerifyRecursiveLocal pins the recursive local walk that Tier 2 relies on:
+// it returns every file at any depth (never directories), reports a missing path
+// as not-found with a nil error, and a single file as itself.
+func TestVerifyRecursiveLocal(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nested files are returned as leaves", func(t *testing.T) {
+		root := t.TempDir()
+		want := []string{
+			filepath.Join(root, "a.mp3"),
+			filepath.Join(root, "sub", "b.mp4"),
+			filepath.Join(root, "sub", "deep", "c.wav"),
+		}
+		for _, f := range want {
+			if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		res, err := VerifyRecursive(ctx, root)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", root, err)
+		}
+		if !res.Exists {
+			t.Fatalf("VerifyRecursive(%q).Exists = false, want true", root)
+		}
+		got := append([]string(nil), res.Entries...)
+		sort.Strings(got)
+		sort.Strings(want)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("VerifyRecursive(%q).Entries = %#v, want %#v", root, got, want)
+		}
+	})
+
+	t.Run("missing path is not-found with nil error", func(t *testing.T) {
+		missing := filepath.Join(t.TempDir(), "does-not-exist")
+		res, err := VerifyRecursive(ctx, missing)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", missing, err)
+		}
+		if res.Exists || len(res.Entries) != 0 {
+			t.Errorf("VerifyRecursive(%q) = %+v, want empty not-found", missing, res)
+		}
+	})
+
+	t.Run("single file returns itself", func(t *testing.T) {
+		f := filepath.Join(t.TempDir(), "only.mp4")
+		if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		res, err := VerifyRecursive(ctx, f)
+		if err != nil {
+			t.Fatalf("VerifyRecursive(%q) error: %v", f, err)
+		}
+		if !res.Exists || !reflect.DeepEqual(res.Entries, []string{f}) {
+			t.Errorf("VerifyRecursive(%q) = %+v, want single entry %q", f, res, f)
+		}
+	})
 }

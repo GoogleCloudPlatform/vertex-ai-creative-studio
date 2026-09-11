@@ -49,6 +49,46 @@ func NewClient(ctx context.Context, g *genkit.Genkit, server string) (*mcp.Genki
 	})
 }
 
+// NewHost connects to SEVERAL genmedia MCP servers at once, by their friendly
+// nicknames, and returns an *mcp.MCPHost that aggregates their tools. It is the
+// multi-server fan-out path Tier 2 uses: one host, many servers, exposed to the
+// model through host.GetActiveTools so a single genkit.Generate turn can pick any
+// tool across all of them (disambiguated in the system prompt, not by a rename
+// layer — see tier2-producer for the in-prompt crosswalk).
+//
+// Each server is launched over stdio through bin/genmedia-launch via the shared
+// StdioFor wiring, so the multi-server path reuses exactly the launch story the
+// single-client path established. The MCP client namespaces every tool as
+// "<nickname>_<toolName>" (e.g. "veo_veo_i2v"), which is what keeps four servers'
+// tools distinct in one toolset.
+//
+// mcp.NewMCPHost logs and continues when an individual server fails to connect,
+// so a healthy host can still be returned with some servers missing. Callers
+// MUST confirm the tools they need are actually present (e.g. by checking
+// host.GetActiveTools for the expected tool names) rather than assuming every
+// requested server connected. The caller owns Disconnect for each server.
+func NewHost(ctx context.Context, g *genkit.Genkit, servers ...string) (*mcp.MCPHost, error) {
+	configs := make([]mcp.MCPServerConfig, 0, len(servers))
+	for _, server := range servers {
+		stdio, err := StdioFor(server)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, mcp.MCPServerConfig{
+			Name: server,
+			Config: mcp.MCPClientOptions{
+				Name:  server,
+				Stdio: stdio,
+			},
+		})
+	}
+
+	return mcp.NewMCPHost(g, mcp.MCPHostOptions{
+		Name:       "genmedia-producer",
+		MCPServers: configs,
+	})
+}
+
 // ToolRefs adapts the []ai.Tool returned by GetActiveTools into the []ai.ToolRef
 // that genkit.Generate's ai.WithTools expects. Shared so every tier converts
 // identically.
