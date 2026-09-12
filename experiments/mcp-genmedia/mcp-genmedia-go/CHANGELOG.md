@@ -4,6 +4,13 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.20.1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.20.0...mcp-v3.20.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 7589d38 ([#1843](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1843)) ([47e9d6e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/47e9d6e56cc5047b14b5889e235c0e8de67fb2e5))
+
 ## [3.20.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.19.0...mcp-v3.20.0) (2026-09-12)
 
 
