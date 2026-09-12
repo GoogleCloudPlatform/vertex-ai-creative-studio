@@ -41,7 +41,7 @@ google-api-core==2.36.0
     #   google-cloud-appengine-logging
     #   google-cloud-core
     #   google-cloud-logging
-google-auth==2.57.1
+google-auth==2.58.0
     # via
     #   babel-web (pyproject.toml)
     #   google-api-core
@@ -104,7 +104,7 @@ msgpack==1.2.2
     # via mesop
 mypy-extensions==1.1.0
     # via typing-inspect
-numpy==2.5.2
+numpy==2.5.3
     # via
     #   babel-web (pyproject.toml)
     #   pandas
@@ -144,7 +144,7 @@ pydantic==2.13.5
     # via
     #   fastapi
     #   mesop
-pydantic-core==2.48.0
+pydantic-core==2.49.0
     # via pydantic
 pygments==2.21.0
     # via rich
@@ -164,7 +164,7 @@ rich==15.0.0
     # via
     #   rich-toolkit
     #   typer
-rich-toolkit==0.20.4
+rich-toolkit==0.20.5
     # via fastapi-cli
 rsa==4.9.1
     # via google-auth
@@ -188,7 +188,7 @@ typing-extensions==4.16.0
     #   typing-inspect
 typing-inspect==0.9.0
     # via dataclasses-json
-tzdata==2026.3
+tzdata==2026.4
     # via pandas
 urllib3==2.7.0
     # via requests
@@ -209,7 +209,7 @@ werkzeug==3.1.8
     #   babel-web (pyproject.toml)
     #   flask
     #   mesop
-wrapt==2.4.0
+wrapt==2.4.1
     # via deprecated
 zipp==4.1.0
     # via importlib-metadata
