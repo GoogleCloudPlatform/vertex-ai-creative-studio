@@ -35,6 +35,28 @@ Synthesizes speech from text using Gemini models, allowing for granular control 
 - `output_filename` (string, optional): Full base name for the output WAV file, e.g. `greeting.wav`. The extension is forced to `.wav`. Takes precedence over `output_filename_prefix` (which only supplies a prefix). See [Naming Outputs](../README.md#naming-outputs-output_filename).
 - `output_filename_prefix` (string, optional): **Deprecated — prefer `output_filename`.** A prefix for the output WAV filename. Still accepted for backward compatibility.
 
+### `gemini_transcribe`
+
+Transcribes a pre-recorded audio file to text using Google's **Gemini 3.5 Transcribe** model in **synchronous mode** (the `generate_content` path on `gemini-3.5-transcribe-preview`, *not* the live/streaming API). Audio must be ≤ 15 minutes (shorter when diarization or timestamps are enabled).
+
+**Parameters:**
+
+- `input_audio` (string, required): The audio to transcribe — either a local file path or a `gs://` URI. Supported formats include WAV, MP3, OGG/Opus, FLAC, M4A/AAC, AIFF, AMR, WEBM, and PCM.
+- `mime_type` (string, optional): The MIME type of the audio (e.g. `audio/wav`, `audio/mpeg`, `audio/ogg`). Inferred from the file extension when omitted. Note: `.m4a`, `.mp4`, and `.aac` all infer `audio/mp4` — a `.mp4` container is treated as audio here, so for a video `.mp4` whose audio track you want transcribed, either extract the audio first or pass `mime_type` explicitly.
+- `model` (string, optional): The transcription model. Defaults to `gemini-3.5-transcribe-preview`.
+- `language_codes` (string array, optional): BCP-47 language hints (e.g. `["en-US", "es-ES"]`). Omit for automatic language detection.
+- `custom_vocabulary` (string array, optional): Up to 1000 phrases (brand names, proper nouns, domain terms) that bias recognition. Most reliable when `language_codes` is also set.
+- `enable_diarization` (boolean, optional): Label individual speakers (up to 8). Incompatible with `smart_formatting`.
+- `enable_word_timestamps` (boolean, optional): Return word-level start/end offsets. Incompatible with `smart_formatting`.
+- `smart_formatting` (boolean, optional): Use SMART mode — filler-word removal, light grammatical cleanup, and automatic formatting. Incompatible with `enable_diarization` and `enable_word_timestamps`.
+- `output_directory` (string, optional): Local directory to save the transcription result (JSON) to. When omitted, the transcript is returned in the response only.
+- `gcs_bucket_uri` (string, optional): GCS URI prefix to store the transcription result (JSON), e.g. `your-bucket/transcripts/`.
+- `output_filename` (string, optional): Base name for the saved transcript. The extension is forced to `.json`. See [Naming Outputs](../README.md#naming-outputs-output_filename).
+
+The plain transcript is always returned as the first text content item. When speaker diarization or word-level timestamps are requested, a second text content item carries the full structured result as JSON (transcript, per-segment speaker labels, and word timings).
+
+> **Note:** Gemini 3.5 Transcribe is served only in the `global` location. `mcp-gemini-go` already defaults to `global`; leave `LOCATION`/`GOOGLE_CLOUD_LOCATION` unset (or set to `global`) for transcription to work.
+
 ### `list_gemini_voices`
 
 Lists the available single-speaker voices for use with the Gemini-TTS models.
