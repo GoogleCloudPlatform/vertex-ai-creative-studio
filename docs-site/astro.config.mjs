@@ -91,6 +91,7 @@ export default defineConfig({
 										{ label: 'mcp-chirp3-go', slug: 'experiments/mcp-genmedia/mcp-chirp3-go' },
 										{ label: 'mcp-nanobanana-go', slug: 'experiments/mcp-genmedia/mcp-nanobanana-go' },
 										{ label: 'mcp-gemini-go', slug: 'experiments/mcp-genmedia/mcp-gemini-go' },
+										{ label: 'mcp-gemini-transcribe-go', slug: 'experiments/mcp-genmedia/mcp-gemini-transcribe-go' },
 										{ label: 'mcp-omni-go', slug: 'experiments/mcp-genmedia/mcp-omni-go' },
 										{ label: 'mcp-avtool-go', slug: 'experiments/mcp-genmedia/mcp-avtool-go' },
 									]
