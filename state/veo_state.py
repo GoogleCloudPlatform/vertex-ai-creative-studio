@@ -36,6 +36,8 @@ class PageState:
     # The user's negative prompt to steer the model away from certain concepts.
     negative_prompt: str = ""
 
+    veo_seed: int = 0
+
     original_prompt: str
 
     video_count: int = 1

@@ -378,6 +378,7 @@ def on_click_extend_video(e: me.ClickEvent):
         duration_seconds=state.video_extend_length,  # Use extension length
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
+        seed=state.veo_seed if state.veo_seed > 0 else None,
         generate_audio=state.generate_audio,
         person_generation=state.person_generation,
         video_input_gcs=video_input_gcs,
@@ -587,6 +588,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         duration_seconds=state.video_length,
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
+        seed=state.veo_seed if state.veo_seed > 0 else None,
         generate_audio=state.generate_audio,
         person_generation=state.person_generation,
         reference_image_gcs=state.reference_image_gcs
