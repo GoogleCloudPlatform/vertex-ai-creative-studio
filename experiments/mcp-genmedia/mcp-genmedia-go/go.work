@@ -5,6 +5,7 @@ use (
 	./mcp-chirp3-go
 	./mcp-common
 	./mcp-gemini-go
+	./mcp-gemini-transcribe-go
 	./mcp-imagen-go
 	./mcp-lyria-go
 	./mcp-nanobanana-go

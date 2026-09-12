@@ -44,6 +44,15 @@ builds:
     env: [CGO_ENABLED=0]
     goos: [linux, windows, darwin]
     goarch: [amd64, arm64]
+  - id: mcp-gemini-transcribe-go
+    dir: experiments/mcp-genmedia/mcp-genmedia-go/mcp-gemini-transcribe-go
+    main: .
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    binary: mcp-gemini-transcribe-go
+    env: [CGO_ENABLED=0]
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
   - id: mcp-lyria-go
     dir: experiments/mcp-genmedia/mcp-genmedia-go/mcp-lyria-go
     main: .

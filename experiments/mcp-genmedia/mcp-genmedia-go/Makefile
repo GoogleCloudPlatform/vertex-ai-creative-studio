@@ -17,6 +17,7 @@ SERVERS := \
 	mcp-nanobanana-go \
 	mcp-chirp3-go \
 	mcp-gemini-go \
+	mcp-gemini-transcribe-go \
 	mcp-lyria-go \
 	mcp-avtool-go \
 	mcp-imagen-go \
