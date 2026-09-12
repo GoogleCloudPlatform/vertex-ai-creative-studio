@@ -11,6 +11,7 @@ Each server can be enabled and run separately, allowing flexibility for environm
 *   **Nano Banana: [Gemini 3.1 Flash Image](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-1-flash-image) & [Gemini 3 Pro Image](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image) & [Gemini 2.5 Flash Image](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)** - for image generation and editing
 *   **[Veo 3 & 3.1](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
 *   **[Gemini TTS](https://docs.cloud.google.com/text-to-speech/docs/gemini-tts)** & **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for speech synthesis
+*   **[Gemini 3.5 Transcribe](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-5-transcribe)** - for speech-to-text transcription
 *   **[Lyria](https://cloud.google.com/vertex-ai/generative-ai/docs/music/generate-music)** - for music generation
 *   **[Imagen 3 & 4](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
 
@@ -67,6 +68,7 @@ The servers are configured primarily through environment variables. Key variable
 
 *   **Gemini Image** Generate and edit images from text prompts.
 *   **Gemini TTS** Synthesize high-quality audio from text.
+*   **Gemini Transcribe:** Transcribe pre-recorded audio to text (synchronous Gemini 3.5 Transcribe). Available both as the `gemini_transcribe` tool on the Gemini server and as the standalone `mcp-gemini-transcribe-go` server.
 *   **Veo:** Create videos from text or images.
 *   **Gemini Omni:** Generate video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, via the Vertex Interactions API.
 *   **Lyria:** Generate music from text prompts.
