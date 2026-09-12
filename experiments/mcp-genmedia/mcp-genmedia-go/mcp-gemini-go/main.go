@@ -188,6 +188,56 @@ func main() {
 	s.AddTool(omniTool, omniVideoGenerationHandler)
 	// --- End of Gemini Omni Video Tool ---
 
+	// --- Register Gemini Transcribe Tool ---
+	// Synchronous speech-to-text via Gemini 3.5 Transcribe (the generate_content
+	// path on gemini-3.5-transcribe-preview, NOT the live/streaming API). The
+	// handler is a thin wrapper over the shared common.Transcribe helpers, so it
+	// stays in lockstep with the standalone mcp-gemini-transcribe-go server.
+	transcribeTool := mcp.NewTool("gemini_transcribe",
+		mcp.WithDescription("Transcribes a pre-recorded audio file to text using Google's Gemini 3.5 Transcribe model (synchronous mode). Supports language hints, custom vocabulary biasing, speaker diarization, word-level timestamps, and smart formatting. Audio must be <=15 minutes."),
+		mcp.WithString("input_audio",
+			mcp.Required(),
+			mcp.Description("The audio to transcribe: either a local file path or a gs:// URI. Supported formats include WAV, MP3, OGG/Opus, FLAC, M4A/AAC, AIFF, AMR, WEBM, and PCM."),
+		),
+		mcp.WithString("mime_type",
+			mcp.Description("Optional. The MIME type of the audio (e.g. audio/wav, audio/mpeg, audio/ogg). Inferred from the file extension when omitted."),
+		),
+		mcp.WithString("model",
+			mcp.DefaultString(common.DefaultTranscribeModel),
+			mcp.Description("Optional. The transcription model to use. Defaults to the synchronous gemini-3.5-transcribe-preview."),
+		),
+		mcp.WithArray("language_codes",
+			mcp.Items(map[string]any{"type": "string"}),
+			mcp.Description("Optional. BCP-47 language code hints (e.g. [\"en-US\", \"es-ES\"]). Omit for automatic language detection."),
+		),
+		mcp.WithArray("custom_vocabulary",
+			mcp.Items(map[string]any{"type": "string"}),
+			mcp.Description("Optional. Up to 1000 phrases (brand names, proper nouns, domain terms) that bias recognition. Most reliable when language_codes is also set."),
+		),
+		mcp.WithBoolean("enable_diarization",
+			mcp.Description("Optional. Label individual speakers (up to 8). Incompatible with smart_formatting."),
+		),
+		mcp.WithBoolean("enable_word_timestamps",
+			mcp.Description("Optional. Return word-level start/end offsets. Incompatible with smart_formatting."),
+		),
+		mcp.WithBoolean("smart_formatting",
+			mcp.Description("Optional. Use SMART mode: filler-word removal, light grammatical cleanup, and automatic formatting. Incompatible with enable_diarization and enable_word_timestamps."),
+		),
+		mcp.WithString("output_directory",
+			mcp.Description("Optional. Local directory to save the transcription result (JSON) to. When omitted, the transcript is returned in the response only."),
+		),
+		mcp.WithString("gcs_bucket_uri",
+			mcp.Description("Optional. GCS URI prefix to store the transcription result (JSON), e.g. your-bucket/transcripts/."),
+		),
+		mcp.WithString("output_filename",
+			mcp.Description("Optional. Client-predictable base name for the saved transcript. The extension is forced to .json. An existing file/object of the same name is overwritten."),
+		),
+	)
+	s.AddTool(transcribeTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return geminiTranscribeHandler(genAIClient, ctx, request)
+	})
+	// --- End of Gemini Transcribe Tool ---
+
 	// --- Register Gemini Resources ---
 	s.AddResource(mcp.NewResource(
 		"gemini://language_codes",
