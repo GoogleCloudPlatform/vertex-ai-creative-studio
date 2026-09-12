@@ -6,14 +6,33 @@ independently reviewable PR. The through-line of the whole series is the
 **Genkit Developer UI and per-turn tracing** — every tier is meant to be *run*,
 then *read* at `http://localhost:4000`.
 
-> **You are here: Tier 2.** A multi-server **producer** flow: one
-> `genkit.DefineFlow` that composes **four** genmedia MCP servers —
-> `nanobanana` → `veo_i2v` → `lyria` → `avtool` — into a single traced production
-> line (still → clip → score → **muxed scored video**), with every artifact proven
-> by verify-by-listing. It builds on **Tier 1** (the two-server chain) and
-> **Tier 0** (the minimal "one tool, one generate" program, also the Go
-> counterpart to the JavaScript [Nano Banana sample](../genkit/); see
-> [Related samples](#related-samples)).
+> **The whole series is here.** All four tiers (0-3) are merged and independently
+> runnable from this directory: Tiers 0-2 on stable Genkit Go API, and **Tier 3**
+> as a **PREVIEW** capstone on experimental `.../exp` APIs. Start at
+> [Tier 0](#run-tier-0-then-read-the-trace) — the minimal "one tool, one generate"
+> program (also the Go counterpart to the JavaScript
+> [Nano Banana sample](../genkit/); see [Related samples](#related-samples)) — then
+> climb: [Tier 1](#run-tier-1-then-read-the-flow-trace) adds a `DefineFlow` chain,
+> [Tier 2](#run-tier-2-then-read-the-producer-trace) composes **four** genmedia MCP
+> servers (`nanobanana` → `veo_i2v` → `lyria` → `avtool`) into one traced producer
+> flow, and [Tier 3 (PREVIEW)](#run-tier-3-preview--agentic-producer-with-delegation--a-human-approval-interrupt)
+> hands sequencing to a delegating orchestrator with a human-approval interrupt.
+> Every tier proves each artifact by verify-by-listing.
+
+## Contents
+
+- [The series](#the-series)
+- [Why lead with the Dev UI](#why-lead-with-the-dev-ui)
+- [Prerequisites](#prerequisites)
+- [Run Tier 0, then read the trace](#run-tier-0-then-read-the-trace)
+- [Run Tier 1, then read the flow trace](#run-tier-1-then-read-the-flow-trace)
+- [Run Tier 2, then read the producer trace](#run-tier-2-then-read-the-producer-trace)
+- [Run Tier 3 (PREVIEW)](#run-tier-3-preview--agentic-producer-with-delegation--a-human-approval-interrupt)
+- [The `resource_link` rule](#the-resource_link-rule)
+- [Where the genmedia binary comes from](#where-the-genmedia-binary-comes-from)
+- [Version pins](#version-pins)
+- [Contributing](#contributing)
+- [Related samples](#related-samples)
 
 ## The series
 
@@ -21,7 +40,7 @@ then *read* at `http://localhost:4000`.
 |------|--------------|---------------|--------|
 | 0 · `tier0-image/` | single tool, single `generate` | `nanobanana` | STABLE |
 | 1 · `tier1-video/` | `DefineFlow`, linear chain | `nanobanana` → `veo_i2v` | STABLE |
-| **2 · `tier2-producer/`** | multi-server producer flow + in-prompt crosswalk | nb → veo → lyria → avtool | **STABLE** *(this tier)* |
+| 2 · `tier2-producer/` | multi-server producer flow + in-prompt crosswalk | nb → veo → lyria → avtool | STABLE |
 | 3 · `tier3-preview/` | **agents middleware** (delegation) + **tool interrupt** (human approval) | all, partitioned across sub-agents | **PREVIEW** — see [Tier 3](#run-tier-3-preview--agentic-producer-with-delegation--a-human-approval-interrupt) |
 
 Tiers land one per PR. They share the foundation Tier 0 established and later
@@ -376,6 +395,14 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
 | Lyria model (Tiers 2-3) | `lyria-3-clip-preview` | `tier2-producer/main.go` + `tier3-preview/main.go` `lyriaModel` |
 | **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`, `plugins/middleware/exp` behind `WithExperimental()` — **pinned to `genkit/go v1.13.1`, may break on upgrade** | `tier3-preview/main.go` |
+
+## Contributing
+
+This sample lives in the `vertex-ai-creative-studio` monorepo. Contributions are welcome; please
+read the repository's [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md) first — it requires a signed
+Google [Contributor License Agreement](https://cla.developers.google.com/) and routes all changes
+through GitHub pull-request review. Keep a change scoped to one tier's `main.go` (or the shared
+`internal/` packages) and update the matching section of this README in the same PR.
 
 ## Related samples
 
