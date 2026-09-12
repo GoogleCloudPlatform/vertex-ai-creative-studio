@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.GoogleCloudPlatform/vertex-ai-creative-studio-mcp-gemini-transcribe-go",
+  "description": "An MCP server for synchronous speech-to-text transcription using Google's Gemini 3.5 Transcribe model.",
+  "status": "active",
+  "repository": {
+    "url": "ssh://git@github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registry_type": "go",
+      "registry_base_url": "https://pkg.go.dev",
+      "identifier": "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/mcp-genmedia/mcp-genmedia-go/mcp-gemini-transcribe-go",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environment_variables": [
+        {
+          "description": "Your Google Cloud project ID.",
+          "is_required": true,
+          "format": "string",
+          "is_secret": false,
+          "name": "GOOGLE_CLOUD_PROJECT"
+        },
+        {
+            "description": "The Google Cloud region for the APIs. Gemini 3.5 Transcribe is served only in `global`; leave unset to default to `global`.",
+            "is_required": false,
+            "format": "string",
+            "is_secret": false,
+            "name": "LOCATION"
+        }
+      ]
+    }
+  ]
+}
