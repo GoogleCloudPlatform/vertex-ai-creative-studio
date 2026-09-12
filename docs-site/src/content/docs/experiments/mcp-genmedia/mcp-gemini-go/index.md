@@ -122,3 +122,23 @@ mcp-gemini-go | \
 jq -r '.result.content[] | select(.type == "audio") | .data' | \
 base64 --decode > test_direct_jsonrpc.wav
 ```
+
+### Transcribing Audio
+
+First, ensure the `GOOGLE_CLOUD_PROJECT` environment variable is set. Then call the `gemini_transcribe` tool with either a local file path or a `gs://` URI. The following example transcribes an audio file stored in GCS with an English language hint and saves the JSON result to a local directory named `transcripts`.
+
+```bash
+export GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)
+
+mcptools call gemini_transcribe \
+  --params '{"input_audio": "gs://your-gcs-bucket/audio/meeting.wav", "language_codes": ["en-US"], "output_directory": "./transcripts"}' \
+  mcp-gemini-go
+```
+
+To label individual speakers and return word-level timestamps, enable diarization and word timestamps:
+
+```bash
+mcptools call gemini_transcribe \
+  --params '{"input_audio": "./samples/interview.mp3", "enable_diarization": true, "enable_word_timestamps": true, "output_directory": "./transcripts"}' \
+  mcp-gemini-go
+```
