@@ -22,6 +22,7 @@ import mesop.labs as mel
 
 from common.metadata import add_media_item
 from common.utils import create_display_url
+from config.default import Default
 from components.dialog import dialog
 from components.header import header
 from components.page_scaffold import on_theme_load
@@ -358,7 +359,7 @@ def on_click_generate_matrix(e: me.ClickEvent):
         if state.save_to_library:
             add_media_item(
                 user_email=me.state(AppState).user_email,
-                model="imagen-4.0-generate-preview-06-06",
+                model=Default().GEMINI_IMAGE_GEN_MODEL,
                 mime_type="image/png",
                 gcs_uris=image_urls,
                 prompt=prompt,
