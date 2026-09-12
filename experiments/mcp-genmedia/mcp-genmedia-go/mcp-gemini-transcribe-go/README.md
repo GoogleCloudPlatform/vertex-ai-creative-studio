@@ -81,15 +81,11 @@ The tool utilizes the following environment variables:
 *   `GOOGLE_CLOUD_PROJECT` (string): **Required**. Your Google Cloud Project ID.
     The application will terminate if this is not set. Note: `PROJECT_ID` is also
     supported as a fallback.
-    *   **Override**: You can override this globally for this specific server by
-        setting `GEMINI_PROJECT_ID`.
 *   `GOOGLE_CLOUD_LOCATION` (string): The preferred Google Cloud location. For
     Gemini 3.5 Transcribe this defaults to `global` (the only location where the
     model is served).
     *   **Fallback**: `LOCATION` is also supported as a fallback for
         `GOOGLE_CLOUD_LOCATION`.
-    *   **Override**: You can override this globally for this specific server by
-        setting `GEMINI_LOCATION`.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to
     use for GCS outputs if the `gcs_bucket_uri` parameter is not specified in the
     tool request.
