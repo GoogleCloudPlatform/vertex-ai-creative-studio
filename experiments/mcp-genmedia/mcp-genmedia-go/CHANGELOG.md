@@ -4,6 +4,19 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.20.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.19.0...mcp-v3.20.0) (2026-09-12)
+
+
+### Features
+
+* **mcp-gemini-go:** add gemini_transcribe speech-to-text tool ([#1849](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1849)) ([6e70c05](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/6e70c0502e19524a6167e91359e1a654b95b2e3a))
+* **mcp-gemini-transcribe-go:** add standalone Gemini 3.5 Transcribe MCP server ([#1850](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1850)) ([dc2f182](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/dc2f182e07f9af5bbe9301b829e37facf7c5e226))
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to d5cee2d ([#1840](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1840)) ([adb02ea](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/adb02ea03bbb890056c9669ca6d9830b0fb4e840))
+
 ## [3.19.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.18.2...mcp-v3.19.0) (2026-09-10)
 
 
