@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests proving generate_virtual_models routes through the Nano Banana
-(Gemini image) adapter instead of the retired Imagen generation path."""
+"""Unit tests for the Nano Banana routing of generate_virtual_models.
+
+They prove generate_virtual_models routes through the Nano Banana (Gemini
+image) adapter instead of the retired Imagen generation path.
+"""
 
 import sys
 from pathlib import Path
@@ -25,7 +28,9 @@ from config.default import Default
 from models.image_models import generate_virtual_models
 
 
-def _fake_adapter_return(uri: str):
+def _fake_adapter_return(
+    uri: str,
+) -> tuple[list[str], float, list[str], None, list[str]]:
     """Mirror the 5-tuple contract of generate_image_from_prompt_and_images."""
     return ([uri], 0.0, [], None, [])
 
