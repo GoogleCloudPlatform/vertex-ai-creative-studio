@@ -42,7 +42,7 @@ Transcribes a pre-recorded audio file to text using Google's **Gemini 3.5 Transc
 **Parameters:**
 
 - `input_audio` (string, required): The audio to transcribe — either a local file path or a `gs://` URI. Supported formats include WAV, MP3, OGG/Opus, FLAC, M4A/AAC, AIFF, AMR, WEBM, and PCM.
-- `mime_type` (string, optional): The MIME type of the audio (e.g. `audio/wav`, `audio/mpeg`, `audio/ogg`). Inferred from the file extension when omitted.
+- `mime_type` (string, optional): The MIME type of the audio (e.g. `audio/wav`, `audio/mpeg`, `audio/ogg`). Inferred from the file extension when omitted. Note: `.m4a`, `.mp4`, and `.aac` all infer `audio/mp4` — a `.mp4` container is treated as audio here, so for a video `.mp4` whose audio track you want transcribed, either extract the audio first or pass `mime_type` explicitly.
 - `model` (string, optional): The transcription model. Defaults to `gemini-3.5-transcribe-preview`.
 - `language_codes` (string array, optional): BCP-47 language hints (e.g. `["en-US", "es-ES"]`). Omit for automatic language detection.
 - `custom_vocabulary` (string array, optional): Up to 1000 phrases (brand names, proper nouns, domain terms) that bias recognition. Most reliable when `language_codes` is also set.
