@@ -42,6 +42,36 @@ The tool utilizes the following environment variables:
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if the `gcs_bucket_uri` parameter is not specified in the tool request.
 *   `PORT` (string, for HTTP transport): The port for the HTTP server to listen on. Default: `8080`.
 
+## Transports Supported
+
+*   `stdio` (default)
+*   `sse` (Server-Sent Events)
+*   `http` (Streamable HTTP)
+
+CORS is enabled for the HTTP transport, allowing all origins by default.
+
+## Run
+
+Build the tool using `go build` or `go install`.
+
+*   **STDIO (Default)**:
+    ```bash
+    ./mcp-gemini-transcribe-go
+    # or
+    ./mcp-gemini-transcribe-go -transport stdio
+    ```
+*   **HTTP**:
+    ```bash
+    ./mcp-gemini-transcribe-go -transport http
+    # Optionally set PORT, e.g. PORT=8084 ./mcp-gemini-transcribe-go -transport http
+    ```
+    The MCP server will be available at `http://localhost:<PORT>/mcp`.
+*   **SSE (Server-Sent Events)**:
+    ```bash
+    ./mcp-gemini-transcribe-go -transport sse
+    ```
+    The MCP server will be available at `http://localhost:8081`.
+
 ## Example Usage
 
 ### Transcribe a GCS audio file

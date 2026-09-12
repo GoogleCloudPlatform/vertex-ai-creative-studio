@@ -41,7 +41,7 @@ Synthesizes speech from text using Gemini models, allowing for granular control 
 
 Transcribes a pre-recorded audio file to text using Google's **Gemini 3.5 Transcribe** model in **synchronous** mode (the `generate_content` path on `gemini-3.5-transcribe-preview`, **not** the live/streaming API). Intended for pre-recorded files up to ~15 minutes. Supports language hints, custom vocabulary biasing, speaker diarization, word-level timestamps, and smart formatting.
 
-> **Note:** Gemini 3.5 Transcribe is served only in the `global` location. This server forces `global` automatically when `LOCATION`/`GOOGLE_CLOUD_LOCATION` are unset.
+> **Note:** Gemini 3.5 Transcribe is served only in the `global` location. `mcp-gemini-go` already defaults to `global`; leave `LOCATION`/`GOOGLE_CLOUD_LOCATION` unset (or set to `global`) for transcription to work.
 
 **Parameters:**
 
