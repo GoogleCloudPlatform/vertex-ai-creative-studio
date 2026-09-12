@@ -48,7 +48,7 @@ tiers consume without changes:
 
 ```
 genkit-go/
-  go.mod                 module .../sample-agents/genkit-go ; go 1.25 ; genkit/go v1.13.1
+  go.mod                 module .../sample-agents/genkit-go ; go 1.25.0 ; genkit/go v1.13.1
   bin/genmedia-launch    pinned, SHA-256-verifying download-on-launch script (copy of agent_tools')
   internal/
     genmedia/            the shared fan-out interface
@@ -389,7 +389,7 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Thing | Pin | Where |
 |-------|-----|-------|
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
-| Go | `go 1.25` | `go.mod` |
+| Go | `go 1.25.0` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
 | Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
 | Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
