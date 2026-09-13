@@ -1,19 +1,18 @@
 # Image Generation Arena & Leaderboard
 
 > [!WARNING]
-> **Deprecation notice.** This experiment is deprecated and scheduled for archiving.
+> **This experiment has been archived (2026-09-13).** It is retained here for reference
+> only and is not maintained. **The code does not run as-is.**
 >
-> It relies on unmaintained dependencies and its core image-battle feature is currently
+> It relies on unmaintained dependencies and its core image-battle feature is
 > broken: the default battle pool depends on Imagen models that were
 > [shut down across Vertex AI on 2026-08-17](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev),
-> so every default battle now fails. The experiment is not actively maintained (recent
-> commits are almost entirely automated dependency bumps) and is not actively used.
+> so every default battle fails. The experiment is not actively maintained (recent
+> commits were almost entirely automated dependency bumps) and is not actively used.
 >
-> - **On or after 2026-09-13**, this experiment will be moved to an archived state.
+> - **On 2026-09-13**, this experiment was moved from `experiments/arena` to `archive/arena`.
 > - **Approximately 2 months after archiving (around 2026-11-13)**, it will be considered
 >   for full removal from the repository.
->
-> If you depend on this experiment, please raise an issue before the archiving date.
 
 This is an example of an arena & leaderboard to compare different image generation tools.
 
