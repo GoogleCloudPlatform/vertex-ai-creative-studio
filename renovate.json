@@ -6,6 +6,10 @@
   ],
   "packageRules": [
     {
+      "matchFileNames": ["archive/**"],
+      "enabled": false
+    },
+    {
       "matchPackageNames": ["hashicorp/google", "hashicorp/google-beta"],
       "matchUpdateTypes": ["major"],
       "enabled": false

@@ -23,7 +23,7 @@ The experimental folder contains stand-alone applications, demos, and features n
 * [Imagen Product Recontextualization at Scale](/vertex-ai-creative-studio/experiments/imagen_product_recontext) - A set of notebooks for the Imagen Product Recontext model to run at scale.
 * [Virtual Try-On](/vertex-ai-creative-studio/experiments/vto) - A notebook example for virtually trying on outfits at scale.
 * [Brand Consistency](/vertex-ai-creative-studio/experiments/brand_consistency) - Maintain brand identity in generated media.
-* [Arena](/vertex-ai-creative-studio/experiments/arena) - Rate your images within a visual arena. **(Deprecated — scheduled for archiving on or after 2026-09-13.)**
+* [Arena](/vertex-ai-creative-studio/experiments/arena) - Rate your images within a visual arena. **(Archived 2026-09-13 — source moved to `archive/arena`; retained for reference, no longer maintained.)**
 
 ## Audio & Voice
 
