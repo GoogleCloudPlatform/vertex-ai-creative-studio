@@ -33,9 +33,6 @@
 /experiments/veo3-character-consistency/ @GoogleCloudPlatform/google-cloud-aaie @cnemri
 /experiments/veo3-item-consistency/ @GoogleCloudPlatform/google-cloud-aaie @PavithraCS25
 
-## Arena
-/experiments/arena/ @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel
-
 ## Countdown workflow
 /experiments/countdown-workflow/ @GoogleCloudPlatform/google-cloud-aaie @cnemri
 
