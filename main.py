@@ -91,7 +91,6 @@ from pages import home as home_page
 from pages import imagen as imagen_page
 from pages import interior_design_v2 as interior_design_page
 from pages import lyria as lyria_page
-from pages import object_rotation as object_rotation_page
 from pages import omni as omni_page
 from pages import pixie_compositor as pixie_compositor_page
 from pages import portraits as motion_portraits
@@ -114,6 +113,13 @@ from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_pa
 from routers import veo_router
 from state.state import AppState
 from workflows.retro_games import page as retro_games
+
+# Object Rotation ("Edit Images") is gated behind EDIT_IMAGES_ENABLED and is
+# disabled by default (product decision; see config/default.py). Only import the
+# page module — which self-registers its @me.page("/object-rotation") route — when
+# the feature is enabled, so the page is neither shown in nav nor reachable by URL.
+if config.Default.EDIT_IMAGES_ENABLED:
+    from pages import object_rotation as object_rotation_page
 
 
 class UserInfo(BaseModel):
