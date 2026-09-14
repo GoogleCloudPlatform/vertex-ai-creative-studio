@@ -39,7 +39,7 @@ def select_best_image(real_image_paths: List[str], generated_image_paths: List[s
     determine which generated image has the highest likeness for both the
     character and their main machine.
     """
-    model = "gemini-2.5-pro"
+    model = "gemini-3.1-pro-preview"
     config = types.GenerateContentConfig(
         thinking_config=types.ThinkingConfig(thinking_budget=-1),
         response_mime_type="application/json",

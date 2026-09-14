@@ -35,7 +35,7 @@ def _get_description_for_image(image_path: str) -> str:
     generates a natural language description from that profile. This is the
     first step in creating a consistent character representation.
     """
-    model_name = "gemini-2.5-pro"
+    model_name = "gemini-3.1-pro-preview"
     
     # Step 1: Extract the structured FacialCompositeProfile
     profile_config = GenerateContentConfig(
@@ -75,7 +75,7 @@ def _generate_final_scene_prompt(base_description: str, user_prompt: str) -> Gen
     in a novel scene. It combines the character's description with the user's
     desired scenario to create a prompt suitable for Imagen.
     """
-    model_name = "gemini-2.5-pro"
+    model_name = "gemini-3.1-pro-preview"
     config = GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=GeneratedPrompts.model_json_schema(),

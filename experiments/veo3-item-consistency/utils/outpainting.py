@@ -27,6 +27,9 @@ import config
 
 # Initialize the Gemini client to use Vertex AI
 client = genai.Client(vertexai=True, project=config.PROJECT_ID, location=config.GEMINI_LOCATION)
+# NOTE: imagen-3.0-capability-001 is on the 2026-06-30 GA sunset list with no drop-in
+# Imagen 4.0 successor for this mask-based outpaint call. Forward path is a Nano Banana
+# port (see config.IMAGEN_MODEL_NAME note and MIGRATION.md). Tracked by #1673.
 edit_model = "imagen-3.0-capability-001"
 
 # Helper functions adapted from the notebook
