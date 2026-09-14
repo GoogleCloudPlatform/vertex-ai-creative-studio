@@ -1,6 +1,6 @@
 # MCP Servers for Google Cloud Genmedia APIs
 
-This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage the full breadth and depth of Google Cloud's powerful generative media APIs (Gemini Image, Gemini TTS, Veo, Chirp, Imagen, Lyria) and advanced audio/video compositing capabilities (AVTool).
+This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage the full breadth and depth of Google Cloud's powerful generative media APIs (Gemini Image, Gemini TTS, Veo, Chirp, Lyria) and advanced audio/video compositing capabilities (AVTool).
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 

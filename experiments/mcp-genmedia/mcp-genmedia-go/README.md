@@ -118,20 +118,20 @@ In addition to tools, the MCP servers now support prompts, providing a more inte
 You can list the available prompts for a server using the `prompts/list` method:
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | mcp-nanobanana-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | mcp-veo-go | jq .
 ```
 
 To use a prompt, you call the `prompts/get` method with the prompt's name and any required arguments. If you omit a required argument, the server will respond with a message asking for it.
 
-**Example: Using the `generate-image` prompt with `mcp-nanobanana-go`**
+**Example: Using the `generate-video` prompt with `mcp-veo-go`**
 
 ```bash
 # Call the prompt with a required argument
 export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
-echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-image","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-nanobanana-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-video","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-veo-go | jq .
 
 # Call the prompt without a required argument
-echo '{"jsonrpc":"2.0","method":"prompts/get","id":3,"params":{"name":"generate-image"}}' | mcp-nanobanana-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":3,"params":{"name":"generate-video"}}' | mcp-veo-go | jq .
 ```
 
 This will result in a more conversational interaction, making the servers easier to use for interactive clients.

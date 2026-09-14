@@ -155,12 +155,12 @@ This document outlines the steps to test the available genmedia tools.
 
 For each test run, create a new directory named with the current date and time (e.g., `test_run_YYYYMMDD_HHMMSS`) within the local output directory to store the results.
 
-*Note: Generative tool calls (Imagen, Veo, Lyria) may occasionally fail or time out. If a generation step fails, retrying or using a pre-existing file for subsequent steps (especially FFmpeg operations) may be necessary to complete the test plan.*
+*Note: Generative tool calls (Nano Banana, Veo, Lyria) may occasionally fail or time out. If a generation step fails, retrying or using a pre-existing file for subsequent steps (especially FFmpeg operations) may be necessary to complete the test plan.*
 
 1.  Generate 1-4 images using `nanobanana_image_generation`
     *   Use Nano Banana (gemini-2.5-flash-image)
 2.  Generate 1-4 images using `nanobanana_image_generation`
-    *   Use Nano Banana Pro (gemini-3-pro-image-preview)
+    *   Use Nano Banana Pro (gemini-3-pro-image)
 3.  Generate 1-4 videos from text using `veo_t2v` (using veo-2.0).
     *   Use the `output_file_name` parameter to rename the output appropriately.
 4.  Generate 1-4 videos from a random image generated in step 1 using `veo_i2v` (using veo-2.0).
