@@ -1,0 +1,37 @@
+name: Promptlandia Tests CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "experiments/promptlandia/**"
+      - ".github/workflows/promptlandia-tests.yml"
+  pull_request:
+    paths:
+      - "experiments/promptlandia/**"
+      - ".github/workflows/promptlandia-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiments/promptlandia
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "latest"
+
+      - name: Set up Python 3.14
+        run: uv python install 3.14
+
+      - name: Run Pytest
+        run: |
+          uv run pytest tests/unit -v
