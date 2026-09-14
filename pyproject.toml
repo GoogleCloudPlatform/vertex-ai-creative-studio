@@ -48,7 +48,10 @@ url = "https://pypi.org/simple"
 default = true
 
 [tool.ruff]
-target-version = "py311"
+# No explicit target-version: ruff infers it from `requires-python` above, so the
+# lint target tracks the declared Python floor automatically. Pinning it here (it
+# was "py311") contradicted `requires-python = ">=3.14"` and made ruff report
+# valid 3.12+ syntax (e.g. PEP 701 f-string quote reuse) as invalid. See #1863.
 
 [tool.ruff.lint]
 # Enable Pyflakes ("F") and Pycodestyle ("E", "W") categories by default.
