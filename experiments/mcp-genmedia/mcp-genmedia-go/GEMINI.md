@@ -89,7 +89,7 @@ export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
 
 ### Mandatory Post-Build Verification
 
-After **any** code change to an MCP server, you **must** run the corresponding `verify.sh` script from the server's directory (e.g., `mcp-imagen-go/verify.sh`).
+After **any** code change to an MCP server, you **must** run the corresponding `verify.sh` script from the server's directory (e.g., `mcp-nanobanana-go/verify.sh`).
 
 ```bash
 ./verify.sh
@@ -129,7 +129,7 @@ The primary command for testing is `mcptools call`. The correct syntax is:
 mcptools call <tool_name> --params '<json_payload>' <path_to_server_binary>
 ```
 
-*   `<tool_name>`: The name of the tool to call (e.g., `imagen_t2i`).
+*   `<tool_name>`: The name of the tool to call (e.g., `nanobanana_image_generation`).
 *   `--params '<json_payload>'`: The arguments for the tool, provided as a single, quoted JSON string.
 *   `<path_to_server_binary>`: The path to the compiled MCP server executable.
 
@@ -137,14 +137,14 @@ mcptools call <tool_name> --params '<json_payload>' <path_to_server_binary>
 
 #### Example
 
-This example calls the `imagen_t2i` tool from the `mcp-imagen-go` server with specific parameters.
+This example calls the `nanobanana_image_generation` tool from the `mcp-nanobanana-go` server with specific parameters.
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=genai-blackbelt-fishfooding
 
-mcptools call imagen_t2i \
-  --params '{"prompt": "a majestic lion", "model":"Imagen 3", "output_directory":"./test_output"}' \
-  mcp-genmedia-go/mcp-imagen-go/mcp-imagen-go
+mcptools call nanobanana_image_generation \
+  --params '{"prompt": "a majestic lion", "output_directory":"./test_output"}' \
+  mcp-genmedia-go/mcp-nanobanana-go/mcp-nanobanana-go
 ```
 
 ### End-to-End Test Plan
@@ -155,12 +155,12 @@ This document outlines the steps to test the available genmedia tools.
 
 For each test run, create a new directory named with the current date and time (e.g., `test_run_YYYYMMDD_HHMMSS`) within the local output directory to store the results.
 
-*Note: Generative tool calls (Imagen, Veo, Lyria) may occasionally fail or time out. If a generation step fails, retrying or using a pre-existing file for subsequent steps (especially FFmpeg operations) may be necessary to complete the test plan.*
+*Note: Generative tool calls (Nano Banana, Veo, Lyria) may occasionally fail or time out. If a generation step fails, retrying or using a pre-existing file for subsequent steps (especially FFmpeg operations) may be necessary to complete the test plan.*
 
-1.  Generate 1-4 images using `imagen_t2i`
-    *   Use Imagen 3
-2.  Generate 1-4 images using `imagen_t2i`
-    *   Use Imagen 4
+1.  Generate 1-4 images using `nanobanana_image_generation`
+    *   Use Nano Banana (gemini-2.5-flash-image)
+2.  Generate 1-4 images using `nanobanana_image_generation`
+    *   Use Nano Banana Pro (gemini-3-pro-image)
 3.  Generate 1-4 videos from text using `veo_t2v` (using veo-2.0).
     *   Use the `output_file_name` parameter to rename the output appropriately.
 4.  Generate 1-4 videos from a random image generated in step 1 using `veo_i2v` (using veo-2.0).

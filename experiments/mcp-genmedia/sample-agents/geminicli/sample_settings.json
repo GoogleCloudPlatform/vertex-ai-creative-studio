@@ -9,8 +9,8 @@
         "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
-    "imagen": {
-      "command": "mcp-imagen-go",
+    "nanobanana": {
+      "command": "mcp-nanobanana-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",

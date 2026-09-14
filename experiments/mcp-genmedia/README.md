@@ -1,6 +1,6 @@
 # MCP Servers for Google Cloud Genmedia APIs
 
-This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage the full breadth and depth of Google Cloud's powerful generative media APIs (Gemini Image, Gemini TTS, Veo, Chirp, Imagen, Lyria) and advanced audio/video compositing capabilities (AVTool).
+This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage the full breadth and depth of Google Cloud's powerful generative media APIs (Gemini Image, Gemini TTS, Veo, Chirp, Lyria) and advanced audio/video compositing capabilities (AVTool).
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
@@ -10,7 +10,6 @@ Each server can be enabled and run separately, allowing flexibility for environm
 *   **[Veo 3 & 3.1](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
 *   **[Gemini TTS](https://docs.cloud.google.com/text-to-speech/docs/gemini-tts)** & **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for speech synthesis
 *   **[Lyria](https://cloud.google.com/vertex-ai/generative-ai/docs/music/generate-music)** - for music generation
-*   **[Imagen 3 & 4](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
 
 *   **AVTool** - for audio/video compositing and manipulation
 
@@ -50,7 +49,7 @@ The MCP servers can be run using different transport protocols. The default is `
 
 To start a server in Streamable HTTP mode, use the `--transport http` flag:
 ```bash
-mcp-imagen-go --transport http
+mcp-nanobanana-go --transport http
 ```
 
 ## Configuration
@@ -69,7 +68,6 @@ The servers are configured primarily through environment variables. Key variable
 *   **Veo:** Create videos from text or images.
 *   **Lyria:** Generate music from text prompts.
 *   **Chirp 3 HD:** Synthesize high-quality audio from text.
-*   **Imagen:** Generate and edit images from text prompts.
 *   **AVTool:** Perform audio/video compositing and manipulation (e.g., combining, concatenating, format conversion).
 
 For a detailed list of tools provided by each server, refer to the [Go Implementations README](./mcp-genmedia-go/README.md).

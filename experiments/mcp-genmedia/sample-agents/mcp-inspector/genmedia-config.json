@@ -8,8 +8,8 @@
         "PROJECT_ID": "YOUR_PROJECT"
       }
     },
-    "imagen-go": {
-      "command": "mcp-imagen-go",
+    "nanobanana-go": {
+      "command": "mcp-nanobanana-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",

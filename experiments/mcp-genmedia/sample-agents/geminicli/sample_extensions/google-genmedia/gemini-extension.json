@@ -9,12 +9,6 @@
         "MCP_SERVER_REQUEST_TIMEOUT": "30000"
       }
     },
-    "imagen": {
-      "command": "mcp-imagen-go",
-      "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
-      }
-    },
     "chirp3-hd": {
       "command": "mcp-chirp3-go",
       "env": {
