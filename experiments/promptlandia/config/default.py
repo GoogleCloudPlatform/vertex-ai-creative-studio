@@ -52,7 +52,7 @@ class Default:
     PROJECT_ID: str = field(default_factory=lambda: os.environ.get("PROJECT_ID"))
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
     GEMINI_LOCATION: str = os.environ.get("GEMINI_LOCATION", "global")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.7-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-3.8-flash")
     PLANNING_MODEL_ID: str = os.environ.get("PLANNING_MODEL_ID")
     ALTERNATIVE_MODEL_ID: str = os.environ.get(
         "ALTERNATIVE_MODEL_ID", "gemini-3.5-flash-lite"

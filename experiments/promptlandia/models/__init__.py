@@ -13,23 +13,11 @@
 # limitations under the License.
 
 """
-The `models` package contains the core business logic for interacting with
-Generative AI models. It is designed to be used by both the web application
-(Mesop) and command-line tools.
+The `models` package contains the domain models, parsers, and prompt templates
+used across the application.
+
+The generation logic itself lives in the `services` package (see
+`services.llm_client.LLMClient` and the `services.improver` / `services.checklist`
+/ `services.trimmer` modules). Importing this package therefore has no side
+effects and does not require any environment configuration.
 """
-
-from models.gemini import (
-    gemini_generate_content as generate_content,
-    gemini_improve_this_prompt as improve_prompt,
-    gemini_thinking_thoughts as generate_thoughts,
-    gemini_trim_prompt as trim_prompt,
-)
-from models.checklist import evaluate_prompt
-
-__all__ = [
-    "generate_content",
-    "improve_prompt",
-    "generate_thoughts",
-    "trim_prompt",
-    "evaluate_prompt",
-]

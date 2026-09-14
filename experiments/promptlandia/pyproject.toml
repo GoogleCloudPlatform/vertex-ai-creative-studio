@@ -3,7 +3,7 @@ name = "Promptlandia"
 version = "0.2.0"
 description = "Promptlandia - a prompt analysis and improvement playground"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "black>=25.1.0",
     "google-genai>=1.2.0",
