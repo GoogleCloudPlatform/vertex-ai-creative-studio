@@ -145,7 +145,7 @@ def video_checklist_page():
 
     This page corresponds to the "/video_checklist" route and allows users to
     evaluate their video prompts against a set of best practices. It uses the
-f    `page_scaffold` component and renders the `video_checklist_page_content`.
+    `page_scaffold` component and renders the `video_checklist_page_content`.
     """
     with page_scaffold():  # pylint: disable=not-context-manager
         video_page()
