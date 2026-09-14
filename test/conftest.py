@@ -49,6 +49,12 @@ def make_app_state(**overrides):
     instance with ``object.__new__`` and populating each declared dataclass
     field with its default value, then applying any caller-provided overrides.
 
+    Note: only fields that declare a default (or ``default_factory``) are
+    populated. Today every ``AppState`` field has a default, so the returned
+    instance is fully initialized. If a future field is added without a default
+    and is not supplied via ``overrides``, accessing it on the returned instance
+    would raise ``AttributeError`` — pass such fields explicitly.
+
     Args:
         **overrides: Field values to set on the returned state. Each key must
             be a declared field of ``AppState``.

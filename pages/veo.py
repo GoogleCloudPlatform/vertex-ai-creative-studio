@@ -372,6 +372,7 @@ def on_click_extend_video(e: me.ClickEvent):
     # --- Prepare Request Data ---
     request = VideoGenerationRequest(
         prompt=state.veo_prompt_input,
+        negative_prompt=state.negative_prompt,
         model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
