@@ -243,6 +243,19 @@ class Default:
     )
 
     # Object Rotation
+    # Feature flag for the Object Rotation ("Edit Images") workflow. It is
+    # referenced by config/navigation.json (to gate the nav entry) and by
+    # main.py (to gate the /object-rotation route). Disabled by default per
+    # product decision: the Object Rotation page is not exposed.
+    #
+    # Previously this flag was referenced but never defined, so the navigation
+    # lookup `getattr(Default, "EDIT_IMAGES_ENABLED", False)` fell back to False
+    # and the page was hidden only implicitly. Defining it here makes that intent
+    # explicit while still allowing an operator to opt in via the environment.
+    EDIT_IMAGES_ENABLED: bool = (
+        os.environ.get("EDIT_IMAGES_ENABLED", "false").lower() == "true"
+    )
+
     OBJECT_ROTATION_VIDEO_MODEL: str = os.environ.get(
         "OBJECT_ROTATION_VIDEO_MODEL",
         "veo-3.1-generate-001",
