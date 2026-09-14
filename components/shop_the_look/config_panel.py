@@ -132,6 +132,12 @@ def config_panel():
                     # Source options from the VEO_MODELS config (single source of
                     # truth) so the dropdown can't drift out of sync with the
                     # models the app actually supports.
+                    # TODO(#1658 follow-up): the selected version_id does not yet
+                    # switch the underlying Veo endpoint/model. models.veo.image_to_video
+                    # only special-cases the legacy "3.0" value and otherwise routes
+                    # every request through config.VEO_MODEL_ID, so all options here
+                    # currently generate with the same (default) model. Wire
+                    # version_id -> model/endpoint before relying on per-option routing.
                     options=[
                         me.SelectOption(
                             label=model.display_name,
