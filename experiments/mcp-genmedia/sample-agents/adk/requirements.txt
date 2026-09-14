@@ -112,7 +112,7 @@ google-auth==2.57.1
     #   google-cloud-storage
     #   google-cloud-trace
     #   google-genai
-google-cloud-aiplatform==1.165.1
+google-cloud-aiplatform==2.1.0
     # via google-adk
 google-cloud-appengine-logging==1.10.0
     # via google-cloud-logging
