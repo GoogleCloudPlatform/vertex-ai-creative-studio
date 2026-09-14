@@ -34,7 +34,7 @@ def _get_description_for_image(image_path: str) -> str:
     Analyzes a single image to extract detailed character and/or machine
     profiles, then generates one unified natural language description.
     """
-    model_name = "gemini-2.5-pro" # Or your preferred model
+    model_name = "gemini-3.1-pro-preview" # Or your preferred model
 
     # Step 1: Extract structured profiles for BOTH entities
     profile_config = GenerateContentConfig(
@@ -76,7 +76,7 @@ def _generate_final_scene_prompt(base_description: str, user_prompt: str) -> Gen
     in a novel scene. It combines the character's description with the user's
     desired scenario to create a prompt suitable for Imagen.
     """
-    model_name = "gemini-2.5-pro"
+    model_name = "gemini-3.1-pro-preview"
     config = GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=GeneratedPrompts.model_json_schema(),

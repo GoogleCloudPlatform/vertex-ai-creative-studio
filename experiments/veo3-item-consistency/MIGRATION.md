@@ -96,7 +96,13 @@ than doing it twice. This is a planning note — do not execute the refactor now
 
 ## 4. Status
 
-**Deferred until closer to the 2026-06-30 deadline.** Documentation only; no
-functional changes. Issues [#1673](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1673)
-and [#1685](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1685)
-remain open to track the eventual code work.
+**Update (post-2026-06-30):** the stale Gemini and Veo IDs have now been modernized
+in this directory (`gemini-2.5-pro` → `gemini-3.1-pro-preview`,
+`veo-3.0-generate-preview` → `veo-3.1-generate-001`) under
+[#1673](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1673).
+The `imagen-3.0-capability-001` → Nano Banana port described above **remains
+outstanding** — it is a behavior-changing refactor, not a string swap, so it was not
+bundled into that mechanical pass. The 2026-06-30 sunset has now passed, so the
+edit/outpaint calls should be treated as broken until the port lands.
+[#1685](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1685)
+tracks the separate build breakage.

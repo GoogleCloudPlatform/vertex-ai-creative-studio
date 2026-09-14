@@ -27,6 +27,11 @@ VIDEO_FILE_PATH=os.getenv("VIDEO_FILE_PATH")
 EXTENDED_VIDEO_FILE_PATH=os.getenv("EXTENDED_VIDEO_FILE_PATH")
 CONTEXT_IMAGE=os.getenv("CONTEXT_IMAGE")
 
-MULTIMODAL_MODEL_NAME = "gemini-2.5-pro"
-VEO_MODEL_NAME = "veo-3.0-generate-preview"
+MULTIMODAL_MODEL_NAME = "gemini-3.1-pro-preview"
+VEO_MODEL_NAME = "veo-3.1-generate-001"
+# NOTE: imagen-3.0-capability-001 is on the 2026-06-30 GA sunset list and has NO
+# drop-in Imagen 4.0 successor for its mask-based edit/capability calls. The forward
+# path is a behavior-changing port to Nano Banana (Gemini prompt-based editing), the
+# same decision the core app shipped in PR #1659. That port is tracked separately and
+# documented in MIGRATION.md; it is not a mechanical string swap. See #1673.
 IMAGEN_MODEL_NAME = "imagen-3.0-capability-001"
