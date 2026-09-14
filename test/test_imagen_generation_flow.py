@@ -25,21 +25,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from components.imagen.generation_controls import on_click_generate_images
 from state.imagen_state import PageState
-from state.state import AppState
 from common.metadata import MediaItem
 
 @patch('components.imagen.generation_controls.add_media_item_to_firestore')
 @patch('components.imagen.generation_controls.generate_compliment', return_value="A stunning image!")
 @patch('components.imagen.generation_controls.generate_images_from_prompt', return_value=["gs://fake-bucket/fake_image.png"])
 @patch('mesop.state')
-def test_imagen_generation_flow_and_metadata(mock_state, mock_generate_images, mock_generate_compliment, mock_add_media_item):
-    """    
+def test_imagen_generation_flow_and_metadata(mock_state, mock_generate_images, mock_generate_compliment, mock_add_media_item, app_state_factory):
+    """
     Tests the Imagen generation flow, focusing on the data handling and metadata
     creation after a successful API call.
     """
     # --- Arrange ---
     # Setup the mocked state that the on_click_generate_images function will use.
-    mock_app_state = AppState(user_email="test_user@example.com")
+    mock_app_state = app_state_factory(user_email="test_user@example.com")
     mock_page_state = PageState(
         image_prompt_input="a test prompt for imagen",
         image_model_name="imagen-4.0-generate-preview-06-06",
@@ -49,8 +48,12 @@ def test_imagen_generation_flow_and_metadata(mock_state, mock_generate_images, m
         imagen_seed=123
     )
 
-    # Configure the mesop.state mock to return the correct state object when called.
-    mock_state.side_effect = [mock_app_state, mock_page_state]
+    # Configure the mesop.state mock to return the correct state object based on
+    # the requested state class. This is order-independent, so it is robust to
+    # helpers (e.g. the @track_click decorator) that also call me.state(AppState).
+    mock_state.side_effect = (
+        lambda cls: mock_page_state if cls is PageState else mock_app_state
+    )
 
     # --- Act ---
     # Call the event handler function. This is a generator function, so we need to exhaust it.
