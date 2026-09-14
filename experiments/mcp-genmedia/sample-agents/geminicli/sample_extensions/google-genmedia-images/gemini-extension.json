@@ -8,9 +8,10 @@
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
-    "imagen": {
-      "command": "mcp-imagen-go",
+    "gemini": {
+      "command": "mcp-gemini-go",
       "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     }

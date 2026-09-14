@@ -57,7 +57,7 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 3.  **Install the Binaries**
     This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
     ```bash
-    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-lyria-go ./mcp-veo-go
     ```
 
 4.  **Verify the Installation**
@@ -78,11 +78,11 @@ export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
 With the MCP servers for genmedia installed, you can test that they're available by sending a STDIO "tools/list" command (substitute the MCP server in question as needed):
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | mcp-imagen-go
+echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | mcp-nanobanana-go
 ```
 For a more readable output, you can pipe it to `jq` (if installed):
 ```bash
-echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | mcp-imagen-go | jq .
+echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | mcp-nanobanana-go | jq .
 ```
 
 Either of these should result in a JSON response with a list of tools, similar to this (output truncated for brevity):
@@ -94,8 +94,8 @@ Either of these should result in a JSON response with a list of tools, similar t
   "result": {
     "tools": [
       {
-        "name": "imagen_t2i",
-        "description": "Generate an image with Imagen 3...",
+        "name": "nanobanana_image_generation",
+        "description": "Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models...",
         // ... more tool details
       }
     ]
@@ -118,20 +118,20 @@ In addition to tools, the MCP servers now support prompts, providing a more inte
 You can list the available prompts for a server using the `prompts/list` method:
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | mcp-imagen-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | mcp-nanobanana-go | jq .
 ```
 
 To use a prompt, you call the `prompts/get` method with the prompt's name and any required arguments. If you omit a required argument, the server will respond with a message asking for it.
 
-**Example: Using the `generate-image` prompt with `mcp-imagen-go`**
+**Example: Using the `generate-image` prompt with `mcp-nanobanana-go`**
 
 ```bash
 # Call the prompt with a required argument
 export GOOGLE_CLOUD_PROJECT=$(gcloud config get project)
-echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-image","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-imagen-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-image","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-nanobanana-go | jq .
 
 # Call the prompt without a required argument
-echo '{"jsonrpc":"2.0","method":"prompts/get","id":3,"params":{"name":"generate-image"}}' | mcp-imagen-go | jq .
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":3,"params":{"name":"generate-image"}}' | mcp-nanobanana-go | jq .
 ```
 
 This will result in a more conversational interaction, making the servers easier to use for interactive clients.
@@ -165,7 +165,7 @@ This repository provides AI application samples for:
     *   Also includes the `list_gemini_voices` helper tool and the `gemini://language_codes` resource.
     *   Output can be saved to a local directory or GCS.
 
-*   **`mcp-imagen-go`**:
+*   **`mcp-imagen-go`** (Deprecated — use `mcp-nanobanana-go` or `mcp-gemini-go` for new work; Imagen models are deprecated as of June 30, 2026):
     *   Enables image generation using Google's Imagen models via Vertex AI.
     *   Tool: `imagen_t2i` for text-to-image generation.
     *   Supports various parameters like aspect ratio and number of images. Output can be directed to GCS, saved locally (including download from GCS if API saves there), or returned as base64 data.
