@@ -219,7 +219,7 @@ def generate_synthetic_60day_dataset(cutoff_date: datetime, end_date: datetime) 
                 # Turn 1: Image Gen
                 rec_img = GenerationRecord(
                     id=f"gen_{rec_counter}", user_email=user, timestamp=t,
-                    media_type="image", model="imagen-3.0-generate-002",
+                    media_type="image", model="gemini-3.1-flash-image",
                     num_images=random.choice([1, 2, 4]), prompt="Concept art character sheet for cyberpunk protagonist",
                 )
                 rec_img.cost = calculate_record_cost(rec_img)
@@ -287,7 +287,7 @@ def generate_synthetic_60day_dataset(cutoff_date: datetime, end_date: datetime) 
                         t += timedelta(minutes=random.randint(1, 4))
                     rec = GenerationRecord(
                         id=f"gen_{rec_counter}", user_email=user, timestamp=t,
-                        media_type="image", model="imagen-3.0-generate-002",
+                        media_type="image", model="gemini-3.1-flash-image",
                         num_images=random.choice([1, 2, 4]), prompt="High resolution architectural render of minimalist modern villa",
                     )
                     rec.cost = calculate_record_cost(rec)
