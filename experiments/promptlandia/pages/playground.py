@@ -46,7 +46,7 @@ class PageState:
     response_tab: bool = True
     # Model configs
     selected_model: str = ""
-    selected_region: str = "us-east4"
+    selected_region: str = "global"
     temperature: float = 1.0
     temperature_for_input: float = 1.0
     token_limit: int = _TOKEN_LIMIT_MAX
@@ -82,7 +82,7 @@ def playground_page_content(app_state: me.state):
         with me.box(style=_STYLE_CODE_BOX):
             me.markdown(
                 _GEMINI_CODE_TEXT.format(
-                    content=state.input.replace('"', '"'),
+                    content=state.input,
                     model=state.selected_model,
                     region=state.selected_region,
                     stop_sequences=make_stop_sequence_str(state.stop_sequences),
@@ -437,7 +437,6 @@ response = client.models.generate_content(
         temperature={temperature},
         max_output_tokens={token_limit},
         stop_sequences=[{stop_sequences}],
-        top_p=0.95,
     ),
 )
 
