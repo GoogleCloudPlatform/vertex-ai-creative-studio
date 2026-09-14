@@ -581,6 +581,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     # (Logic copied from original to maintain parity)
     request = VideoGenerationRequest(
         prompt=state.veo_prompt_input,
+        negative_prompt=state.negative_prompt,
         model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,

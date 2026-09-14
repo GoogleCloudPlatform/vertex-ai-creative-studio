@@ -22,42 +22,52 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from pages.veo import on_click_veo
 from state.veo_state import PageState
-from state.state import AppState
-from common.metadata import MediaItem
 from models.requests import VideoGenerationRequest
 
-@patch('pages.veo.add_media_item_to_firestore')
-@patch('pages.veo.generate_video')
+@patch('pages.veo.start_async_veo_job')
 @patch('mesop.state')
-def test_veo_negative_prompt_flow(mock_state, mock_generate_video, mock_add_media_item_to_firestore):
+def test_veo_negative_prompt_flow(mock_state, mock_start_async_veo_job, app_state_factory):
     """
     Tests that the negative_prompt is correctly passed from the UI state
-    through the generation request and into the final metadata logging.
+    through to the async generation request.
+
+    Veo generation runs as an async job: on_click_veo builds a
+    VideoGenerationRequest from the page state and hands it to
+    start_async_veo_job. The negative_prompt must survive that hand-off so the
+    downstream service/model layer (which reads request.negative_prompt) can
+    apply it.
     """
     # --- Arrange ---
     prompt = "a cinematic shot of a raccoon"
     negative_prompt = "text, watermark, signature"
 
-    # Mock the return value of the video generation
-    mock_generate_video.return_value = ("gs://fake-bucket/video.mp4", "1080p")
+    # Return a job that is already complete so on_click_veo does not enter its
+    # Firestore polling loop.
+    mock_start_async_veo_job.return_value = {
+        "job_id": "test-job-id",
+        "status": "complete",
+    }
 
-    # Setup the mocked states that me.state() will return upon subsequent calls
-    mock_app_state = AppState(user_email="test_user@example.com")
+    # Setup the mocked states that me.state() will return.
+    mock_app_state = app_state_factory(user_email="test_user@example.com")
     mock_page_state = PageState(
         veo_prompt_input=prompt,
         negative_prompt=negative_prompt,
-        veo_model="2.0",
+        veo_model="3.1-fast",
         aspect_ratio="16:9",
         video_length=5,
         resolution="1080p",
         reference_image_gcs=None,
         last_reference_image_gcs=None,
-        auto_enhance_prompt=False
+        auto_enhance_prompt=False,
     )
 
-    # The on_click_veo function calls me.state() multiple times.
-    # We configure the mock to return the appropriate state object each time.
-    mock_state.side_effect = [mock_app_state, mock_page_state, mock_page_state, mock_page_state]
+    # The on_click_veo function (and its @track_click decorator) call me.state()
+    # multiple times for both AppState and PageState. Return the appropriate
+    # state object based on the requested class so the mock is order-independent.
+    mock_state.side_effect = (
+        lambda cls: mock_page_state if cls is PageState else mock_app_state
+    )
 
     # --- Act ---
     # Call the event handler, which is a generator. We need to exhaust it.
@@ -65,19 +75,13 @@ def test_veo_negative_prompt_flow(mock_state, mock_generate_video, mock_add_medi
         pass
 
     # --- Assert ---
-    # 1. Assert that the video generation function was called correctly.
-    mock_generate_video.assert_called_once()
-    request_arg = mock_generate_video.call_args[0][0]
+    # The async job must be kicked off exactly once with the built request.
+    mock_start_async_veo_job.assert_called_once()
+    request_arg = mock_start_async_veo_job.call_args[0][0]
+    user_email_arg = mock_start_async_veo_job.call_args[0][1]
 
     assert isinstance(request_arg, VideoGenerationRequest)
     assert request_arg.prompt == prompt
+    # The crux of this test: the negative_prompt must be carried into the request.
     assert request_arg.negative_prompt == negative_prompt
-
-    # 2. Assert that the Firestore logging function was called with the correct data.
-    mock_add_media_item_to_firestore.assert_called_once()
-    media_item_arg = mock_add_media_item_to_firestore.call_args[0][0]
-
-    assert isinstance(media_item_arg, MediaItem)
-    assert media_item_arg.prompt == prompt
-    assert media_item_arg.negative_prompt == negative_prompt
-    assert media_item_arg.user_email == "test_user@example.com"
+    assert user_email_arg == "test_user@example.com"
