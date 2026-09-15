@@ -4,6 +4,16 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.20.1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.20.0...mcp-v3.20.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 4fdae31 ([#1853](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1853)) ([d4ca01e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/d4ca01ef4c0d4666335529a416fcdd27c797d9cf))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 7589d38 ([#1843](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1843)) ([47e9d6e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/47e9d6e56cc5047b14b5889e235c0e8de67fb2e5))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 763e337 ([#1857](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1857)) ([c2461da](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/c2461dad4bb008c355eac9d693c3cd3530ff8c13))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to ae4be8c ([#1860](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1860)) ([5dfe30d](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/5dfe30d4c5feed8bb541a3af5554215a082e44e1))
+
 ## [3.20.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.19.0...mcp-v3.20.0) (2026-09-12)
 
 
