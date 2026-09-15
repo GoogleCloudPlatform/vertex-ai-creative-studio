@@ -27,11 +27,11 @@ We provide a set of expert **Agent Skills** that provide AI agents (like Gemini 
 *   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
 *   `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
 
-See the [Agent Skills](./skills/README.md) directory for more information on how to link or install these skills.
+See the [Agent Skills](./skills/) directory for more information on how to link or install these skills.
 
 ## Installation
 
-**Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
+**Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
 
 ### Easy Installation (Pre-compiled Binaries)
 
@@ -76,7 +76,7 @@ The servers are configured primarily through environment variables. Key variable
 *   **Imagen:** Generate and edit images from text prompts.
 *   **AVTool:** Perform audio/video compositing and manipulation (e.g., combining, concatenating, format conversion).
 
-For a detailed list of tools provided by each server, refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
+For a detailed list of tools provided by each server, refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
 
 ## Naming Outputs: `output_filename`
 
@@ -148,17 +148,17 @@ gcloud storage buckets add-iam-policy-binding gs://BUCKET_NAME \
 
 ## Client Configurations
 
-The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](./sample-agents/mcp-inspector/genmedia-config.json).
+The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/blob/main/experiments/mcp-genmedia/sample-agents/mcp-inspector/genmedia-config.json).
 
 This repository provides AI application samples for:
 
-* [geminicli](./sample-agents/geminicli/)
-* [Google ADK (Agent Development Kit)](./sample-agents/adk/README.md)
-* [Google Firebase Genkit](./sample-agents/genkit/README.md)
+* [geminicli](./agents/geminicli/)
+* [Google ADK (Agent Development Kit)](./agents/adk/)
+* [Google Firebase Genkit](./agents/genkit/)
 
 ## Development and Contribution
 
-For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](./mcp-genmedia-go/README.md) for more information.
+For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go) for more information.
 
 ## License
 
