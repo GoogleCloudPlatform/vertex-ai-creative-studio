@@ -72,6 +72,13 @@ def generation_controls(
             on_selection_change=on_selection_change_veo_model,
         )
 
+        me.input(
+            label="Seed (0 for random)",
+            value=str(state.veo_seed),
+            on_blur=on_blur_veo_seed,
+            type="number",
+        )
+
         # Number of videos
         me.select(
             label="count",
@@ -159,3 +166,12 @@ def generation_controls(
             value=state.person_generation,
             on_selection_change=on_selection_change_person_generation,
         )
+
+def on_blur_veo_seed(e: me.InputBlurEvent):
+    """Handles blur event for the Veo seed input."""
+    state = me.state(PageState)
+    try:
+        seed_value = int(e.value)
+        state.veo_seed = seed_value if seed_value >= 0 else 0
+    except ValueError:
+        state.veo_seed = 0
