@@ -152,9 +152,16 @@ The MCP servers can be used with various clients and hosts. A sample MCP configu
 
 This repository provides AI application samples for:
 
-* [geminicli](./agents/geminicli/)
+* [Claude Code](./agents/claude-code/)
+* [Gemini CLI](./agents/geminicli/)
+* [Antigravity](./agents/antigravity/)
+* [OpenAI Codex](./agents/codex/)
+* [Opencode](./agents/opencode/)
+* [DeepSeek Harness](./agents/deepseek-harness/)
+* [Hermes](./agents/hermes/)
 * [Google ADK (Agent Development Kit)](./agents/adk/)
 * [Google Firebase Genkit](./agents/genkit/)
+* [MCP Inspector](./agents/mcp-inspector/)
 
 ## Development and Contribution
 
