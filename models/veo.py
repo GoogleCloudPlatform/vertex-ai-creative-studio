@@ -95,6 +95,10 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         if model_config.requires_prompt_enhancement:
             enhance_prompt_for_api = True
 
+        # Vertex rejects seed + prompt enhancement together.
+        if request.seed is not None:
+            enhance_prompt_for_api = False
+
         gen_config_args = {
             "aspect_ratio": request.aspect_ratio,
             "number_of_videos": request.video_count,
@@ -114,6 +118,9 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
         if request.negative_prompt:
             gen_config_args["negative_prompt"] = request.negative_prompt
+
+        if request.seed is not None:
+            gen_config_args["seed"] = request.seed
 
         extra_params = {}
         # Add support for social rewriter if specified

@@ -204,6 +204,18 @@ def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     yield
 
 
+
+def on_blur_veo_seed(e: me.InputBlurEvent):
+    """Handles blur event for the Veo seed input."""
+    state = me.state(PageState)
+    try:
+        seed_value = int(e.value)
+        state.veo_seed = seed_value if seed_value >= 0 else 0
+    except ValueError:
+        state.veo_seed = 0
+    yield
+
+
 def on_change_generate_audio(e: me.CheckboxChangeEvent):
     """Toggle audio generation."""
     app_state = me.state(AppState)
@@ -301,6 +313,7 @@ def veo_content(app_state: me.state):
                 on_selection_change_person_generation=on_selection_change_person_generation,
                 on_change_auto_enhance_prompt=on_change_auto_enhance_prompt,
                 on_change_generate_audio=on_change_generate_audio,
+                on_blur_veo_seed=on_blur_veo_seed,
             )
 
         me.box(style=me.Style(height=50))
