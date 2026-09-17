@@ -31,6 +31,7 @@ from tenacity import (
     wait_exponential,
 )
 
+import models.gemini as gemini
 from common.analytics import get_logger, track_model_call
 from config.default import Default
 
@@ -199,6 +200,10 @@ def generate_images_from_prompt(
 def generate_virtual_models(prompt: str, num_images: int) -> list[str]:
     """Generates multiple virtual model images and saves them to GCS.
 
+    Text-to-image virtual model generation via Nano Banana (Gemini image). The
+    Imagen model family returns HTTP 404 on Vertex AI, so this helper routes
+    through the Gemini image adapter, which is text-only when ``images=[]``.
+
     Args:
         prompt: The prompt to generate the images.
         num_images: The number of images to generate.
@@ -207,18 +212,18 @@ def generate_virtual_models(prompt: str, num_images: int) -> list[str]:
         A list of GCS URIs for the generated images.
 
     """
-    response = generate_images(
-        model=Default().MODEL_IMAGEN4_FAST,
-        prompt=prompt,
-        number_of_images=num_images,
-        aspect_ratio="1:1",
-        negative_prompt="",  # Assuming no negative prompt for this case
-    )
-    generated_uris = [
-        img.image.gcs_uri
-        for img in response.generated_images
-        if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
-    ]
+    cfg = Default()
+    generated_uris: list[str] = []
+    for _ in range(num_images):
+        gcs_uris, *_ = gemini.generate_image_from_prompt_and_images(
+            prompt=prompt,
+            images=[],  # text-only
+            aspect_ratio="1:1",
+            gcs_folder=cfg.IMAGEN_GENERATED_SUBFOLDER,
+            file_prefix="virtual_model",
+            model_name=cfg.GEMINI_IMAGE_GEN_MODEL,
+        )
+        generated_uris.extend(gcs_uris)
     return generated_uris
 
 
