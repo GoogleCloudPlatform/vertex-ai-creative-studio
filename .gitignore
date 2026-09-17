@@ -83,3 +83,6 @@ update_*.py
 **/mcp-*-go/mcp-*-go
 bin/
 *.exe
+
+# local provider lock (platform-specific hashes); owner re-inits at their venue
+.terraform.lock.hcl

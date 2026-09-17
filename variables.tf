@@ -170,6 +170,12 @@ variable "cloud_run_max_concurrency" {
   default     = 4
 }
 
+variable "max_instance_count" {
+  description = "Maximum number of Cloud Run instances (scaling.max_instance_count). Previously hardcoded to 1; kept at 1 to preserve behaviour."
+  type        = number
+  default     = 1
+}
+
 variable "asset_lifecycle_age_days" {
   description = "Age in days after which objects in the assets bucket are deleted by a lifecycle rule. Set to 0 to disable the lifecycle rule."
   type        = number

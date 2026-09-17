@@ -15,26 +15,26 @@
 */
 
 output "load-balancer-ip" {
-  value       = var.use_lb ? module.lb-http[0].external_ip : ""
+  value       = var.use_lb ? module.networking-lb[0].load_balancer_ip : ""
   description = "IP Address that should be used for DNS A record for the domain provided."
 }
 
 output "assets-bucket" {
-  value       = google_storage_bucket.assets.name
+  value       = module.data.assets_bucket_name
   description = "Name of the GCS bucket where assets are stored."
 }
 
 output "cloud-run-app-url" {
-  value       = !var.use_lb ? "https://${google_cloud_run_v2_service.creative_studio.name}-${data.google_project.project.number}.${google_cloud_run_v2_service.creative_studio.location}.run.app" : ""
+  value       = !var.use_lb ? "https://${module.cloud-run-service.service_name}-${data.google_project.project.number}.${module.cloud-run-service.service_location}.run.app" : ""
   description = "The Cloud Run URL where the website can be reached."
 }
 
 output "builds-service-account" {
-  value       = google_service_account.cloudbuild.email
+  value       = module.iam.build_sa_email
   description = "Service Account used for Cloud Build"
 }
 
 output "application-service-account" {
-  value       = google_service_account.creative_studio.email
+  value       = module.iam.runtime_sa_email
   description = "Service Account used by the Creative Studio web application"
 }
