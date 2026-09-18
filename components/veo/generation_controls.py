@@ -79,6 +79,12 @@ def generation_controls(
             on_blur=on_blur_veo_seed,
             type="number",
         )
+        me.text(
+            "A seed is applied to influence generation, but exact "
+            "reproducibility is not guaranteed on Veo 3.x while prompt "
+            "enhancement is required.",
+            style=me.Style(font_size="12px", color="gray"),
+        )
 
         # Number of videos
         me.select(

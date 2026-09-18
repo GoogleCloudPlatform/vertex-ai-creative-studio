@@ -95,10 +95,6 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         if model_config.requires_prompt_enhancement:
             enhance_prompt_for_api = True
 
-        # Vertex rejects seed + prompt enhancement together.
-        if request.seed is not None:
-            enhance_prompt_for_api = False
-
         gen_config_args = {
             "aspect_ratio": request.aspect_ratio,
             "number_of_videos": request.video_count,

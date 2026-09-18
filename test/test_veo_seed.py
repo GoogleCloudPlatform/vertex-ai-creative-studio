@@ -46,10 +46,10 @@ T2V_MODELS = get_models_by_mode("t2v")
     "model_config", T2V_MODELS, ids=[m.version_id for m in T2V_MODELS]
 )
 @patch("models.veo.get_veo_client")
-def test_generate_video_forwards_seed_and_disables_enhancement(
+def test_generate_video_forwards_seed_and_keeps_enhancement(
     mock_get_client, model_config
 ):
-    """Seed must reach gen_config_args and disable prompt enhancement."""
+    """Seed must reach gen_config_args while prompt enhancement stays on."""
     mock_client = MagicMock()
     mock_client.models.generate_videos.return_value = _make_fake_operation()
     mock_get_client.return_value = mock_client
@@ -72,4 +72,4 @@ def test_generate_video_forwards_seed_and_disables_enhancement(
     mock_client.models.generate_videos.assert_called_once()
     config = mock_client.models.generate_videos.call_args.kwargs["config"]
     assert config.seed == 424242
-    assert config.enhance_prompt is False
+    assert config.enhance_prompt is True
