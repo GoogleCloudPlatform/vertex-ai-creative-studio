@@ -15,8 +15,12 @@
 */
 
 # data-stores module: platform-agnostic persistence layer — assets GCS bucket,
-# Firestore Native DB + composite indexes (AS-IS; index changes are Phase 2),
-# and the Cloud Tasks queue. All attribute values preserved exactly.
+# Firestore Native DB + composite indexes, and the Cloud Tasks queue.
+#
+# The composite indexes are rendered from the `firestore_indexes` locals list
+# (Phase 2) so the single authoritative definition lives in Terraform. The set is
+# behavior-identical to the previous explicit resources; addresses moved from
+# individually-named resources to for_each keys are preserved via moved.tf.
 
 terraform {
   required_providers {
@@ -76,71 +80,55 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
   deletion_policy = var.enable_data_deletion ? "DELETE" : "ABANDON"
 }
 
-resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
-  collection  = "genmedia"
-  database    = google_firestore_database.create_studio_asset_metadata.name
-  query_scope = "COLLECTION"
-
-  fields {
-    field_path = "mime_type"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "timestamp"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "genmedia_chooser_media_type_timestamp" {
-  collection  = "genmedia"
-  database    = google_firestore_database.create_studio_asset_metadata.name
-  query_scope = "COLLECTION"
-
-  fields {
-    field_path = "media_type"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "timestamp"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "genmedia_user_email_timestamp" {
-  collection  = "genmedia"
-  database    = google_firestore_database.create_studio_asset_metadata.name
-  query_scope = "COLLECTION"
-
-  fields {
-    field_path = "user_email"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "timestamp"
-    order      = "DESCENDING"
+# Composite indexes for the `genmedia` collection. Each entry maps a query shape
+# used by the app (see common/metadata.py) to its covering index. Keys match the
+# previous resource names so state addresses migrate cleanly via moved.tf.
+locals {
+  firestore_indexes = {
+    # get_media_for_chooser query2 (legacy mime_type) + optimized mime range
+    genmedia_library_mime_type_timestamp = {
+      fields = [
+        { field_path = "mime_type", order = "ASCENDING" },
+        { field_path = "timestamp", order = "DESCENDING" },
+      ]
+    }
+    # get_media_for_chooser query1: where("media_type" ==) + order_by timestamp
+    genmedia_chooser_media_type_timestamp = {
+      fields = [
+        { field_path = "media_type", order = "ASCENDING" },
+        { field_path = "timestamp", order = "DESCENDING" },
+      ]
+    }
+    # get_media_for_page_optimized: where("user_email" ==) + order_by timestamp
+    genmedia_user_email_timestamp = {
+      fields = [
+        { field_path = "user_email", order = "ASCENDING" },
+        { field_path = "timestamp", order = "DESCENDING" },
+      ]
+    }
+    # get_media_for_page_optimized: user_email + mime_type range + order_by timestamp
+    genmedia_user_email_mime_type_timestamp = {
+      fields = [
+        { field_path = "user_email", order = "ASCENDING" },
+        { field_path = "mime_type", order = "ASCENDING" },
+        { field_path = "timestamp", order = "DESCENDING" },
+      ]
+    }
   }
 }
 
-resource "google_firestore_index" "genmedia_user_email_mime_type_timestamp" {
+resource "google_firestore_index" "genmedia" {
+  for_each = local.firestore_indexes
+
   collection  = "genmedia"
   database    = google_firestore_database.create_studio_asset_metadata.name
   query_scope = "COLLECTION"
 
-  fields {
-    field_path = "user_email"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "mime_type"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "timestamp"
-    order      = "DESCENDING"
+  dynamic "fields" {
+    for_each = each.value.fields
+    content {
+      field_path = fields.value.field_path
+      order      = fields.value.order
+    }
   }
 }
