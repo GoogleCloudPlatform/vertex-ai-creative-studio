@@ -43,6 +43,7 @@ class VideoGenerationRequest(BaseModel):
     model_version_id: str
     person_generation: str
     negative_prompt: Optional[str] = None
+    seed: Optional[int] = None
     rewriter_type: Optional[str] = None
 
     # For I2V and Interpolation

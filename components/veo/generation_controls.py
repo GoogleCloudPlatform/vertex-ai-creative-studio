@@ -30,6 +30,7 @@ def generation_controls(
     on_selection_change_person_generation,
     on_change_auto_enhance_prompt,
     on_change_generate_audio,
+    on_blur_veo_seed,
 ):
     """Generation controls for VEO."""
     state = me.state(PageState)
@@ -70,6 +71,19 @@ def generation_controls(
             ],
             value=state.veo_model,
             on_selection_change=on_selection_change_veo_model,
+        )
+
+        me.input(
+            label="Seed (0 for random)",
+            value=str(state.veo_seed),
+            on_blur=on_blur_veo_seed,
+            type="number",
+        )
+        me.text(
+            "A seed is applied to influence generation, but exact "
+            "reproducibility is not guaranteed on Veo 3.x while prompt "
+            "enhancement is required.",
+            style=me.Style(font_size="12px", color="gray"),
         )
 
         # Number of videos

@@ -115,6 +115,9 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         if request.negative_prompt:
             gen_config_args["negative_prompt"] = request.negative_prompt
 
+        if request.seed is not None:
+            gen_config_args["seed"] = request.seed
+
         extra_params = {}
         # Add support for social rewriter if specified
         if (
