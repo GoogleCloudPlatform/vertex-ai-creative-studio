@@ -202,3 +202,90 @@ With any of the deployment options above that use IAP, if you need to add additi
 - Image Access - The images are served using the authenticated GCS URL of each storage object so users need to be granted the _Storage Object Viewer_ role. The name of the bucket is available as the `assets-bucket` Terraform output.
 
 > **Note:** For the application to function correctly, the **Cloud Run service account** must have the **`Storage Object Viewer`** (`roles/storage.objectViewer`) role on the GCS bucket. This allows the application to read media assets and serve them to users through the proxy.
+
+# Fast redeploy + pre/post-flight checks (`deploy.sh`)
+
+`deploy.sh` (repo root) is a lightweight, **non-Terraform** operator loop for the
+Cloud Run path. It is for redeploying the application to an environment that
+Terraform has **already provisioned** — it is a deploy loop plus a pre-flight
+sanity gate, not an infrastructure provisioner. Use `build.sh`/Terraform for the
+provisioning workflow above; use `deploy.sh` for routine app redeploys and as a
+cheap, CI-usable prerequisite gate.
+
+It (1) verifies the environment's prerequisites (22 pre-checks), (2) drives the
+existing `cloudbuild.yaml` build and `gcloud run deploy`, and (3) runs
+post-deploy health and auth-wiring smoke checks.
+
+### Usage
+
+```bash
+# Run ALL pre-checks and exit WITHOUT deploying (safe/read-only; ideal for CI):
+./deploy.sh check
+
+# Pre-checks -> build + deploy -> post-checks:
+./deploy.sh deploy
+
+# Promote every WARN pre-check to a HARD-BLOCK (strict CI gate):
+./deploy.sh check --strict
+
+# Deploy an already-built image without rebuilding (makes the "image exists"
+# check a HARD-BLOCK):
+./deploy.sh deploy --no-build --tag <existing-tag>
+```
+
+Common flags: `--project <id>`, `--region <region>`, `--service <name>`,
+`--tag <tag>`. The project resolves from `--project`, then the `PROJECT_ID` env
+var, then `gcloud config`. The region resolves from `--region`, then the `REGION`
+env var, then `GOOGLE_CLOUD_REGION`, then `gcloud config`, defaulting to
+`us-central1`. Run `./deploy.sh --help`
+for the full list, including the optional `LB_HOST`, `IAP_ID_TOKEN`, `APP_ENV`,
+`TF_STATE_BUCKET`, and `SECRET_ENV` environment overrides.
+
+### Exit codes
+
+| Code | Meaning |
+| :--- | :--- |
+| `0` | Success — all HARD-BLOCK pre-checks (and, in `deploy` mode, all post-checks) passed. |
+| `1` | Usage / internal error. |
+| `2` | A HARD-BLOCK pre-check failed — the deploy was refused. |
+| `3` | The build or `gcloud run deploy` step failed. |
+| `4` | The deploy succeeded but a post-deploy check failed. |
+
+Each pre-check prints a `PASS` / `WARN` / `BLOCK` / `SKIP` line. A **HARD-BLOCK**
+means the deploy would fail or the app would be broken/insecure at startup (e.g.
+missing API, service account, IAM role, Firestore DB, or bucket). A **WARN** flags
+a feature-degradation or an unrecommended-but-functional posture (e.g. a missing
+Cloud Tasks queue only degrades async thumbnails); `--strict` promotes every WARN
+to a HARD-BLOCK. One check — the Artifact Registry repository (#16) — is
+**auto-remediated** (idempotent describe-then-create) in `deploy` mode only.
+
+### Post-deploy checks
+
+`deploy` mode polls `/healthz` and `/readyz` until they return `200` (or timeout),
+runs an auth-wiring smoke test (a protected path must return `401`/redirect
+**without** a trusted identity, proving auth is enforced; a `200` with an
+`IAP_ID_TOKEN` where one can be minted), and confirms the new revision is serving
+100% of traffic. Any post-check failure exits non-zero (`4`).
+
+### Required-API single source
+
+The required-API list is **not** hand-copied into the script. `deploy.sh` reads it
+from `apis.txt` at the repo root (the single machine-readable source), and
+pre-check `#2a` guards against drift by asserting `apis.txt` matches the
+Terraform-declared set (`activate_apis` default in
+`modules/project-services/variables.tf`). Keep the two in sync; if they diverge,
+`#2a` warns. (Wiring Terraform to consume `apis.txt` directly, so both read one
+file, is deferred to a Terraform phase where a zero-diff `terraform plan` gate can
+prove the change is behaviour-neutral.)
+
+### What `deploy.sh` does NOT do
+
+- It does **not** provision infrastructure — that is Terraform's job. Its only
+  creation is the idempotent Artifact Registry repo auto-remediation (#16).
+- It does **not** manage the container-image contract beyond invoking the existing
+  build (preserving Terraform's `ignore_changes` on the image).
+- It does **not** read or write secret values. It only *checks* that referenced
+  Secret Manager secrets exist (pre-check #19); it never becomes the secret store.
+
+**Rollback:** delete `deploy.sh` — it provisions nothing, so removing it has no
+infrastructure impact.
