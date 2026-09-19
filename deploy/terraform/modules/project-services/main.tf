@@ -35,8 +35,14 @@ terraform {
 # is actually adopted (secret_ids non-empty upstream => enable_secret_manager_api
 # true). This keeps the P4 mechanism dormant: with defaults the API set is
 # unchanged, so a default apply enables no new API.
+#
+# The Container (GKE) API is added symmetrically only when enable_container_api
+# is true (the GKE root in Phase 9 sets it; the Cloud Run root never does). This
+# keeps the Cloud Run path's API set byte-identical (dormant, like the
+# secretmanager flag) so a default apply enables no additional API.
 locals {
-  activate_apis = var.enable_secret_manager_api ? concat(var.activate_apis, ["secretmanager.googleapis.com"]) : var.activate_apis
+  activate_apis_with_secretmanager = var.enable_secret_manager_api ? concat(var.activate_apis, ["secretmanager.googleapis.com"]) : var.activate_apis
+  activate_apis                    = var.enable_container_api ? concat(local.activate_apis_with_secretmanager, ["container.googleapis.com"]) : local.activate_apis_with_secretmanager
 }
 
 module "project_services" {
