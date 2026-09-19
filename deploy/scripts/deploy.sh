@@ -37,6 +37,9 @@ set -euo pipefail
 # --------------------------------------------------------------------------- #
 SCRIPT_NAME="$(basename "$0")"; readonly SCRIPT_NAME
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; readonly SCRIPT_DIR
+# Repo root is two levels up from deploy/scripts/ (this script lives at
+# deploy/scripts/deploy.sh). Build files (Dockerfile, cloudbuild.yaml) stay there.
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"; readonly REPO_ROOT
 readonly SERVICE_NAME_DEFAULT="creative-studio"       # cloud-run-service module
 readonly FIRESTORE_DB="create-studio-asset-metadata"  # data-stores module
 readonly TASKS_QUEUE="thumbnail-extraction"           # data-stores module
@@ -44,8 +47,8 @@ readonly AR_REPO="creative-studio"                     # artifact-registry modul
 readonly IMAGE_PATH="creative-studio/creative-studio"  # cloudbuild.yaml _IMAGE_NAME
 readonly EXPECTED_INDEX_COUNT=4                         # data-stores firestore_indexes (genmedia collection)
 readonly APIS_FILE="${SCRIPT_DIR}/apis.txt"
-readonly TF_APIS_VARFILE="${SCRIPT_DIR}/modules/project-services/variables.tf"
-readonly CLOUDBUILD_CONFIG="${SCRIPT_DIR}/cloudbuild.yaml"
+readonly TF_APIS_VARFILE="${SCRIPT_DIR}/../terraform/modules/project-services/variables.tf"
+readonly CLOUDBUILD_CONFIG="${REPO_ROOT}/cloudbuild.yaml"
 readonly HEALTH_TIMEOUT_DEFAULT=300   # seconds for post-deploy health poll
 readonly HEALTH_INTERVAL=10           # seconds between polls
 
@@ -681,7 +684,7 @@ do_build() {
   if [[ ! -f "${CLOUDBUILD_CONFIG}" ]]; then
     log "ERROR: ${CLOUDBUILD_CONFIG} not found"; return 1
   fi
-  gcloud builds submit "${SCRIPT_DIR}" \
+  gcloud builds submit "${REPO_ROOT}" \
     --project="${PROJECT}" \
     --region="${REGION}" \
     --config="${CLOUDBUILD_CONFIG}" \

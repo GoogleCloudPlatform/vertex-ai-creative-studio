@@ -53,7 +53,7 @@ data "google_project" "project" {
 }
 
 module "apis" {
-  source     = "./modules/project-services"
+  source     = "../modules/project-services"
   project_id = var.project_id
   sleep_time = var.sleep_time
   # Enable the Secret Manager API only when secrets are actually configured, so
@@ -68,7 +68,7 @@ module "apis" {
 
 module "networking-lb" {
   count               = var.use_lb ? 1 : 0
-  source              = "./modules/networking-lb"
+  source              = "../modules/networking-lb"
   project_id          = var.project_id
   region              = var.region
   domain              = var.domain
@@ -85,7 +85,7 @@ module "networking-lb" {
 *********************************************/
 
 module "data" {
-  source                   = "./modules/data-stores"
+  source                   = "../modules/data-stores"
   project_id               = var.project_id
   region                   = var.region
   bucket_name              = local.asset_bucket_name
@@ -97,7 +97,7 @@ module "data" {
 }
 
 module "iam" {
-  source             = "./modules/iam"
+  source             = "../modules/iam"
   project_id         = var.project_id
   firestore_db_id    = module.data.firestore_db_id
   assets_bucket_name = module.data.assets_bucket_name
@@ -109,7 +109,7 @@ module "iam" {
 # accessor binding for the runtime SA. No secret values/versions are created by
 # Terraform. With defaults (secret_ids = []) this module creates nothing.
 module "secret-manager" {
-  source            = "./modules/secret-manager"
+  source            = "../modules/secret-manager"
   project_id        = var.project_id
   secret_ids        = var.secret_ids
   accessor_sa_email = module.iam.runtime_sa_email
@@ -154,7 +154,7 @@ locals {
 }
 
 module "cloud-run-service" {
-  source             = "./modules/cloud-run-service"
+  source             = "../modules/cloud-run-service"
   project_id         = var.project_id
   region             = var.region
   image              = var.initial_container_image
@@ -184,7 +184,7 @@ module "cloud-run-service" {
 *********************************************/
 
 module "registry" {
-  source               = "./modules/artifact-registry"
+  source               = "../modules/artifact-registry"
   project_id           = var.project_id
   region               = var.region
   initial_user         = var.initial_user

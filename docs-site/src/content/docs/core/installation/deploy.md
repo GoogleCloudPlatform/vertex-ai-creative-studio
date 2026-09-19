@@ -58,9 +58,10 @@ Because you are using a custom domain, you will need to export one more variable
 export DOMAIN_NAME=creativestudio.example.com
 ```
 
-Make sure your command line is in the folder containing this README (i.e., in the root of the main repository, /). Then create the `terraform.tfvars` using the following command:
+Make sure your command line is in the Cloud Run Terraform root, `deploy/terraform/cloudrun`. Then create the `terraform.tfvars` using the following command:
 
 ```bash
+cd deploy/terraform/cloudrun
 cat > terraform.tfvars << EOF
 project_id = "$PROJECT_ID"
 initial_user = "$INITIAL_USER"
@@ -83,9 +84,10 @@ If you use Google Cloud DNS, follow the steps [here](https://cloud.google.com/dn
 
 ### 3. Build and Deploy Container Image
 
-A shell script, `build.sh`, is included in this repo that submits a build to Cloud Build which builds and deploys the application's container image. Use the following command:
+A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build which builds and deploys the application's container image. Run it from the repository root:
 
 ```bash
+cd -  # back to the repository root (if you ran terraform from deploy/terraform/cloudrun)
 ./build.sh
 ```
 
@@ -103,9 +105,10 @@ If you are unable to create a DNS record in your corporate domain, you can also 
 
 ### 1. Initialize Terraform
 
-Make sure your command line is in the folder containing this README (i.e., in the root of the main repository, /). Then create the `terraform.tfvars` using the following command:
+Make sure your command line is in the Cloud Run Terraform root, `deploy/terraform/cloudrun`. Then create the `terraform.tfvars` using the following command:
 
 ```bash
+cd deploy/terraform/cloudrun
 cat > terraform.tfvars << EOF
 project_id = "$PROJECT_ID"
 initial_user = "$INITIAL_USER"
@@ -122,9 +125,10 @@ Make sure to take note of the Cloud Run URL that is output. This is what you wil
 
 ### 2. Build and Deploy Container Image
 
-A shell script, `build.sh`, is included in this repo that submits a build to Cloud Build which builds and deploys the application's container image. Use the following command:
+A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build which builds and deploys the application's container image. Run it from the repository root:
 
 ```bash
+cd -  # back to the repository root (if you ran terraform from deploy/terraform/cloudrun)
 ./build.sh
 ```
 
@@ -182,9 +186,11 @@ If the updates include changes to the Terraform configuration (e.g., new environ
    git pull
    ```
 
-2. Initialize Terraform to download any new provider requirements:
+2. Initialize Terraform to download any new provider requirements (run from the
+   Cloud Run Terraform root):
 
    ```bash
+   cd deploy/terraform/cloudrun
    terraform init -upgrade
    ```
 
@@ -205,7 +211,7 @@ With any of the deployment options above that use IAP, if you need to add additi
 
 # Fast redeploy + pre/post-flight checks (`deploy.sh`)
 
-`deploy.sh` (repo root) is a lightweight, **non-Terraform** operator loop for the
+`deploy.sh` (at `deploy/scripts/deploy.sh`) is a lightweight, **non-Terraform** operator loop for the
 Cloud Run path. It is for redeploying the application to an environment that
 Terraform has **already provisioned** — it is a deploy loop plus a pre-flight
 sanity gate, not an infrastructure provisioner. Use `build.sh`/Terraform for the
@@ -220,24 +226,24 @@ post-deploy health and auth-wiring smoke checks.
 
 ```bash
 # Run ALL pre-checks and exit WITHOUT deploying (safe/read-only; ideal for CI):
-./deploy.sh check
+./deploy/scripts/deploy.sh check
 
 # Pre-checks -> build + deploy -> post-checks:
-./deploy.sh deploy
+./deploy/scripts/deploy.sh deploy
 
 # Promote every WARN pre-check to a HARD-BLOCK (strict CI gate):
-./deploy.sh check --strict
+./deploy/scripts/deploy.sh check --strict
 
 # Deploy an already-built image without rebuilding (makes the "image exists"
 # check a HARD-BLOCK):
-./deploy.sh deploy --no-build --tag <existing-tag>
+./deploy/scripts/deploy.sh deploy --no-build --tag <existing-tag>
 ```
 
 Common flags: `--project <id>`, `--region <region>`, `--service <name>`,
 `--tag <tag>`. The project resolves from `--project`, then the `PROJECT_ID` env
 var, then `gcloud config`. The region resolves from `--region`, then the `REGION`
 env var, then `GOOGLE_CLOUD_REGION`, then `gcloud config`, defaulting to
-`us-central1`. Run `./deploy.sh --help`
+`us-central1`. Run `./deploy/scripts/deploy.sh --help`
 for the full list, including the optional `LB_HOST`, `IAP_ID_TOKEN`, `APP_ENV`,
 `TF_STATE_BUCKET`, and `SECRET_ENV` environment overrides.
 
@@ -270,10 +276,10 @@ runs an auth-wiring smoke test (a protected path must return `401`/redirect
 ### Required-API single source
 
 The required-API list is **not** hand-copied into the script. `deploy.sh` reads it
-from `apis.txt` at the repo root (the single machine-readable source), and
-pre-check `#2a` guards against drift by asserting `apis.txt` matches the
-Terraform-declared set (`activate_apis` default in
-`modules/project-services/variables.tf`). Keep the two in sync; if they diverge,
+from `apis.txt` alongside the script (`deploy/scripts/apis.txt`, the single
+machine-readable source), and pre-check `#2a` guards against drift by asserting
+`apis.txt` matches the Terraform-declared set (`activate_apis` default in
+`deploy/terraform/modules/project-services/variables.tf`). Keep the two in sync; if they diverge,
 `#2a` warns. (Wiring Terraform to consume `apis.txt` directly, so both read one
 file, is deferred to a Terraform phase where a zero-diff `terraform plan` gate can
 prove the change is behaviour-neutral.)
@@ -287,5 +293,5 @@ prove the change is behaviour-neutral.)
 - It does **not** read or write secret values. It only *checks* that referenced
   Secret Manager secrets exist (pre-check #19); it never becomes the secret store.
 
-**Rollback:** delete `deploy.sh` — it provisions nothing, so removing it has no
+**Rollback:** delete `deploy/scripts/deploy.sh` — it provisions nothing, so removing it has no
 infrastructure impact.

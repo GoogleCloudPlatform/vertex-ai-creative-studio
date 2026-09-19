@@ -33,9 +33,10 @@
 #
 #   terraform init -reconfigure -backend-config="bucket=..." \
 #       -backend-config="prefix=creative-studio/<env>"
-#   terraform apply -var-file=environments/<env>.tfvars
+#   terraform apply -var-file=../environments/<env>.tfvars
 #
-# See environments/README.md. The default prefix below is the prod environment.
+# Run these from this directory (deploy/terraform/cloudrun). See
+# ../environments/README.md. The default prefix below is the prod environment.
 terraform {
   backend "gcs" {
     # bucket = "YOUR_TF_STATE_BUCKET"  # provide via -backend-config
