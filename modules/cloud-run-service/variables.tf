@@ -127,7 +127,7 @@ variable "startup_probe" {
     timeout_seconds       = optional(number, 3)
     failure_threshold     = optional(number, 20)
   })
-  default  = {}
+  default  = null
   nullable = true
 }
 
@@ -141,7 +141,7 @@ variable "liveness_probe" {
     timeout_seconds       = optional(number, 5)
     failure_threshold     = optional(number, 3)
   })
-  default  = {}
+  default  = null
   nullable = true
 }
 
