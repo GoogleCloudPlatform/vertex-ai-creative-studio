@@ -1,0 +1,34 @@
+# Canonical list of GCP APIs required by GenMedia Creative Studio.
+#
+# SINGLE SOURCE OF TRUTH for the required-API set. This file is the machine-
+# readable source consumed by the lightweight deploy script (deploy.sh, pre-check
+# #2) so the script never hand-copies the API list.
+#
+# It is kept in sync with the Terraform-declared set in
+# modules/project-services/variables.tf (variable "activate_apis", the 13-API
+# default). deploy.sh enforces that coupling with a drift check (pre-check #2a):
+# if this file and the Terraform default diverge, the script flags it.
+#
+# NOTE (coupling): wiring Terraform to read this file directly (so both consume a
+# single source) is intentionally deferred to a Terraform phase where a
+# `terraform plan` zero-diff gate can prove the change is behaviour-neutral. Until
+# then, this file plus the drift check are the enforced single source. See §5.3 of
+# the infra-modernization design and deploy.md ("Required-API single source").
+#
+# Format: one API service name per line. Blank lines and lines starting with '#'
+# are ignored. Conditional APIs are NOT listed here and are added by the script
+# only when applicable: secretmanager.googleapis.com (when secrets are used) and
+# container.googleapis.com (GKE target only).
+iap.googleapis.com
+compute.googleapis.com
+certificatemanager.googleapis.com
+cloudbuild.googleapis.com
+run.googleapis.com
+artifactregistry.googleapis.com
+containerscanning.googleapis.com
+storage.googleapis.com
+aiplatform.googleapis.com
+firestore.googleapis.com
+cloudtasks.googleapis.com
+serviceusage.googleapis.com
+cloudresourcemanager.googleapis.com
