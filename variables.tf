@@ -171,9 +171,9 @@ variable "cloud_run_max_concurrency" {
 }
 
 variable "max_instance_count" {
-  description = "Maximum number of Cloud Run instances (scaling.max_instance_count). Previously hardcoded to 1; kept at 1 to preserve behaviour."
+  description = "Maximum number of Cloud Run instances (scaling.max_instance_count). Previously hardcoded to 1 (P1 preserved it as a variable defaulting to 1); raised to 10 in P3 to provide a realistic autoscaling ceiling for real traffic. Configurable per environment/apply."
   type        = number
-  default     = 1
+  default     = 10
 }
 
 variable "asset_lifecycle_age_days" {

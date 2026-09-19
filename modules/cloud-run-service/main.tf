@@ -77,6 +77,36 @@ resource "google_cloud_run_v2_service" "creative_studio" {
           value = env.value
         }
       }
+      # Startup probe: gates traffic until the app reports ready on /readyz.
+      # Conservative failure_threshold * period gives a slow cold start room
+      # to come up before the instance is considered failed.
+      dynamic "startup_probe" {
+        for_each = var.startup_probe == null ? [] : [var.startup_probe]
+        content {
+          initial_delay_seconds = startup_probe.value.initial_delay_seconds
+          period_seconds        = startup_probe.value.period_seconds
+          timeout_seconds       = startup_probe.value.timeout_seconds
+          failure_threshold     = startup_probe.value.failure_threshold
+          http_get {
+            path = startup_probe.value.path
+            port = startup_probe.value.port
+          }
+        }
+      }
+      # Liveness probe: restarts the container if /healthz stops responding.
+      dynamic "liveness_probe" {
+        for_each = var.liveness_probe == null ? [] : [var.liveness_probe]
+        content {
+          initial_delay_seconds = liveness_probe.value.initial_delay_seconds
+          period_seconds        = liveness_probe.value.period_seconds
+          timeout_seconds       = liveness_probe.value.timeout_seconds
+          failure_threshold     = liveness_probe.value.failure_threshold
+          http_get {
+            path = liveness_probe.value.path
+            port = liveness_probe.value.port
+          }
+        }
+      }
     }
     service_account = var.runtime_sa_email
     scaling {

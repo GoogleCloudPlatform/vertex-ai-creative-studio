@@ -104,21 +104,50 @@ variable "launch_stage" {
   type        = string
 }
 
-# --- Phase 1 no-op inputs (present but null; wired in a later phase) ---
-# Kept in the interface so the compute contract is stable across the Cloud Run
-# and future GKE paths. Not referenced yet: declaring them is behaviour-neutral.
+# --- Cloud Run health probes (Phase 3a) ---
+# Wired to the application's real, auth-exempt health endpoints:
+#   /readyz  (main.py:148-150) — used by the startup probe, which gates traffic
+#            until the container reports ready (Cloud Run v2 has no separate
+#            readiness probe; the startup probe fills that role).
+#   /healthz (main.py:143-145) — used by the liveness probe.
+# Both are exempt from auth via PUBLIC_PATH_PREFIXES (main.py:130) and return
+# {"status":"ok"}. The probe port defaults to 8080, the container's serving port
+# (PORT env default, main.py:399; no explicit ports block => Cloud Run default).
+# Each probe is configurable via these object inputs; set a probe to null to
+# disable it entirely (e.g. for a placeholder image that does not yet serve the
+# endpoints). Defaults are conservative so a slow cold start is not killed.
 
 variable "startup_probe" {
-  description = "Optional Cloud Run startup probe. Phase 1 no-op (null)."
-  type        = any
-  default     = null
+  description = "Cloud Run startup probe config. Gates traffic until the container is ready; targets the app's /readyz endpoint by default. Set to null to disable."
+  type = object({
+    path                  = optional(string, "/readyz")
+    port                  = optional(number, 8080)
+    initial_delay_seconds = optional(number, 0)
+    period_seconds        = optional(number, 10)
+    timeout_seconds       = optional(number, 3)
+    failure_threshold     = optional(number, 20)
+  })
+  default  = {}
+  nullable = true
 }
 
 variable "liveness_probe" {
-  description = "Optional Cloud Run liveness probe. Phase 1 no-op (null)."
-  type        = any
-  default     = null
+  description = "Cloud Run liveness probe config. Restarts the container if it stops responding; targets the app's /healthz endpoint by default. Set to null to disable."
+  type = object({
+    path                  = optional(string, "/healthz")
+    port                  = optional(number, 8080)
+    initial_delay_seconds = optional(number, 0)
+    period_seconds        = optional(number, 30)
+    timeout_seconds       = optional(number, 5)
+    failure_threshold     = optional(number, 3)
+  })
+  default  = {}
+  nullable = true
 }
+
+# --- Phase 1 no-op input (present but null; wired in a later phase) ---
+# Kept in the interface so the compute contract is stable across the Cloud Run
+# and future GKE paths. Not referenced yet: declaring it is behaviour-neutral.
 
 variable "secret_env" {
   description = "Optional map of environment variables sourced from Secret Manager. Phase 1 no-op (null)."
