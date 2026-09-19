@@ -70,6 +70,7 @@ MODE="check"          # check | deploy
 STRICT=0              # --strict: promote every WARN to a HARD-BLOCK
 DO_BUILD=1            # --no-build: deploy an existing image, do not build
 PROJECT=""
+REGION_ENV="${REGION:-}"  # inherited REGION env var (documented); captured before REGION becomes the internal resolution var
 REGION=""
 SERVICE_NAME="${SERVICE_NAME_DEFAULT}"
 IMAGE_TAG="latest"
@@ -136,13 +137,15 @@ OPTIONS:
                         pre-check #17 (image exists) a HARD-BLOCK and skips the
                         build-SA check (#10).
   --project <id>        GCP project id (else \$PROJECT_ID / gcloud config).
-  --region <region>     GCP region (else \$REGION / gcloud config / us-central1).
+  --region <region>     GCP region (else \$REGION / \$GOOGLE_CLOUD_REGION /
+                        gcloud config / us-central1, in that order).
   --service <name>      Cloud Run service name (default: ${SERVICE_NAME_DEFAULT}).
   --tag <tag>           Image tag to build/deploy (default: latest).
   -h, --help            Show this help.
 
 ENVIRONMENT (optional overrides; sensible defaults are derived):
-  PROJECT_ID, REGION, SERVICE_ACCOUNT_EMAIL, GCS_ASSETS_BUCKET, BUILD_SA_EMAIL,
+  PROJECT_ID, REGION, GOOGLE_CLOUD_REGION (region fallback, ranked after REGION),
+  SERVICE_ACCOUNT_EMAIL, GCS_ASSETS_BUCKET, BUILD_SA_EMAIL,
   HEALTH_TIMEOUT, LB_HOST (poll health through this host instead of the run.app
   URL), IAP_ID_TOKEN (OIDC token for the positive auth smoke), APP_ENV
   (drives pre-check #22), TF_STATE_BUCKET (enables pre-check #18), SECRET_ENV
@@ -188,7 +191,11 @@ resolve_config() {
     PROJECT="$(gcloud config get-value project 2>/dev/null || true)"
     [[ "${PROJECT}" == "(unset)" ]] && PROJECT=""
   fi
-  [[ -z "${REGION}" ]] && REGION="${REGION:-${GOOGLE_CLOUD_REGION:-}}"
+  # Region precedence: --region flag > REGION env > GOOGLE_CLOUD_REGION > gcloud
+  # config > us-central1. --region populates REGION during arg parsing; the
+  # inherited REGION env value was captured as REGION_ENV before it was blanked.
+  [[ -z "${REGION}" ]] && REGION="${REGION_ENV}"
+  [[ -z "${REGION}" ]] && REGION="${GOOGLE_CLOUD_REGION:-}"
   if [[ -z "${REGION}" ]] && command -v gcloud >/dev/null 2>&1; then
     REGION="$(gcloud config get-value run/region 2>/dev/null || true)"
     [[ "${REGION}" == "(unset)" ]] && REGION=""
@@ -219,10 +226,17 @@ read_required_apis() {
 }
 
 # Extract the API set Terraform declares (variable "activate_apis" default) for
-# the drift check. Returns a sorted, one-per-line list.
+# the drift check. Returns a sorted, one-per-line list. Scoped to the
+# activate_apis block only, so an API literal elsewhere in the file (e.g. another
+# variable's description) cannot false-positive the #2a parity check.
 read_tf_apis() {
   [[ -f "${TF_APIS_VARFILE}" ]] || return 1
-  grep -oE '"[a-z][a-z0-9.-]+\.googleapis\.com"' "${TF_APIS_VARFILE}" |
+  awk '
+    /variable[[:space:]]+"activate_apis"/ { in_block=1 }
+    in_block                              { print }
+    in_block && /^}/                      { exit }
+  ' "${TF_APIS_VARFILE}" |
+    grep -oE '"[a-z][a-z0-9.-]+\.googleapis\.com"' |
     tr -d '"' | sort -u
 }
 

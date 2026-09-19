@@ -234,8 +234,10 @@ post-deploy health and auth-wiring smoke checks.
 ```
 
 Common flags: `--project <id>`, `--region <region>`, `--service <name>`,
-`--tag <tag>`. Project/region resolve from these flags, then `PROJECT_ID`/`REGION`
-env vars, then `gcloud config`, defaulting to `us-central1`. Run `./deploy.sh --help`
+`--tag <tag>`. The project resolves from `--project`, then the `PROJECT_ID` env
+var, then `gcloud config`. The region resolves from `--region`, then the `REGION`
+env var, then `GOOGLE_CLOUD_REGION`, then `gcloud config`, defaulting to
+`us-central1`. Run `./deploy.sh --help`
 for the full list, including the optional `LB_HOST`, `IAP_ID_TOKEN`, `APP_ENV`,
 `TF_STATE_BUCKET`, and `SECRET_ENV` environment overrides.
 
