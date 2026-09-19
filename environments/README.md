@@ -54,7 +54,7 @@ Where `<env>` is `prod` or `nonprod` (staging). Examples:
 | Environment | tfvars | Backend prefix | State bucket (example) |
 | :-- | :-- | :-- | :-- |
 | prod | `environments/prod.tfvars` | `creative-studio/prod` | `<PROD_TF_STATE_BUCKET>` |
-| non-prod | `environments/nonprod.tfvars` | `creative-studio/staging` | `gs://ghchinoy-genai-sa-creative-studio-tfstate` |
+| non-prod | `environments/nonprod.tfvars` | `creative-studio/staging` | `gs://<NONPROD_TF_STATE_BUCKET>` |
 
 The `creative-studio/prod` prefix matches the value committed in `backend.tf`;
 `creative-studio/staging` matches the proven staging stand-up
