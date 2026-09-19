@@ -4,6 +4,20 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.20.1](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.20.0...mcp-v3.20.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 40e142b ([#1881](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1881)) ([caedecc](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/caedecc7b51dc6f2016ab81b93f38b635b651fba))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 4fdae31 ([#1853](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1853)) ([d4ca01e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/d4ca01ef4c0d4666335529a416fcdd27c797d9cf))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 7589d38 ([#1843](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1843)) ([47e9d6e](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/47e9d6e56cc5047b14b5889e235c0e8de67fb2e5))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 763e337 ([#1857](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1857)) ([c2461da](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/c2461dad4bb008c355eac9d693c3cd3530ff8c13))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 88c354f ([#1890](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1890)) ([c2031ac](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/c2031ac972b73973d3cbd1a5fb6fd7122f7c2338))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 8e0620e ([#1877](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1877)) ([9d54fee](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/9d54feef5475208fb8ee905c4c2be487bde92137))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to ae4be8c ([#1860](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1860)) ([5dfe30d](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/5dfe30d4c5feed8bb541a3af5554215a082e44e1))
+* **deps:** update github.com/googlecloudplatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to b0287be ([#1885](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1885)) ([283a001](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/commit/283a00124c08f847076decb5b23153bc61c1b680))
+
 ## [3.20.0](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/compare/mcp-v3.19.0...mcp-v3.20.0) (2026-09-12)
 
 
