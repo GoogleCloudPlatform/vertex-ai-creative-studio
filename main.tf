@@ -58,7 +58,7 @@ module "apis" {
   sleep_time = var.sleep_time
   # Enable the Secret Manager API only when secrets are actually configured, so
   # the P4 mechanism is dormant by default (empty secret_ids => API set unchanged).
-  enable_secret_manager_api = length(var.secret_ids) > 0
+  enable_secret_manager_api = length(var.secret_ids) > 0 || length(var.secret_env) > 0
 }
 
 /********************************************
