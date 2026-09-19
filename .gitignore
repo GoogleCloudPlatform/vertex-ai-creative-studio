@@ -44,11 +44,12 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 
-# Exception: the per-environment example tfvars under environments/ ARE tracked.
-# They are legible, reproducible, non-secret configuration templates (see
-# environments/README.md); the root terraform.tfvars written per deploy stays
-# ignored by the rule above.
-!environments/*.tfvars
+# Exception: the per-environment example tfvars under
+# deploy/terraform/environments/ ARE tracked. They are legible, reproducible,
+# non-secret configuration templates (see
+# deploy/terraform/environments/README.md); the root terraform.tfvars written per
+# deploy stays ignored by the rule above.
+!deploy/terraform/environments/*.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in

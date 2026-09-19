@@ -33,10 +33,15 @@ unchanged.
 ## Per-environment workflow
 
 Each environment has **isolated Terraform state**: a distinct backend `prefix`
-(and normally a distinct state bucket, since each project has its own). Select an
+(and normally a distinct state bucket, since each project has its own). Run these
+from the Cloud Run root directory `deploy/terraform/cloudrun` (the tfvars files in
+this directory are referenced as `../environments/<env>.tfvars`). Select an
 environment at `init` time (backend prefix) and at `plan`/`apply` time (tfvars):
 
 ```bash
+# Run from deploy/terraform/cloudrun (this file lives at ../environments/).
+cd deploy/terraform/cloudrun
+
 # 1. Point Terraform at this environment's state (backend is not in *.tfvars).
 #    -reconfigure is REQUIRED when switching environments so Terraform adopts the
 #    new backend settings instead of reusing the previously-initialized backend.
@@ -45,16 +50,16 @@ terraform init -reconfigure \
   -backend-config="prefix=creative-studio/<env>"
 
 # 2. Plan / apply with this environment's variable file.
-terraform plan  -var-file=environments/<env>.tfvars
-terraform apply -var-file=environments/<env>.tfvars
+terraform plan  -var-file=../environments/<env>.tfvars
+terraform apply -var-file=../environments/<env>.tfvars
 ```
 
 Where `<env>` is `prod` or `nonprod` (staging). Examples:
 
-| Environment | tfvars | Backend prefix | State bucket (example) |
+| Environment | tfvars (from `cloudrun/`) | Backend prefix | State bucket (example) |
 | :-- | :-- | :-- | :-- |
-| prod | `environments/prod.tfvars` | `creative-studio/prod` | `<PROD_TF_STATE_BUCKET>` |
-| non-prod | `environments/nonprod.tfvars` | `creative-studio/staging` | `gs://<NONPROD_TF_STATE_BUCKET>` |
+| prod | `../environments/prod.tfvars` | `creative-studio/prod` | `<PROD_TF_STATE_BUCKET>` |
+| non-prod | `../environments/nonprod.tfvars` | `creative-studio/staging` | `gs://<NONPROD_TF_STATE_BUCKET>` |
 
 The `creative-studio/prod` prefix matches the value committed in `backend.tf`;
 `creative-studio/staging` matches the proven staging stand-up
