@@ -145,12 +145,20 @@ variable "liveness_probe" {
   nullable = true
 }
 
-# --- Phase 1 no-op input (present but null; wired in a later phase) ---
-# Kept in the interface so the compute contract is stable across the Cloud Run
-# and future GKE paths. Not referenced yet: declaring it is behaviour-neutral.
-
+# --- Secret Manager-backed environment variables (Phase 4) ---
+# Map of ENV_VAR_NAME => { secret, version } rendered as Cloud Run
+#   env { value_source { secret_key_ref { secret, version } } }
+# blocks, one per entry. This is orthogonal to the plaintext env_vars map: a
+# variable migrated to Secret Manager is removed from env_vars and added here
+# (1:1, one var at a time). DORMANT by default: default = {} renders zero secret
+# env blocks, so the container's environment is unchanged. `version` defaults to
+# "latest"; the referenced secret + version must exist before deploy (values are
+# loaded out-of-band, never authored in Terraform).
 variable "secret_env" {
-  description = "Optional map of environment variables sourced from Secret Manager. Phase 1 no-op (null)."
-  type        = any
-  default     = null
+  description = "Map of environment variable name => { secret = <secret id/resource>, version = <version, default \"latest\"> } sourced from Secret Manager. Defaults to {} (no secret env rendered)."
+  type = map(object({
+    secret  = string
+    version = optional(string, "latest")
+  }))
+  default = {}
 }

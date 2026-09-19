@@ -212,3 +212,24 @@ variable "cost_center" {
   type        = string
   default     = "creative-studio"
 }
+
+# --- Secret Manager adoption (Phase 4), dormant by default ---
+# These two inputs drive the P4 mechanism and both default to empty, so a
+# default apply creates zero secrets, zero bindings, and zero secret env blocks,
+# and leaves the API set unchanged. The set of variables to migrate is an owner
+# input decided in the P4b follow-up; secret *values* are never authored here.
+
+variable "secret_ids" {
+  description = "List of Secret Manager secret IDs to create as *containers* (one per migrated variable) with a per-secret accessor binding for the runtime SA. Defaults to [] (dormant: no secrets or bindings created, Secret Manager API not enabled). Values/versions are loaded out-of-band, never in Terraform."
+  type        = list(string)
+  default     = []
+}
+
+variable "secret_env" {
+  description = "Map of Cloud Run environment variable name => { secret = <secret id/resource>, version = <version, default \"latest\"> } sourced from Secret Manager. A variable migrated to a secret is removed from the plaintext env map and added here (1:1). Defaults to {} (no secret env rendered)."
+  type = map(object({
+    secret  = string
+    version = optional(string, "latest")
+  }))
+  default = {}
+}

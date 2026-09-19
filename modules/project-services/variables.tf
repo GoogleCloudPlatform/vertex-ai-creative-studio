@@ -25,6 +25,12 @@ variable "sleep_time" {
   default     = 45
 }
 
+variable "enable_secret_manager_api" {
+  description = "When true, adds secretmanager.googleapis.com to the activated APIs (P4 Secret Manager adoption). Defaults false so the mechanism is dormant: with no secrets configured the API set is unchanged and a default apply enables no additional API."
+  type        = bool
+  default     = false
+}
+
 variable "activate_apis" {
   description = "List of GCP APIs to enable for the project. Defaults to the 13-API set required by Creative Studio."
   type        = list(string)

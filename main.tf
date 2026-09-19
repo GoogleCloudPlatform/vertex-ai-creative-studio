@@ -56,6 +56,9 @@ module "apis" {
   source     = "./modules/project-services"
   project_id = var.project_id
   sleep_time = var.sleep_time
+  # Enable the Secret Manager API only when secrets are actually configured, so
+  # the P4 mechanism is dormant by default (empty secret_ids => API set unchanged).
+  enable_secret_manager_api = length(var.secret_ids) > 0
 }
 
 /********************************************
@@ -100,6 +103,19 @@ module "iam" {
   initial_user       = var.initial_user
 }
 
+# Secret Manager adoption (Phase 4), DORMANT by default. Creates one secret
+# *container* per entry in var.secret_ids (default []) plus a per-secret
+# accessor binding for the runtime SA. No secret values/versions are created by
+# Terraform. With defaults (secret_ids = []) this module creates nothing.
+module "secret-manager" {
+  source            = "./modules/secret-manager"
+  project_id        = var.project_id
+  secret_ids        = var.secret_ids
+  accessor_sa_email = module.iam.runtime_sa_email
+
+  depends_on = [module.apis]
+}
+
 # Centralizing environment variables here and passing them explicitly to the
 # cloud-run-service module (no module reads a global locals). Assembled from the
 # data-stores + iam module outputs plus input variables.
@@ -142,6 +158,7 @@ module "cloud-run-service" {
   region             = var.region
   image              = var.initial_container_image
   env_vars           = local.creative_studio_env_vars
+  secret_env         = var.secret_env
   runtime_sa_email   = module.iam.runtime_sa_email
   runtime_sa_name    = module.iam.runtime_sa_name
   build_sa_member    = module.iam.build_sa_member

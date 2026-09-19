@@ -31,12 +31,20 @@ terraform {
   }
 }
 
+# The Secret Manager API is added to the activated set only when Secret Manager
+# is actually adopted (secret_ids non-empty upstream => enable_secret_manager_api
+# true). This keeps the P4 mechanism dormant: with defaults the API set is
+# unchanged, so a default apply enables no new API.
+locals {
+  activate_apis = var.enable_secret_manager_api ? concat(var.activate_apis, ["secretmanager.googleapis.com"]) : var.activate_apis
+}
+
 module "project_services" {
   source                      = "terraform-google-modules/project-factory/google//modules/project_services"
   version                     = "~>18.0"
   project_id                  = var.project_id
   disable_services_on_destroy = false
-  activate_apis               = var.activate_apis
+  activate_apis               = local.activate_apis
 }
 
 resource "null_resource" "sleep" {

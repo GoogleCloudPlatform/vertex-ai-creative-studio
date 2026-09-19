@@ -77,6 +77,21 @@ resource "google_cloud_run_v2_service" "creative_studio" {
           value = env.value
         }
       }
+      # Secret Manager-backed env vars (Phase 4). Empty by default => renders
+      # nothing, so the plaintext env_vars handling above is unchanged. Each
+      # entry becomes an env whose value is sourced from a secret version.
+      dynamic "env" {
+        for_each = var.secret_env
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret
+              version = env.value.version
+            }
+          }
+        }
+      }
       # Startup probe: gates traffic until the app reports ready on /readyz.
       # Conservative failure_threshold * period gives a slow cold start room
       # to come up before the instance is considered failed.
