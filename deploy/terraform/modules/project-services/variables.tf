@@ -31,6 +31,12 @@ variable "enable_secret_manager_api" {
   default     = false
 }
 
+variable "enable_container_api" {
+  description = "When true, adds container.googleapis.com to the activated APIs (P9 GKE target). Defaults false so the mechanism is dormant: the Cloud Run root never sets it, so the Cloud Run API set is unchanged and a default apply enables no additional API. The GKE root sets it true."
+  type        = bool
+  default     = false
+}
+
 variable "activate_apis" {
   description = "List of GCP APIs to enable for the project. Defaults to the 13-API set required by Creative Studio."
   type        = list(string)
