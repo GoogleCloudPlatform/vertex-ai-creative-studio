@@ -288,6 +288,80 @@ has_project_role() {
   _has_binding "$2" "serviceAccount:$1" gcloud projects get-iam-policy "${PROJECT}"
 }
 
+# _caller_iam_permission <project> <permission>
+#   Positive capability probe for the ACTIVE principal via Cloud Resource Manager
+#   testIamPermissions (REST). testIamPermissions returns only the SUBSET of the
+#   queried permissions the caller actually holds — including grants inherited via
+#   Google groups or custom roles — so a returned hit is authoritative.
+#   Prints exactly one of:
+#     has     - the caller holds <permission>
+#     absent  - a clean answer: the caller does NOT hold it (empty {} or a
+#               permissions list without it)
+#     error   - the probe itself could not return a decision (no curl / no token,
+#               network failure, API disabled, HTTP != 200, or non-JSON body).
+#               Callers should treat 'error' (and ONLY 'error') as grounds to fall
+#               back to coarser role-name matching.
+_caller_iam_permission() {
+  local project="$1" perm="$2"
+  command -v curl >/dev/null 2>&1 || { printf 'error\n'; return; }
+  local token
+  token="$(gcloud auth print-access-token 2>/dev/null || true)"
+  [[ -n "${token}" ]] || { printf 'error\n'; return; }
+
+  local url="https://cloudresourcemanager.googleapis.com/v1/projects/${project}:testIamPermissions"
+  local raw http body
+  # Append the HTTP status on its own trailing line so we can split it off.
+  raw="$(curl -sS -X POST \
+      -H "Authorization: Bearer ${token}" \
+      -H "Content-Type: application/json" \
+      -d "{\"permissions\":[\"${perm}\"]}" \
+      -w $'\n%{http_code}' \
+      "${url}" 2>/dev/null || true)"
+  [[ -n "${raw}" ]] || { printf 'error\n'; return; }
+  http="${raw##*$'\n'}"
+  body="${raw%$'\n'*}"
+  [[ "${http}" == "200" ]] || { printf 'error\n'; return; }
+
+  # Parse the body robustly. Prefer a real JSON parser; fall back to a careful
+  # grep only when neither python3 nor jq is available.
+  if command -v python3 >/dev/null 2>&1; then
+    printf '%s' "${body}" | python3 -c '
+import sys, json
+perm = sys.argv[1]
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print("error"); sys.exit(0)
+if not isinstance(d, dict) or "error" in d:
+    print("error"); sys.exit(0)
+print("has" if perm in d.get("permissions", []) else "absent")
+' "${perm}" 2>/dev/null || printf 'error\n'
+    return
+  fi
+  if command -v jq >/dev/null 2>&1; then
+    if ! printf '%s' "${body}" | jq -e . >/dev/null 2>&1; then printf 'error\n'; return; fi
+    if printf '%s' "${body}" | jq -e 'has("error")' >/dev/null 2>&1; then printf 'error\n'; return; fi
+    if printf '%s' "${body}" | jq -e --arg p "${perm}" '((.permissions // []) | index($p)) != null' >/dev/null 2>&1; then
+      printf 'has\n'
+    else
+      printf 'absent\n'
+    fi
+    return
+  fi
+  # Careful grep fallback (no JSON parser present). Only a clearly-structured,
+  # error-free object is trusted; anything else is reported as an error so the
+  # caller falls back rather than mis-reading the response.
+  if printf '%s' "${body}" | grep -q '"error"'; then printf 'error\n'; return; fi
+  local esc="${perm//./\\.}"
+  if printf '%s' "${body}" | grep -Eq "\"${esc}\""; then
+    printf 'has\n'
+  elif printf '%s' "${body}" | grep -q '{'; then
+    printf 'absent\n'
+  else
+    printf 'error\n'
+  fi
+}
+
 # --------------------------------------------------------------------------- #
 # PRE-CHECKS — implement the DECIDED §4.2 table (all 22). Classification is
 # authoritative and must not be re-litigated here.
@@ -512,8 +586,15 @@ _report_10a_missing() {
 # *build service account's* roles, whereas this verifies the *active principal*
 # running deploy.sh can actually SUBMIT a build. A caller lacking
 # cloudbuild.builds.create passes #10 but `gcloud builds submit` still returns
-# PERMISSION_DENIED (observed on staging with sa-scion-warmup). Same conditionality
-# as #10: build mode only (skipped under --no-build).
+# PERMISSION_DENIED (observed on staging with a warm-up service account). Same
+# conditionality as #10: build mode only (skipped under --no-build).
+#
+# The capability is confirmed with a REAL positive probe: Cloud Resource Manager
+# testIamPermissions (REST) reports the subset of queried permissions the caller
+# holds, INCLUDING grants inherited via Google groups or custom roles. Role-name
+# matching is used ONLY as a fallback when the probe itself cannot return a
+# decision (no curl/token, network, API disabled, non-JSON) — never on a clean
+# "permission absent" answer, which is authoritative.
 precheck_10a_caller_build() {
   if [[ "${DO_BUILD}" -eq 0 ]]; then
     skip "#10a" "caller can submit builds" "N/A — --no-build (no Cloud Build submission)"; return
@@ -538,24 +619,32 @@ precheck_10a_caller_build() {
   fi
   local grant="gcloud projects add-iam-policy-binding ${PROJECT} --member=${member} --role=roles/cloudbuild.builds.editor"
 
-  # Preferred: positive capability probe. testIamPermissions returns only the
-  # subset of the queried permissions the CALLER actually holds — capturing
-  # inherited/group grants too, which role-name matching on a direct project
-  # binding would miss.
+  # Preferred: positive capability probe via Cloud Resource Manager
+  # testIamPermissions (REST). It returns only the subset of the queried
+  # permissions the CALLER actually holds — capturing inherited/group and
+  # custom-role grants too, which role-name matching on a direct project binding
+  # would miss. A clean "absent" answer is authoritative (BLOCK/WARN, no
+  # fallback); only a probe ERROR falls through to role-name matching.
   local probe
-  if probe="$(gcloud projects test-iam-permissions "${PROJECT}" \
-      --permissions=cloudbuild.builds.create \
-      --format='value(permissions)' 2>/dev/null)"; then
-    if [[ "${probe}" == *cloudbuild.builds.create* ]]; then
-      pass "#10a" "caller can submit builds" "${member} holds cloudbuild.builds.create"
-    else
+  probe="$(_caller_iam_permission "${PROJECT}" cloudbuild.builds.create)"
+  case "${probe}" in
+    has)
+      pass "#10a" "caller can submit builds" "${member} holds cloudbuild.builds.create (testIamPermissions probe)"
+      return
+      ;;
+    absent)
       _report_10a_missing "${member}" "${grant}"
-    fi
-    return
-  fi
+      return
+      ;;
+    *)
+      : # probe could not decide (no curl/token, network, API disabled, non-JSON)
+      ;;
+  esac
 
-  # Fallback (probe unavailable — offline / resourcemanager path blocked): match
-  # membership in a project-scope role that grants cloudbuild.builds.create.
+  # Fallback (probe errored — offline / no curl / resourcemanager path blocked):
+  # match membership in a project-scope role that grants cloudbuild.builds.create.
+  # Coarser than the probe — it cannot see group/custom-role grants — so it runs
+  # only when the probe itself failed to return a decision.
   local role
   for role in roles/cloudbuild.builds.editor roles/cloudbuild.builds.builder roles/owner roles/editor; do
     if _has_binding "${role}" "${member}" gcloud projects get-iam-policy "${PROJECT}"; then
@@ -660,11 +749,18 @@ precheck_17_image() {
   # image provably existed. Match the requested tag against the listed tags
   # client-side (exact equality, avoiding substring false-positives a server-side
   # filter's `has` operator would allow).
-  local tags_out
+  # Normalize the listed tags into one-per-line in a variable FIRST, then match
+  # with a here-string. Piping directly into `grep -Fxq` is unsound under
+  # `set -o pipefail`: grep exits on first match and SIGPIPEs the upstream
+  # tr/sed, flipping the pipeline's status non-zero and FALSE-BLOCKING a present
+  # image. A here-string gives grep no upstream pipe to break.
+  local tags_out norm
   tags_out="$(gcloud artifacts docker images list "${img_base}" \
     --include-tags --format='value(tags)' 2>/dev/null || true)"
-  if printf '%s\n' "${tags_out}" | tr ',;' '\n' | sed 's/[[:space:]]//g' \
-      | grep -Fxq -- "${IMAGE_TAG}"; then
+  norm="$(printf '%s\n' "${tags_out}" | tr ',;' '\n' | sed 's/[[:space:]]//g')"
+  # Guard against an empty --tag: grep -Fx "" would match a blank tag line and
+  # falsely PASS. A real image tag is never empty.
+  if [[ -n "${IMAGE_TAG}" ]] && grep -Fxq -- "${IMAGE_TAG}" <<<"${norm}"; then
     pass "#17" "target image exists" "${img_base}:${IMAGE_TAG}"
   elif [[ "${DO_BUILD}" -eq 1 ]]; then
     warn "#17" "target image exists" "absent — expected; this run will build ${IMAGE_TAG}"
