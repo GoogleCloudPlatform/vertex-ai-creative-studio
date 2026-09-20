@@ -21,6 +21,7 @@ You'll need the following
 
 - An existing Google Cloud Project
 - If you want to use a custom domain, you need the ability to create a DNS A record for your target domain that resolves to the provisioned load balancer
+- For the deploy step, the operator/principal running `deploy.sh` or `build.sh` needs `roles/run.developer` (or a superset such as `roles/run.admin`) **and** `roles/iam.serviceAccountUser` (to act as the runtime service account). The deploy now runs **as the caller** — `cloudbuild.yaml` only builds and pushes the image, so the caller (not the Cloud Build service account) performs `gcloud run deploy`.
 
 ### 1. Download the source code for this project
 
@@ -218,7 +219,7 @@ sanity gate, not an infrastructure provisioner. Use `build.sh`/Terraform for the
 provisioning workflow above; use `deploy.sh` for routine app redeploys and as a
 cheap, CI-usable prerequisite gate.
 
-It (1) verifies the environment's prerequisites (22 pre-checks), (2) drives the
+It (1) verifies the environment's prerequisites (23 pre-checks), (2) drives the
 build+push via `cloudbuild.yaml` and then a caller-run `gcloud run deploy`
 (`cloudbuild.yaml` builds and pushes only; it does not deploy), and (3) runs
 post-deploy health and auth-wiring smoke checks.
@@ -265,6 +266,17 @@ a feature-degradation or an unrecommended-but-functional posture (e.g. a missing
 Cloud Tasks queue only degrades async thumbnails); `--strict` promotes every WARN
 to a HARD-BLOCK. One check — the Artifact Registry repository (#16) — is
 **auto-remediated** (idempotent describe-then-create) in `deploy` mode only.
+
+When building (i.e. not `--no-build`), two adjacent checks cover Cloud Build: #10
+verifies the **build service account's** roles, and #10a verifies the **invoking
+principal** running `deploy.sh` can actually submit a build
+(`cloudbuild.builds.create`) — a caller can pass #10 yet still hit
+`PERMISSION_DENIED` on `gcloud builds submit`. #10a confirms the capability with a
+positive `testIamPermissions` probe (Cloud Resource Manager), which reports the
+permission even when it is granted via a Google group or a custom role; it falls
+back to role-name matching only if that probe cannot return an answer. #10a
+HARD-BLOCKs in `deploy` mode and WARNs in check-only mode, naming the exact role
+and grant command.
 
 ### Post-deploy checks
 
