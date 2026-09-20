@@ -70,12 +70,14 @@ readonly EXIT_POSTCHECK=4
 # Runtime state.
 # --------------------------------------------------------------------------- #
 MODE="check"          # check | deploy
+TARGET="cloudrun"     # --target: cloudrun (default, unchanged behavior) | gke
 STRICT=0              # --strict: promote every WARN to a HARD-BLOCK
 DO_BUILD=1            # --no-build: deploy an existing image, do not build
 PROJECT=""
 REGION_ENV="${REGION:-}"  # inherited REGION env var (documented); captured before REGION becomes the internal resolution var
 REGION=""
 SERVICE_NAME="${SERVICE_NAME_DEFAULT}"
+NAMESPACE="${NAMESPACE:-default}"  # k8s namespace for the --target gke rollout check
 IMAGE_TAG="latest"
 SERVICE_ACCOUNT_EMAIL=""
 GCS_ASSETS_BUCKET=""
@@ -135,6 +137,15 @@ USAGE:
   ${SCRIPT_NAME} --help
 
 OPTIONS:
+  --target <t>          Deploy target: cloudrun (default) or gke. cloudrun is the
+                        canonical path and is unchanged. gke reuses the same
+                        pre-checks (pre-check #2 additionally requires
+                        container.googleapis.com) and health/auth post-checks
+                        (point them at the ingress with LB_HOST=<gke ingress host>),
+                        and swaps the revision/traffic post-check for a
+                        \`kubectl rollout status\` + ingress-address readiness check.
+                        GKE provisioning/image roll-out is Terraform's job
+                        (deploy/terraform/gke); this path runs checks + smoke only.
   --strict              Promote every WARN pre-check to a HARD-BLOCK (for CI).
   --no-build            Deploy an already-built image (skip Cloud Build). Makes
                         pre-check #17 (image exists) a HARD-BLOCK and skips the
@@ -173,6 +184,13 @@ parse_args() {
   esac
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --target)
+        TARGET="${2:-}"; shift 2
+        case "${TARGET}" in
+          cloudrun|gke) ;;
+          *) log "Unknown --target: ${TARGET} (expected cloudrun|gke)"; usage; exit "${EXIT_USAGE}" ;;
+        esac
+        ;;
       --strict) STRICT=1; shift ;;
       --no-build) DO_BUILD=0; shift ;;
       --project) PROJECT="${2:-}"; shift 2 ;;
@@ -319,6 +337,11 @@ precheck_2_apis() {
   # Conditional additions (§4.2 #2): +secretmanager if secrets used.
   if [[ -n "${SECRET_ENV:-}" ]]; then
     required="${required}"$'\n'"secretmanager.googleapis.com"
+  fi
+  # +container for a GKE target (the GKE root enables container.googleapis.com;
+  # apis.txt documents this as a target-conditional API). No-op for cloudrun.
+  if [[ "${TARGET}" == "gke" ]]; then
+    required="${required}"$'\n'"container.googleapis.com"
   fi
 
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then
@@ -772,8 +795,40 @@ postcheck_auth() {
   fi
 }
 
+# 3b. GKE rollout check (--target gke): Deployment rolled out + ingress address
+#     ready. The GKE analogue of the Cloud Run revision/traffic check.
+postcheck_rollout_gke() {
+  info "-- GKE rollout / ingress check (deploy/${SERVICE_NAME}, ns=${NAMESPACE}) --"
+  if ! command -v kubectl >/dev/null 2>&1; then
+    warn "post" "GKE rollout" "kubectl not found — cannot verify rollout (run: gcloud container clusters get-credentials)"
+    return
+  fi
+  local timeout="${HEALTH_TIMEOUT:-${HEALTH_TIMEOUT_DEFAULT}}"
+  if kubectl rollout status "deploy/${SERVICE_NAME}" -n "${NAMESPACE}" \
+      --timeout="${timeout}s" >/dev/null 2>&1; then
+    pass "post" "GKE rollout" "deploy/${SERVICE_NAME} rolled out (ns=${NAMESPACE})"
+  else
+    block "post" "GKE rollout" "deploy/${SERVICE_NAME} did not complete rollout within ${timeout}s"
+    POST_FAIL=1
+  fi
+  # Ingress address readiness (the GCLB IP GKE assigns once the LB is programmed).
+  local ing_addr
+  ing_addr="$(kubectl get ingress "${SERVICE_NAME}" -n "${NAMESPACE}" \
+    -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+  if [[ -n "${ing_addr}" ]]; then
+    pass "post" "GKE ingress address" "ingress ${SERVICE_NAME} has address ${ing_addr}"
+  else
+    warn "post" "GKE ingress address" "ingress ${SERVICE_NAME} has no address yet (LB still programming / cert provisioning)"
+  fi
+}
+
 # 3. Revision/traffic check: new revision serving 100% of traffic.
 postcheck_revision() {
+  # --target gke swaps this Cloud-Run-specific check for the GKE rollout check.
+  if [[ "${TARGET}" == "gke" ]]; then
+    postcheck_rollout_gke
+    return
+  fi
   info "-- revision / traffic check --"
   local latest serving pct
   latest="$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT}" \
@@ -794,7 +849,13 @@ run_postchecks() {
   info "== Post-deploy checks (§4.3) =="
   hr
   local url
-  url="$(resolve_service_url)"
+  # For --target gke there is no Cloud Run service to describe; the ingress host
+  # is supplied via LB_HOST (health/auth post-checks already key off it).
+  if [[ "${TARGET}" == "gke" ]]; then
+    url=""
+  else
+    url="$(resolve_service_url)"
+  fi
   if [[ -z "${url}" && -z "${LB_HOST:-}" ]]; then
     block "post" "service url" "could not resolve status.url for ${SERVICE_NAME}"
     POST_FAIL=1
@@ -826,16 +887,24 @@ main() {
     exit "${EXIT_OK}"
   fi
 
-  # deploy mode
-  if [[ "${DO_BUILD}" -eq 1 ]]; then
-    if ! do_build; then
-      log "${C_RED}RESULT: build failed.${C_NC}"; exit "${EXIT_DEPLOY}"
-    fi
+  # deploy mode.
+  # GKE provisioning + image roll-out is Terraform's job (deploy/terraform/gke);
+  # the --target gke deploy path runs the post-deploy smoke only, against the
+  # already-applied ingress (LB_HOST). The Cloud Run build+deploy block below is
+  # unchanged and only runs for the (default) cloudrun target.
+  if [[ "${TARGET}" == "gke" ]]; then
+    info "Target gke: skipping Cloud Run build/deploy (provisioning is Terraform's job); running post-deploy smoke."
   else
-    info "Skipping build (--no-build); deploying existing image $(image_ref)"
-  fi
-  if ! do_deploy; then
-    log "${C_RED}RESULT: deploy failed.${C_NC}"; exit "${EXIT_DEPLOY}"
+    if [[ "${DO_BUILD}" -eq 1 ]]; then
+      if ! do_build; then
+        log "${C_RED}RESULT: build failed.${C_NC}"; exit "${EXIT_DEPLOY}"
+      fi
+    else
+      info "Skipping build (--no-build); deploying existing image $(image_ref)"
+    fi
+    if ! do_deploy; then
+      log "${C_RED}RESULT: deploy failed.${C_NC}"; exit "${EXIT_DEPLOY}"
+    fi
   fi
 
   run_postchecks
