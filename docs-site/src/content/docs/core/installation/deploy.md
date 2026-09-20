@@ -218,7 +218,7 @@ sanity gate, not an infrastructure provisioner. Use `build.sh`/Terraform for the
 provisioning workflow above; use `deploy.sh` for routine app redeploys and as a
 cheap, CI-usable prerequisite gate.
 
-It (1) verifies the environment's prerequisites (22 pre-checks), (2) drives the
+It (1) verifies the environment's prerequisites (23 pre-checks), (2) drives the
 build+push via `cloudbuild.yaml` and then a caller-run `gcloud run deploy`
 (`cloudbuild.yaml` builds and pushes only; it does not deploy), and (3) runs
 post-deploy health and auth-wiring smoke checks.
@@ -265,6 +265,13 @@ a feature-degradation or an unrecommended-but-functional posture (e.g. a missing
 Cloud Tasks queue only degrades async thumbnails); `--strict` promotes every WARN
 to a HARD-BLOCK. One check — the Artifact Registry repository (#16) — is
 **auto-remediated** (idempotent describe-then-create) in `deploy` mode only.
+
+When building (i.e. not `--no-build`), two adjacent checks cover Cloud Build: #10
+verifies the **build service account's** roles, and #10a verifies the **invoking
+principal** running `deploy.sh` can actually submit a build
+(`cloudbuild.builds.create`) — a caller can pass #10 yet still hit
+`PERMISSION_DENIED` on `gcloud builds submit`. #10a HARD-BLOCKs in `deploy` mode
+and WARNs in check-only mode, naming the exact role and grant command.
 
 ### Post-deploy checks
 

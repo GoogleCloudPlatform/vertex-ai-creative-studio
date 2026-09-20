@@ -149,7 +149,7 @@ OPTIONS:
   --strict              Promote every WARN pre-check to a HARD-BLOCK (for CI).
   --no-build            Deploy an already-built image (skip Cloud Build). Makes
                         pre-check #17 (image exists) a HARD-BLOCK and skips the
-                        build-SA check (#10).
+                        build-SA (#10) and caller-can-submit-builds (#10a) checks.
   --project <id>        GCP project id (else \$PROJECT_ID / gcloud config).
   --region <region>     GCP region (else \$REGION / \$GOOGLE_CLOUD_REGION /
                         gcloud config / us-central1, in that order).
@@ -495,6 +495,77 @@ precheck_10_build_sa() {
   fi
 }
 
+# #10a classification helper: HARD-BLOCK in deploy mode (the build WILL fail),
+# advisory WARN in check-only mode. --strict still promotes the WARN via warn().
+_report_10a_missing() {
+  local member="$1" grant="$2"
+  local detail="${member} lacks cloudbuild.builds.create — 'gcloud builds submit' will PERMISSION_DENIED; grant with: ${grant}"
+  if [[ "${MODE}" == "check" ]]; then
+    warn "#10a" "caller can submit builds" "${detail}"
+  else
+    block "#10a" "caller can submit builds" "${detail}"
+  fi
+}
+
+# #10a Invoking principal can submit Cloud Build builds (HARD-BLOCK when building
+# in deploy mode / WARN in check-only, §4.2). Distinct from #10: #10 validates the
+# *build service account's* roles, whereas this verifies the *active principal*
+# running deploy.sh can actually SUBMIT a build. A caller lacking
+# cloudbuild.builds.create passes #10 but `gcloud builds submit` still returns
+# PERMISSION_DENIED (observed on staging with sa-scion-warmup). Same conditionality
+# as #10: build mode only (skipped under --no-build).
+precheck_10a_caller_build() {
+  if [[ "${DO_BUILD}" -eq 0 ]]; then
+    skip "#10a" "caller can submit builds" "N/A — --no-build (no Cloud Build submission)"; return
+  fi
+  if [[ "${GCLOUD_OK}" -eq 0 ]]; then
+    skip "#10a" "caller can submit builds" "unauthenticated — would verify the active principal holds cloudbuild.builds.create"; return
+  fi
+  # Determine the active principal robustly (user or service account).
+  local caller
+  caller="$(gcloud config get-value account 2>/dev/null || true)"
+  if [[ -z "${caller}" || "${caller}" == "(unset)" ]]; then
+    caller="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null | head -n1 || true)"
+  fi
+  if [[ -z "${caller}" ]]; then
+    block "#10a" "caller can submit builds" "cannot determine the active gcloud principal (run: gcloud auth login)"; return
+  fi
+  local member
+  if [[ "${caller}" == *.gserviceaccount.com ]]; then
+    member="serviceAccount:${caller}"
+  else
+    member="user:${caller}"
+  fi
+  local grant="gcloud projects add-iam-policy-binding ${PROJECT} --member=${member} --role=roles/cloudbuild.builds.editor"
+
+  # Preferred: positive capability probe. testIamPermissions returns only the
+  # subset of the queried permissions the CALLER actually holds — capturing
+  # inherited/group grants too, which role-name matching on a direct project
+  # binding would miss.
+  local probe
+  if probe="$(gcloud projects test-iam-permissions "${PROJECT}" \
+      --permissions=cloudbuild.builds.create \
+      --format='value(permissions)' 2>/dev/null)"; then
+    if [[ "${probe}" == *cloudbuild.builds.create* ]]; then
+      pass "#10a" "caller can submit builds" "${member} holds cloudbuild.builds.create"
+    else
+      _report_10a_missing "${member}" "${grant}"
+    fi
+    return
+  fi
+
+  # Fallback (probe unavailable — offline / resourcemanager path blocked): match
+  # membership in a project-scope role that grants cloudbuild.builds.create.
+  local role
+  for role in roles/cloudbuild.builds.editor roles/cloudbuild.builds.builder roles/owner roles/editor; do
+    if _has_binding "${role}" "${member}" gcloud projects get-iam-policy "${PROJECT}"; then
+      pass "#10a" "caller can submit builds" "${member} has ${role} (grants cloudbuild.builds.create)"
+      return
+    fi
+  done
+  _report_10a_missing "${member}" "${grant}"
+}
+
 # #11 Firestore Native DB exists (HARD-BLOCK, §4.4)
 precheck_11_firestore_db() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#11" "Firestore DB exists" "unauthenticated"; return; fi
@@ -582,7 +653,18 @@ precheck_16_ar_repo() {
 precheck_17_image() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#17" "target image exists" "unauthenticated"; return; fi
   local img_base="${REGION}-docker.pkg.dev/${PROJECT}/${IMAGE_PATH}"
-  if gcloud artifacts docker images describe "${img_base}:${IMAGE_TAG}" >/dev/null 2>&1; then
+  # Probe existence with `artifacts docker images list --include-tags`, which needs
+  # only artifact-registry list/read permission. The former `... images describe`
+  # additionally requires containeranalysis.occurrences.list and FALSE-BLOCKED
+  # --no-build on staging when the caller lacked that permission even though the
+  # image provably existed. Match the requested tag against the listed tags
+  # client-side (exact equality, avoiding substring false-positives a server-side
+  # filter's `has` operator would allow).
+  local tags_out
+  tags_out="$(gcloud artifacts docker images list "${img_base}" \
+    --include-tags --format='value(tags)' 2>/dev/null || true)"
+  if printf '%s\n' "${tags_out}" | tr ',;' '\n' | sed 's/[[:space:]]//g' \
+      | grep -Fxq -- "${IMAGE_TAG}"; then
     pass "#17" "target image exists" "${img_base}:${IMAGE_TAG}"
   elif [[ "${DO_BUILD}" -eq 1 ]]; then
     warn "#17" "target image exists" "absent — expected; this run will build ${IMAGE_TAG}"
@@ -683,6 +765,7 @@ run_prechecks() {
   precheck_8_bucket_roles
   precheck_9_tasks_enqueuer
   precheck_10_build_sa
+  precheck_10a_caller_build
   precheck_11_firestore_db
   precheck_12_indexes
   precheck_13_bucket
