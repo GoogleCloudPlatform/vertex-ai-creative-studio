@@ -50,6 +50,10 @@ crash.*.log
 # deploy/terraform/environments/README.md); the root terraform.tfvars written per
 # deploy stays ignored by the rule above.
 !deploy/terraform/environments/*.tfvars
+# Same exception for the GKE deploy root's per-environment example tfvars: a
+# legible, non-secret placeholder template (project/user/domain are placeholders,
+# secret_env stays dormant). See deploy/terraform/gke/environments/.
+!deploy/terraform/gke/environments/*.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
