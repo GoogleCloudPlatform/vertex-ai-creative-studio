@@ -283,9 +283,15 @@ digest**:
 - an **immutable version tag** `v<UTC-timestamp>-<gitShortSHA>` (for example
   `v20260920t153012z-3eb17bf`) — human-sortable by time and tied to the source
   commit; by convention a `v…` tag is never re-pushed, so it is a stable handle for
-  a specific build. For a dirty working tree or a non-git checkout the git short SHA
-  is replaced by `nogit` (e.g. `v20260920t153012z-nogit`) so a version tag is always
-  produced.
+  a specific build. The tag is computed in three cases so the commit SHA is kept for
+  provenance whenever one exists:
+  - **clean git checkout:** `v<UTC-timestamp>-<gitShortSHA>` (e.g. `v20260920t153012z-3eb17bf`).
+  - **dirty working tree:** `v<UTC-timestamp>-<gitShortSHA>-dirty` (e.g.
+    `v20260920t153012z-3eb17bf-dirty`) — keeps the SHA and flags the uncommitted state.
+  - **true non-git (no repo / no resolvable HEAD):** `v<UTC-timestamp>-nogit` (e.g.
+    `v20260920t153012z-nogit`).
+
+  A version tag is always produced.
 - the moving **`:latest`** tag — unchanged default; a plain `deploy` still deploys
   `:latest`.
 

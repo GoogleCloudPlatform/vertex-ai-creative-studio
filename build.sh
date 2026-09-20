@@ -12,19 +12,25 @@
 # Expects PROJECT_ID and REGION to be set in the environment (see deploy.md).
 set -euo pipefail
 
-# FU-3: compute an immutable per-build version tag v<UTC-timestamp>-<gitShortSHA>
-# (e.g. v20260920t153012z-3eb17bf). Fall back to v<UTC-timestamp>-nogit for a dirty
-# working tree or a non-git checkout, so a version tag is ALWAYS produced and never
-# collides with a clean build. cloudbuild.yaml pushes this tag AND the moving
-# :latest to the same digest; when _VERSION_TAG is empty only :latest is pushed.
+# FU-3: compute an immutable per-build version tag. Three cases, so the commit SHA
+# is preserved for provenance whenever one exists:
+#   - clean git checkout:  v<UTC-timestamp>-<gitShortSHA>       (e.g. v20260920t153012z-3eb17bf)
+#   - dirty working tree:  v<UTC-timestamp>-<gitShortSHA>-dirty (keeps the SHA, marks it dirty)
+#   - true non-git:        v<UTC-timestamp>-nogit               (no repo / no resolvable HEAD)
+# A version tag is ALWAYS produced and never collides with a clean build. cloudbuild.yaml
+# pushes this tag AND the moving :latest to the same digest; when _VERSION_TAG is empty
+# only :latest is pushed.
 _ts="$(date -u +%Y%m%dt%H%M%Sz)"
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1 &&
-   [ -z "$(git status --porcelain 2>/dev/null)" ]; then
-  _sha="$(git rev-parse --short=7 HEAD 2>/dev/null || echo nogit)"
+   _sha="$(git rev-parse --short=7 HEAD 2>/dev/null)" && [ -n "$_sha" ]; then
+  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    VERSION_TAG="v${_ts}-${_sha}-dirty"
+  else
+    VERSION_TAG="v${_ts}-${_sha}"
+  fi
 else
-  _sha="nogit"
+  VERSION_TAG="v${_ts}-nogit"
 fi
-VERSION_TAG="v${_ts}-${_sha}"
 echo "Build version tag: ${VERSION_TAG} (also updates :latest)"
 
 # 1. Build + push the image (Cloud Build runs cloudbuild.yaml as the

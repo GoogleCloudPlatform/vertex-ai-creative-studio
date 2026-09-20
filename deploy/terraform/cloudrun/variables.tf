@@ -116,7 +116,7 @@ variable "allow_local_domain_cors_requests" {
 }
 
 variable "deployer_members" {
-  description = "Member-formatted IAM principal(s) for the deployer that runs `gcloud builds submit` during a deploy (e.g. [\"serviceAccount:deploy@PROJECT.iam.gserviceaccount.com\"]). Each is granted an additive project-scoped roles/cloudbuild.builds.editor binding via the iam module. Defaults to [] (no binding created); set per environment to codify the grant. Never a bare email."
+  description = "Member-formatted IAM principal(s) for the deployer that runs `gcloud builds submit` and `deploy.sh list-versions`/deploy-by-tag during a deploy (e.g. [\"serviceAccount:deploy@PROJECT.iam.gserviceaccount.com\"]). Each is granted two additive bindings from this same list: a project-scoped roles/cloudbuild.builds.editor via the iam module, and a repo-scoped roles/artifactregistry.reader via the artifact-registry module. Defaults to [] (no bindings created); set per environment to codify the grants. Never a bare email."
   type        = list(string)
   default     = []
 }

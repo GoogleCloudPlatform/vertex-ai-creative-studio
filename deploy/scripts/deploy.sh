@@ -140,8 +140,9 @@ USAGE:
   ${SCRIPT_NAME} --help
 
 On \`deploy\`, the build pushes an IMMUTABLE version tag \`v<UTC-timestamp>-<gitShortSHA>\`
-(e.g. v20260920t153012z-3eb17bf; fallback \`v<UTC-timestamp>-nogit\` for a dirty tree or a
-non-git checkout) AND updates the moving \`:latest\`, both pointing at the same digest. The
+(e.g. v20260920t153012z-3eb17bf; a dirty tree keeps the SHA as \`...-<gitShortSHA>-dirty\`,
+and a non-git checkout falls back to \`v<UTC-timestamp>-nogit\`) AND updates the moving
+\`:latest\`, both pointing at the same digest. The
 default UX still deploys \`:latest\` unless \`--version\`/\`--image\` selects a specific image.
 
 OPTIONS:
@@ -283,22 +284,29 @@ image_ref() {
   printf '%s:%s' "${base}" "${IMAGE_TAG}"
 }
 
-# compute_version_tag: an immutable, human-sortable per-build version tag
-# v<UTC-timestamp>-<gitShortSHA> (e.g. v20260920t153012z-3eb17bf). Falls back to
-# v<UTC-timestamp>-nogit for a dirty working tree or a non-git checkout, so a
-# version tag is ALWAYS produced and never collides with a clean build (FU-3 Q1).
+# compute_version_tag: an immutable, human-sortable per-build version tag.
+# Three cases, so the commit SHA is preserved for provenance whenever one exists:
+#   - clean git checkout:  v<UTC-timestamp>-<gitShortSHA>       (e.g. v20260920t153012z-3eb17bf)
+#   - dirty working tree:  v<UTC-timestamp>-<gitShortSHA>-dirty (keeps the SHA, marks it dirty)
+#   - true non-git:        v<UTC-timestamp>-nogit               (no repo / no resolvable HEAD)
+# A version tag is ALWAYS produced and never collides with a clean build (FU-3 Q1).
 compute_version_tag() {
   local ts sha
   ts="$(date -u +%Y%m%dt%H%M%Sz)"
   if command -v git >/dev/null 2>&1 &&
      git -C "${REPO_ROOT}" rev-parse --git-dir >/dev/null 2>&1 &&
-     [[ -z "$(git -C "${REPO_ROOT}" status --porcelain 2>/dev/null)" ]]; then
-    sha="$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD 2>/dev/null || true)"
-    [[ -n "${sha}" ]] || sha="nogit"
+     sha="$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD 2>/dev/null)" &&
+     [[ -n "${sha}" ]]; then
+    # In a git checkout with a resolvable HEAD: keep the SHA, appending -dirty
+    # when the working tree has uncommitted changes.
+    if [[ -n "$(git -C "${REPO_ROOT}" status --porcelain 2>/dev/null)" ]]; then
+      printf 'v%s-%s-dirty' "${ts}" "${sha}"
+    else
+      printf 'v%s-%s' "${ts}" "${sha}"
+    fi
   else
-    sha="nogit"
+    printf 'v%s-nogit' "${ts}"
   fi
-  printf 'v%s-%s' "${ts}" "${sha}"
 }
 
 # Read the canonical required-API list from the single source (apis.txt).
