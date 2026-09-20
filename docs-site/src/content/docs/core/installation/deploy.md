@@ -84,7 +84,7 @@ If you use Google Cloud DNS, follow the steps [here](https://cloud.google.com/dn
 
 ### 3. Build and Deploy Container Image
 
-A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build which builds and deploys the application's container image. Run it from the repository root:
+A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build to build and push the application's container image, then deploys it to Cloud Run (the deploy is run by `build.sh` as the caller; `cloudbuild.yaml` only builds and pushes). Run it from the repository root:
 
 ```bash
 cd -  # back to the repository root (if you ran terraform from deploy/terraform/cloudrun)
@@ -125,7 +125,7 @@ Make sure to take note of the Cloud Run URL that is output. This is what you wil
 
 ### 2. Build and Deploy Container Image
 
-A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build which builds and deploys the application's container image. Run it from the repository root:
+A shell script, `build.sh`, is included at the repository root that submits a build to Cloud Build to build and push the application's container image, then deploys it to Cloud Run (the deploy is run by `build.sh` as the caller; `cloudbuild.yaml` only builds and pushes). Run it from the repository root:
 
 ```bash
 cd -  # back to the repository root (if you ran terraform from deploy/terraform/cloudrun)
@@ -174,7 +174,7 @@ If you only need to update the application code (Python files, UI changes):
    ./build.sh
    ```
 
-This script submits a new build to Cloud Build, creates a new container image, and updates the existing Cloud Run service.
+This script submits a new build to Cloud Build to build and push a new container image, then deploys it (as the caller) to update the existing Cloud Run service.
 
 ## Updating Infrastructure
 
@@ -219,7 +219,8 @@ provisioning workflow above; use `deploy.sh` for routine app redeploys and as a
 cheap, CI-usable prerequisite gate.
 
 It (1) verifies the environment's prerequisites (22 pre-checks), (2) drives the
-existing `cloudbuild.yaml` build and `gcloud run deploy`, and (3) runs
+build+push via `cloudbuild.yaml` and then a caller-run `gcloud run deploy`
+(`cloudbuild.yaml` builds and pushes only; it does not deploy), and (3) runs
 post-deploy health and auth-wiring smoke checks.
 
 ### Usage

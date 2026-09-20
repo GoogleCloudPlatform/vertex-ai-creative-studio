@@ -127,3 +127,20 @@ resource "google_project_iam_member" "creative_studio_vertex_access" {
 resource "google_service_account" "cloudbuild" {
   account_id = "builds-creative-studio"
 }
+
+/********************************************
+*  Deployer principal bindings (FU-1)
+*********************************************/
+
+# Additive project-scoped grant so the DEPLOYER principal (the SA/user that runs
+# `gcloud builds submit` during a deploy) can submit Cloud Builds. This codifies
+# the grant that had to be applied MANUALLY to stand up staging (untracked IAM
+# drift) into Terraform. Uses google_project_iam_member (ADDITIVE) — never
+# google_project_iam_binding (authoritative) — so it cannot clobber other members
+# of the role. With var.deployer_members = [] (default) this creates nothing.
+resource "google_project_iam_member" "deployer_builds_editor" {
+  for_each = toset(var.deployer_members)
+  project  = var.project_id
+  role     = "roles/cloudbuild.builds.editor"
+  member   = each.value
+}

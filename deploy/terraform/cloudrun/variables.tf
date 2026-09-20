@@ -115,6 +115,12 @@ variable "allow_local_domain_cors_requests" {
   default     = false
 }
 
+variable "deployer_members" {
+  description = "Member-formatted IAM principal(s) for the deployer that runs `gcloud builds submit` during a deploy (e.g. [\"serviceAccount:deploy@PROJECT.iam.gserviceaccount.com\"]). Each is granted an additive project-scoped roles/cloudbuild.builds.editor binding via the iam module. Defaults to [] (no binding created); set per environment to codify the grant. Never a bare email."
+  type        = list(string)
+  default     = []
+}
+
 variable "sleep_time" {
   description = "Amount of time to wait post service API enablement to allow for eventual consistency to trickly through GCP."
   type        = number

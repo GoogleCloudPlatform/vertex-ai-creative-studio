@@ -34,7 +34,10 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push image to Artifact Registry'
     args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME']
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-    entrypoint: gcloud
-    id: Update Cloud Run Image
-    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION', '--timeout', '3600' ]    
+# NOTE (FU-5): this config BUILDS + PUSHES the image only; it deliberately does
+# NOT run `gcloud run deploy`. Deployment is performed by the *caller* after the
+# build (deploy/scripts/deploy.sh `do_deploy`, and build.sh), which deploys with
+# the caller's own identity. Keeping deploy out of Cloud Build means the Cloud
+# Build service account needs no roles/run.developer or act-as on the runtime SA
+# (least privilege), and avoids a build failure when the default Cloud Build SA
+# lacks those roles.    

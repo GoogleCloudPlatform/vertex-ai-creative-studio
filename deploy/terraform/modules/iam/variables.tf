@@ -35,3 +35,20 @@ variable "initial_user" {
   nullable    = true
   default     = null
 }
+
+variable "deployer_members" {
+  description = <<-EOT
+    IAM member(s) for the DEPLOYER principal that submits Cloud Builds during a
+    deploy (e.g. the environment's deploy service account or a human operator).
+    Each entry MUST be a fully-qualified, member-formatted string
+    (e.g. "serviceAccount:deploy@PROJECT.iam.gserviceaccount.com" or
+    "user:someone@example.com") — never a bare email. Each member receives an
+    additive project-scoped roles/cloudbuild.builds.editor binding so the
+    deployer can run `gcloud builds submit`. Codifies the previously-manual
+    staging grant (IAM drift) as Terraform-managed. Defaults to [] (dormant: no
+    binding created), so a default apply is unchanged; set it per environment to
+    reconcile the grant.
+  EOT
+  type        = list(string)
+  default     = []
+}

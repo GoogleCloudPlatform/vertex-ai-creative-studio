@@ -27,6 +27,14 @@ project_id   = "REPLACE_WITH_PROD_PROJECT_ID"        # required (no default)
 initial_user = "REPLACE_WITH_PROD_ADMIN@example.com" # effectively required: interpolated as user:${initial_user}
 domain       = "REPLACE_WITH_PROD_DOMAIN"            # required when use_lb = true (managed cert + API_BASE_URL)
 
+# Deployer principal that runs `gcloud builds submit` during a deploy. MUST be
+# member-formatted (serviceAccount:...@....iam.gserviceaccount.com or user:...),
+# NOT a bare email. Granted additive project-scoped roles/cloudbuild.builds.editor
+# via the iam module (codifies the previously-manual staging grant / IAM drift).
+# The owner's next apply shows this as +1 to add (expected reconciliation, not a
+# zero-diff). Leave as [] to skip the binding.
+deployer_members = ["REPLACE_WITH_DEPLOYER_PRINCIPAL"]
+
 # --- Behavior-defining settings (stated explicitly for legibility) ---
 region               = "us-central1" # matches variables.tf default and deploy.md
 environment          = "prod"        # cost-allocation label (variables.tf default)

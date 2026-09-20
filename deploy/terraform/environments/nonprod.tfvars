@@ -23,6 +23,14 @@
 project_id   = "REPLACE_WITH_NONPROD_PROJECT_ID"       # separate non-prod project (proven stand-up)
 initial_user = "REPLACE_WITH_NONPROD_USER@example.com" # effectively required; the non-prod project OWNER (stand-up)
 
+# Deployer principal that runs `gcloud builds submit` during a deploy. MUST be
+# member-formatted (serviceAccount:...@....iam.gserviceaccount.com or user:...),
+# NOT a bare email. Granted additive project-scoped roles/cloudbuild.builds.editor
+# via the iam module. This codifies the grant that was applied MANUALLY to stand
+# up staging (untracked IAM drift); the owner's next apply shows this as +1 to add
+# (expected reconciliation, not a zero-diff). Leave as [] to skip the binding.
+deployer_members = ["REPLACE_WITH_DEPLOYER_PRINCIPAL"]
+
 # --- Behavior-defining settings for non-prod ---
 region               = "us-central1"
 environment          = "staging" # cost-allocation label
