@@ -102,6 +102,7 @@ module "iam" {
   firestore_db_id    = module.data.firestore_db_id
   assets_bucket_name = module.data.assets_bucket_name
   initial_user       = var.initial_user
+  deployer_members   = var.deployer_members
 }
 
 # Secret Manager adoption (Phase 4), DORMANT by default. Creates one secret
