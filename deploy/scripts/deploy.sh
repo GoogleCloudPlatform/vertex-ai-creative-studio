@@ -69,7 +69,7 @@ readonly EXIT_POSTCHECK=4
 # --------------------------------------------------------------------------- #
 # Runtime state.
 # --------------------------------------------------------------------------- #
-MODE="check"          # check | deploy
+MODE="check"          # check | deploy | list-versions
 TARGET="cloudrun"     # --target: cloudrun (default, unchanged behavior) | gke
 STRICT=0              # --strict: promote every WARN to a HARD-BLOCK
 DO_BUILD=1            # --no-build: deploy an existing image, do not build
@@ -79,6 +79,8 @@ REGION=""
 SERVICE_NAME="${SERVICE_NAME_DEFAULT}"
 NAMESPACE="${NAMESPACE:-default}"  # k8s namespace for the --target gke rollout check
 IMAGE_TAG="latest"
+IMAGE_DIGEST=""       # --image: deploy an exact digest (@sha256:…); implies --no-build
+VERSION_TAG=""        # computed immutable per-build tag v<UTC-ts>-<shortSHA> (set at build time)
 SERVICE_ACCOUNT_EMAIL=""
 GCS_ASSETS_BUCKET=""
 BUILD_SA_EMAIL=""
@@ -132,9 +134,16 @@ usage() {
 ${SCRIPT_NAME} — GenMedia Creative Studio deploy + pre/post-flight checks (Cloud Run).
 
 USAGE:
-  ${SCRIPT_NAME} check  [options]     Run ALL pre-checks and exit (no deploy). Alias: --check-only, --dry-run
-  ${SCRIPT_NAME} deploy [options]     Pre-checks -> build+deploy -> post-checks
+  ${SCRIPT_NAME} check         [options]  Run ALL pre-checks and exit (no deploy). Alias: --check-only, --dry-run
+  ${SCRIPT_NAME} deploy        [options]  Pre-checks -> build+deploy -> post-checks
+  ${SCRIPT_NAME} list-versions [options]  List AR image versions (tags + digest + create time), newest first (read-only)
   ${SCRIPT_NAME} --help
+
+On \`deploy\`, the build pushes an IMMUTABLE version tag \`v<UTC-timestamp>-<gitShortSHA>\`
+(e.g. v20260920t153012z-3eb17bf; a dirty tree keeps the SHA as \`...-<gitShortSHA>-dirty\`,
+and a non-git checkout falls back to \`v<UTC-timestamp>-nogit\`) AND updates the moving
+\`:latest\`, both pointing at the same digest. The
+default UX still deploys \`:latest\` unless \`--version\`/\`--image\` selects a specific image.
 
 OPTIONS:
   --target <t>          Deploy target: cloudrun (default) or gke. cloudrun is the
@@ -155,6 +164,14 @@ OPTIONS:
                         gcloud config / us-central1, in that order).
   --service <name>      Cloud Run service name (default: ${SERVICE_NAME_DEFAULT}).
   --tag <tag>           Image tag to build/deploy (default: latest).
+  --version <tag>       Deploy an EXISTING version tag (e.g. v20260920t153012z-3eb17bf)
+                        without rebuilding. Implies --no-build; the tag's existence is
+                        gated by pre-check #17 (HARD-BLOCK if absent). This is also the
+                        rollback path: pick a prior tag from \`list-versions\`.
+  --image <digest>      Deploy an EXACT image by digest (a bare sha256:… , or a full
+                        <region>-docker.pkg.dev/<project>/creative-studio/creative-studio@sha256:…
+                        ref). Digest is tag-independent ground truth. Implies --no-build;
+                        existence is gated by #17. Mutually exclusive with --version.
   -h, --help            Show this help.
 
 ENVIRONMENT (optional overrides; sensible defaults are derived):
@@ -174,10 +191,12 @@ EOF
 # Argument parsing.
 # --------------------------------------------------------------------------- #
 parse_args() {
+  local version_selected=0
   if [[ $# -eq 0 ]]; then MODE="check"; return; fi
   case "$1" in
     check|--check-only|--dry-run) MODE="check"; shift ;;
     deploy) MODE="deploy"; shift ;;
+    list-versions) MODE="list-versions"; shift ;;
     -h|--help) usage; exit "${EXIT_OK}" ;;
     --*) MODE="check" ;;  # bare flags default to check mode
     *) log "Unknown command: $1"; usage; exit "${EXIT_USAGE}" ;;
@@ -197,10 +216,20 @@ parse_args() {
       --region) REGION="${2:-}"; shift 2 ;;
       --service) SERVICE_NAME="${2:-}"; shift 2 ;;
       --tag) IMAGE_TAG="${2:-}"; shift 2 ;;
+      # --version / --image select an EXISTING image and each imply --no-build
+      # (deploy without rebuilding). Existence is gated by pre-check #17.
+      --version) IMAGE_TAG="${2:-}"; DO_BUILD=0; version_selected=1; shift 2 ;;
+      --image) IMAGE_DIGEST="${2:-}"; DO_BUILD=0; shift 2 ;;
       -h|--help) usage; exit "${EXIT_OK}" ;;
       *) log "Unknown option: $1"; usage; exit "${EXIT_USAGE}" ;;
     esac
   done
+  # --version and --image are mutually exclusive: one selects by tag, the other by
+  # digest; specifying both is ambiguous about which ref to deploy.
+  if [[ "${version_selected}" -eq 1 && -n "${IMAGE_DIGEST}" ]]; then
+    log "Cannot combine --version and --image (choose a tag OR a digest)."
+    usage; exit "${EXIT_USAGE}"
+  fi
 }
 
 # --------------------------------------------------------------------------- #
@@ -238,7 +267,47 @@ resolve_config() {
   return 0
 }
 
-image_ref() { printf '%s-docker.pkg.dev/%s/%s:%s' "${REGION}" "${PROJECT}" "${IMAGE_PATH}" "${IMAGE_TAG}"; }
+# image_ref: the fully-qualified image reference to deploy. Defaults to the
+# tag-based ref (<region>-docker.pkg.dev/<project>/<path>:<tag>). When --image
+# supplies a digest, deploy that exact digest instead (tag-independent ground
+# truth). --image accepts a full ref, a bare "sha256:…" digest, or a bare digest.
+image_ref() {
+  local base="${REGION}-docker.pkg.dev/${PROJECT}/${IMAGE_PATH}"
+  if [[ -n "${IMAGE_DIGEST}" ]]; then
+    case "${IMAGE_DIGEST}" in
+      *docker.pkg.dev/*) printf '%s' "${IMAGE_DIGEST}" ;;          # full ref given
+      sha256:*)          printf '%s@%s' "${base}" "${IMAGE_DIGEST}" ;;
+      *)                 printf '%s@sha256:%s' "${base}" "${IMAGE_DIGEST}" ;;
+    esac
+    return
+  fi
+  printf '%s:%s' "${base}" "${IMAGE_TAG}"
+}
+
+# compute_version_tag: an immutable, human-sortable per-build version tag.
+# Three cases, so the commit SHA is preserved for provenance whenever one exists:
+#   - clean git checkout:  v<UTC-timestamp>-<gitShortSHA>       (e.g. v20260920t153012z-3eb17bf)
+#   - dirty working tree:  v<UTC-timestamp>-<gitShortSHA>-dirty (keeps the SHA, marks it dirty)
+#   - true non-git:        v<UTC-timestamp>-nogit               (no repo / no resolvable HEAD)
+# A version tag is ALWAYS produced and never collides with a clean build (FU-3 Q1).
+compute_version_tag() {
+  local ts sha
+  ts="$(date -u +%Y%m%dt%H%M%Sz)"
+  if command -v git >/dev/null 2>&1 &&
+     git -C "${REPO_ROOT}" rev-parse --git-dir >/dev/null 2>&1 &&
+     sha="$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD 2>/dev/null)" &&
+     [[ -n "${sha}" ]]; then
+    # In a git checkout with a resolvable HEAD: keep the SHA, appending -dirty
+    # when the working tree has uncommitted changes.
+    if [[ -n "$(git -C "${REPO_ROOT}" status --porcelain 2>/dev/null)" ]]; then
+      printf 'v%s-%s-dirty' "${ts}" "${sha}"
+    else
+      printf 'v%s-%s' "${ts}" "${sha}"
+    fi
+  else
+    printf 'v%s-nogit' "${ts}"
+  fi
+}
 
 # Read the canonical required-API list from the single source (apis.txt).
 read_required_apis() {
@@ -742,6 +811,23 @@ precheck_16_ar_repo() {
 precheck_17_image() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#17" "target image exists" "unauthenticated"; return; fi
   local img_base="${REGION}-docker.pkg.dev/${PROJECT}/${IMAGE_PATH}"
+  # --image (digest) path: gate on digest existence using the same list-based
+  # probe (metadata-only, no container-analysis perm). Only runs when --image is
+  # given; the tag path below is unchanged. --image always implies --no-build, so
+  # a missing digest is a HARD-BLOCK (nothing to deploy).
+  if [[ -n "${IMAGE_DIGEST}" ]]; then
+    local want="${IMAGE_DIGEST##*@}"                 # strip any full-ref prefix
+    [[ "${want}" == sha256:* ]] || want="sha256:${want}"
+    local digs
+    digs="$(gcloud artifacts docker images list "${img_base}" \
+      --include-tags --format='value(version)' 2>/dev/null || true)"
+    if grep -Fxq -- "${want}" <<<"${digs}"; then
+      pass "#17" "target image exists" "${img_base}@${want}"
+    else
+      block "#17" "target image exists" "digest absent and --no-build: nothing to deploy (${img_base}@${want})"
+    fi
+    return
+  fi
   # Probe existence with `artifacts docker images list --include-tags`, which needs
   # only artifact-registry list/read permission. The former `... images describe`
   # additionally requires containeranalysis.occurrences.list and FALSE-BLOCKED
@@ -886,11 +972,40 @@ do_build() {
   if [[ ! -f "${CLOUDBUILD_CONFIG}" ]]; then
     log "ERROR: ${CLOUDBUILD_CONFIG} not found"; return 1
   fi
+  # Compute the immutable version tag once and pass it (plus the moving tag via
+  # _IMAGE_NAME) to cloudbuild.yaml, which builds once and pushes BOTH refs to the
+  # same digest. The moving tag (default :latest) preserves the existing default UX.
+  VERSION_TAG="$(compute_version_tag)"
+  info "Build tags: ${IMAGE_PATH}:${IMAGE_TAG} (moving) + ${IMAGE_PATH}:${VERSION_TAG} (immutable)"
   gcloud builds submit "${REPO_ROOT}" \
     --project="${PROJECT}" \
     --region="${REGION}" \
     --config="${CLOUDBUILD_CONFIG}" \
-    --substitutions="_IMAGE_NAME=${IMAGE_PATH}:${IMAGE_TAG}"
+    --substitutions="_IMAGE_NAME=${IMAGE_PATH}:${IMAGE_TAG},_VERSION_TAG=${VERSION_TAG}"
+}
+
+# list-versions: read-only listing of the repo's image versions (tags + digest +
+# create time), newest first. Backed by `artifacts docker images list
+# --include-tags` (metadata-only; needs roles/artifactregistry.reader on the
+# repo — see deploy.md). Used to pick a prior version/digest for a rollback.
+do_list_versions() {
+  if ! command -v gcloud >/dev/null 2>&1; then
+    log "ERROR: gcloud not found on PATH"; return "${EXIT_USAGE}"
+  fi
+  if [[ -z "${PROJECT}" ]]; then
+    log "ERROR: project not resolvable (set --project, \$PROJECT_ID, or gcloud config)"; return "${EXIT_USAGE}"
+  fi
+  local repo_path="${REGION}-docker.pkg.dev/${PROJECT}/${IMAGE_PATH}"
+  info "== Artifact Registry image versions (newest first) — ${repo_path} =="
+  if ! gcloud artifacts docker images list "${repo_path}" \
+      --include-tags \
+      --sort-by="~CREATE_TIME" \
+      --format="table(version.basename():label=DIGEST, tags.list():label=TAGS, createTime.date('%Y-%m-%dT%H:%M:%SZ'):label=CREATE_TIME)"; then
+    log "ERROR: failed to list image versions for ${repo_path}"
+    log "       (does the active principal hold roles/artifactregistry.reader on the repo?)"
+    return "${EXIT_USAGE}"
+  fi
+  return "${EXIT_OK}"
 }
 
 do_deploy() {
@@ -1052,6 +1167,14 @@ run_postchecks() {
 main() {
   parse_args "$@"
   resolve_config
+
+  # list-versions is a read-only query, not a deploy: skip the pre-check gate and
+  # just list the repo's image versions.
+  if [[ "${MODE}" == "list-versions" ]]; then
+    do_list_versions
+    exit "$?"
+  fi
+
   run_prechecks
 
   if [[ "${BLOCK_COUNT}" -gt 0 ]]; then
@@ -1095,4 +1218,9 @@ main() {
   exit "${EXIT_OK}"
 }
 
-main "$@"
+# Run main only when executed, not when sourced (lets the pure helpers — e.g.
+# compute_version_tag — be unit-tested without side effects). When executed,
+# BASH_SOURCE[0] == $0, so behavior is unchanged.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

@@ -22,6 +22,7 @@ You'll need the following
 - An existing Google Cloud Project
 - If you want to use a custom domain, you need the ability to create a DNS A record for your target domain that resolves to the provisioned load balancer
 - For the deploy step, the operator/principal running `deploy.sh` or `build.sh` needs `roles/run.developer` (or a superset such as `roles/run.admin`) **and** `roles/iam.serviceAccountUser` (to act as the runtime service account). The deploy now runs **as the caller** — `cloudbuild.yaml` only builds and pushes the image, so the caller (not the Cloud Build service account) performs `gcloud run deploy`.
+- To use `deploy.sh list-versions` or to deploy by version/digest (`--version` / `--image`), the caller also needs `roles/artifactregistry.reader` on the `creative-studio` repository (to run `artifacts docker images list` and resolve digests). Terraform codifies this grant for the principal(s) in `deployer_members` (the `artifact-registry` module; dormant when the list is empty).
 
 ### 1. Download the source code for this project
 
@@ -201,6 +202,22 @@ If the updates include changes to the Terraform configuration (e.g., new environ
    terraform apply
    ```
 
+### Artifact Registry retention (cleanup policies)
+
+The `artifact-registry` module defines two cleanup policies on the `creative-studio`
+repository: **KEEP** the most-recent `cleanup_keep_count` versions (default `20`) and
+**DELETE** untagged artifacts older than `cleanup_untagged_older_than` (default
+`2592000s` = 30 days). Tagged versions (`:latest`, `v…`) are not affected by the
+delete policy.
+
+These ship with **`cleanup_policy_dry_run = true`**, so Artifact Registry only
+**logs** what the policies *would* delete and deletes nothing. Review that dry-run
+output (in the repository's cleanup-policy logs), tune `cleanup_keep_count` /
+`cleanup_untagged_older_than` if needed, then set `cleanup_policy_dry_run = false` on
+a later `terraform apply` to enable real deletion. Repository-wide immutable tags are
+intentionally **not** enabled (that would forbid re-pointing the moving `:latest`);
+version-tag immutability is a convention, not an enforced repo setting.
+
 # Adding Additional Users
 
 With any of the deployment options above that use IAP, if you need to add additional users, there are two steps to take to make sure those users can both access the application and the images generated:
@@ -239,15 +256,77 @@ post-deploy health and auth-wiring smoke checks.
 # Deploy an already-built image without rebuilding (makes the "image exists"
 # check a HARD-BLOCK):
 ./deploy/scripts/deploy.sh deploy --no-build --tag <existing-tag>
+
+# List the image versions available in Artifact Registry (read-only), newest first:
+./deploy/scripts/deploy.sh list-versions
+
+# Deploy a prior immutable version without rebuilding (rollback):
+./deploy/scripts/deploy.sh deploy --version v20260920t153012z-3eb17bf
+
+# Deploy an exact image by digest (tag-independent ground truth):
+./deploy/scripts/deploy.sh deploy --image sha256:<digest>
 ```
 
 Common flags: `--project <id>`, `--region <region>`, `--service <name>`,
-`--tag <tag>`. The project resolves from `--project`, then the `PROJECT_ID` env
+`--tag <tag>`, `--version <tag>`, `--image <digest>`. The project resolves from `--project`, then the `PROJECT_ID` env
 var, then `gcloud config`. The region resolves from `--region`, then the `REGION`
 env var, then `GOOGLE_CLOUD_REGION`, then `gcloud config`, defaulting to
 `us-central1`. Run `./deploy/scripts/deploy.sh --help`
 for the full list, including the optional `LB_HOST`, `IAP_ID_TOKEN`, `APP_ENV`,
 `TF_STATE_BUCKET`, and `SECRET_ENV` environment overrides.
+
+### Image versioning, listing, and rollback
+
+Every `deploy` (and `build.sh`) build now pushes **two tags to the same image
+digest**:
+
+- an **immutable version tag** `v<UTC-timestamp>-<gitShortSHA>` (for example
+  `v20260920t153012z-3eb17bf`) — human-sortable by time and tied to the source
+  commit; by convention a `v…` tag is never re-pushed, so it is a stable handle for
+  a specific build. The tag is computed in three cases so the commit SHA is kept for
+  provenance whenever one exists:
+  - **clean git checkout:** `v<UTC-timestamp>-<gitShortSHA>` (e.g. `v20260920t153012z-3eb17bf`).
+  - **dirty working tree:** `v<UTC-timestamp>-<gitShortSHA>-dirty` (e.g.
+    `v20260920t153012z-3eb17bf-dirty`) — keeps the SHA and flags the uncommitted state.
+  - **true non-git (no repo / no resolvable HEAD):** `v<UTC-timestamp>-nogit` (e.g.
+    `v20260920t153012z-nogit`).
+
+  A version tag is always produced.
+- the moving **`:latest`** tag — unchanged default; a plain `deploy` still deploys
+  `:latest`.
+
+The container image is content-addressable by **digest** (`@sha256:…`) regardless
+of tag; tags are a convenient index over immutable digests, and deploy-by-digest is
+always the ground truth.
+
+**List what's available** (read-only; needs `roles/artifactregistry.reader`):
+
+```bash
+./deploy/scripts/deploy.sh list-versions
+```
+
+This prints each version's digest, tag(s), and create time, newest first.
+
+**Deploy a specific image without rebuilding.** Both flags imply `--no-build`, and
+the requested tag/digest must already exist (gated by pre-check #17, a HARD-BLOCK if
+absent):
+
+```bash
+# by version tag
+./deploy/scripts/deploy.sh deploy --version v20260918t094412z-1a2b3c4
+
+# by exact digest (a bare sha256:… or a full …/creative-studio@sha256:… ref)
+./deploy/scripts/deploy.sh deploy --image sha256:<digest>
+```
+
+**Rollback** is just a redeploy of a prior image — there is no separate verb: run
+`list-versions`, pick a prior `v…` tag (or `@sha256` digest), then
+`deploy --version <prior-tag>` (or `--image <digest>`). This deploys as the caller
+(image-only, preserving env/runtime-SA/IAP) and runs the standard post-checks. For
+reverting to a config that is *already a Cloud Run revision*, the faster path is a
+Cloud Run revision rollback (`gcloud run services update-traffic <svc>
+--to-revisions <rev>=100`); use version/digest redeploy when the target image is not
+a current revision.
 
 ### Exit codes
 

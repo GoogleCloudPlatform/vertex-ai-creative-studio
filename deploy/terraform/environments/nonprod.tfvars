@@ -25,10 +25,13 @@ initial_user = "REPLACE_WITH_NONPROD_USER@example.com" # effectively required; t
 
 # Deployer principal that runs `gcloud builds submit` during a deploy. MUST be
 # member-formatted (serviceAccount:...@....iam.gserviceaccount.com or user:...),
-# NOT a bare email. Granted additive project-scoped roles/cloudbuild.builds.editor
-# via the iam module. This codifies the grant that was applied MANUALLY to stand
-# up staging (untracked IAM drift); the owner's next apply shows this as +1 to add
-# (expected reconciliation, not a zero-diff). Leave as [] to skip the binding.
+# NOT a bare email. This single list drives TWO additive bindings:
+#   - roles/cloudbuild.builds.editor (project) via the iam module — submit builds.
+#   - roles/artifactregistry.reader (repo) via the artifact-registry module (FU-3)
+#     — run `deploy.sh list-versions` and deploy by tag/digest.
+# Codifies grants applied MANUALLY to stand up staging (untracked IAM drift); with
+# one principal the owner's next apply shows +2 to add (1 per binding; +N for N
+# principals). Leave as [] to skip both bindings.
 deployer_members = ["REPLACE_WITH_DEPLOYER_PRINCIPAL"]
 
 # --- Behavior-defining settings for non-prod ---

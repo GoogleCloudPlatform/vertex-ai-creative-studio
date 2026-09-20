@@ -29,10 +29,13 @@ domain       = "REPLACE_WITH_PROD_DOMAIN"            # required when use_lb = tr
 
 # Deployer principal that runs `gcloud builds submit` during a deploy. MUST be
 # member-formatted (serviceAccount:...@....iam.gserviceaccount.com or user:...),
-# NOT a bare email. Granted additive project-scoped roles/cloudbuild.builds.editor
-# via the iam module (codifies the previously-manual staging grant / IAM drift).
-# The owner's next apply shows this as +1 to add (expected reconciliation, not a
-# zero-diff). Leave as [] to skip the binding.
+# NOT a bare email. This single list drives TWO additive bindings:
+#   - roles/cloudbuild.builds.editor (project) via the iam module — submit builds.
+#   - roles/artifactregistry.reader (repo) via the artifact-registry module (FU-3)
+#     — run `deploy.sh list-versions` and deploy by tag/digest.
+# Codifies previously-manual staging grants (IAM drift). With one principal the
+# owner's next apply shows +2 to add (1 per binding; +N for N principals). Leave
+# as [] to skip both bindings.
 deployer_members = ["REPLACE_WITH_DEPLOYER_PRINCIPAL"]
 
 # --- Behavior-defining settings (stated explicitly for legibility) ---

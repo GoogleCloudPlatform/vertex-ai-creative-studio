@@ -16,6 +16,10 @@ options:
   logging: CLOUD_LOGGING_ONLY
 substitutions:
   _IMAGE_NAME: creative-studio/creative-studio:latest
+  # Immutable per-build version tag (v<UTC-ts>-<shortSHA>), supplied by
+  # deploy.sh/build.sh. When empty (e.g. a bare `gcloud builds submit`), only the
+  # moving _IMAGE_NAME tag is pushed — identical to the pre-FU-3 behavior.
+  _VERSION_TAG: ''
 steps:
   # Inject Build Metadata for Versioning
   - name: 'gcr.io/cloud-builders/git'
@@ -34,6 +38,28 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push image to Artifact Registry'
     args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME']
+  # Additionally tag+push the SAME built image under the immutable version tag
+  # (build once; `docker tag`; push both refs -> same digest). Skipped when
+  # _VERSION_TAG is empty, so the default (moving-tag-only) behavior is unchanged.
+  # `$$VAR` escapes a shell variable so Cloud Build does not treat it as a
+  # substitution; `$LOCATION`/`$PROJECT_ID`/`${_...}` are Cloud Build substitutions.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Tag and push immutable version'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        if [ -z "${_VERSION_TAG}" ]; then
+          echo "No _VERSION_TAG supplied; only the moving tag was pushed (default behavior)."
+          exit 0
+        fi
+        MOVING="$LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE_NAME}"
+        BASE="$${MOVING%:*}"
+        VERSION_REF="$${BASE}:${_VERSION_TAG}"
+        docker tag "$$MOVING" "$$VERSION_REF"
+        docker push "$$VERSION_REF"
+        echo "Pushed immutable version tag: $$VERSION_REF"
 # NOTE (FU-5): this config BUILDS + PUSHES the image only; it deliberately does
 # NOT run `gcloud run deploy`. Deployment is performed by the *caller* after the
 # build (deploy/scripts/deploy.sh `do_deploy`, and build.sh), which deploys with

@@ -191,6 +191,9 @@ module "registry" {
   initial_user         = var.initial_user
   enable_data_deletion = var.enable_data_deletion
   build_sa_member      = module.iam.build_sa_member
+  # FU-3: same deployer principal(s) as the iam module, granted AR reader on the
+  # repo for list-versions / deploy-by-digest. Default [] ⇒ no binding.
+  deployer_members = var.deployer_members
 
   depends_on = [module.apis]
 }
