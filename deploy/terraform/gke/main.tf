@@ -112,10 +112,6 @@ provider "kubectl" {
 # Read-only references to existing data stores + identity.
 # ---------------------------------------------------------------------------
 
-data "google_project" "project" {
-  project_id = var.project_id
-}
-
 # Assets GCS bucket — REAL read-only data source (asserts the bucket exists at
 # apply). Deterministic name, identical to the data-stores module + the Cloud Run
 # root's local.asset_bucket_name.
