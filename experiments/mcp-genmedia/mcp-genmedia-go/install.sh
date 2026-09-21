@@ -110,7 +110,7 @@ setup_agent_skills() {
     # Check if gemini CLI is installed for remote installation tip
     if command -v gemini &> /dev/null; then
       echo -e "${YELLOW}Tip: You can also install these skills remotely via Gemini CLI:${NC}"
-      echo -e "  ${BLUE}gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills${NC}\n"
+      echo -e "  ${BLUE}gemini skills install https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git --path experiments/mcp-genmedia/skills${NC}\n"
     fi
 
     # Gemini CLI

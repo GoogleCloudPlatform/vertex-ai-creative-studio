@@ -29,7 +29,7 @@ You'll need the following
 Download the source
 
 ```bash
-git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
+git clone https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git
 ```
 
 ### 2. Export Environment Variables
@@ -154,7 +154,7 @@ Congratulations, you can now navigate to the address provided in the `cloud-run-
 
 Use this option if you want to quickly run the UI without having to setup a local development environment. To get started, use Cloud Shell and follow the tutorial instructions.
 
-  [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_tutorial=tutorial.md)
+  [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git&cloudshell_tutorial=tutorial.md)
 
 # Updating GenMedia Creative Studio
 

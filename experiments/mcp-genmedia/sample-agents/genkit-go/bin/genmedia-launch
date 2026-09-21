@@ -82,7 +82,7 @@ PINNED_SHA256_linux_arm64="9ae511298fbf28f578f75ee59ff6c94fb9fb9a4dbec5e26916ed8
 PINNED_SHA256_windows_amd64="226b0fffef826e5fd9478dcdf138ba2a029b29b87da6b16179f0d2d355143fdc"
 PINNED_SHA256_windows_arm64="0027490699868059a5e9712298b7f60058fe769886457d255b80507b4957fdbb"
 
-RELEASE_BASE="https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/releases/download"
+RELEASE_BASE="https://github.com/GoogleCloudPlatform/genmedia-creative-studio/releases/download"
 
 # --- Args ------------------------------------------------------------------
 [ "$#" -ge 1 ] || die "usage: genmedia-launch <server-binary> [server-args...]"

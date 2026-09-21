@@ -5,9 +5,9 @@ set -e
 # This script downloads and installs the pre-compiled binaries for your OS and Architecture.
 #
 # Usage:
-#   curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+#   curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/genmedia-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
 
-REPO="GoogleCloudPlatform/vertex-ai-creative-studio"
+REPO="GoogleCloudPlatform/genmedia-creative-studio"
 INSTALL_DIR="$HOME/.local/bin"
 ARCHIVE_PREFIX="genmedia-mcp-servers"
 

@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // inferMimeTypeFromURI attempts to determine the MIME type of a file based on its extension.

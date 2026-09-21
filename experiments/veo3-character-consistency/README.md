@@ -30,14 +30,14 @@ This demo uses the following Google AI models:
 > prompt-based editing) — the same decision the core app shipped in PR #1659 —
 > documented in [`MIGRATION.md`](./MIGRATION.md). That port remains outstanding and is
 > tracked by
-> [#1672](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1672).
+> [#1672](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1672).
 
 ## How to Run
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
-    cd vertex-ai-creative-studio/experiments/veo3-character-consistency
+    git clone https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git
+    cd genmedia-creative-studio/experiments/veo3-character-consistency
     ```
 
 2.  **Set up the Python environment and install dependencies:**

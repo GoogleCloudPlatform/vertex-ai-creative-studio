@@ -20,7 +20,7 @@ This skill provides direct, clone-free instructions to download, install, and re
 This command fetches the official install script, which automatically detects your OS and architecture, downloads the latest pre-compiled binaries from the GitHub Releases page, and extracts them into your `~/.local/bin/` folder.
 
 ```bash
-curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/genmedia-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
 ```
 
 *Note: Ensure that `~/.local/bin` is in your system's executable search `PATH`.*

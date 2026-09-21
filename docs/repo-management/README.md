@@ -16,8 +16,8 @@ the relevant document.
 
 | Term | Plain meaning |
 |---|---|
-| **Upstream** | The canonical repository everyone treats as the source of truth: `GoogleCloudPlatform/vertex-ai-creative-studio`. |
-| **Fork** | A personal copy of upstream (here, `ghchinoy/vertex-ai-creative-studio`) used to stage and test work before it goes into upstream. |
+| **Upstream** | The canonical repository everyone treats as the source of truth: `GoogleCloudPlatform/genmedia-creative-studio`. |
+| **Fork** | A personal copy of upstream (here, `ghchinoy/genmedia-creative-studio`) used to stage and test work before it goes into upstream. |
 | **`main`** | The primary branch of a repository — the "current, released" line of code. |
 | **PR (pull request)** | A proposed change, opened for review before it becomes part of `main`. |
 | **CI** | *Continuous Integration* — the automated checks (tests, linters) that run against every PR. |

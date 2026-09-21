@@ -1,10 +1,10 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "io.github.GoogleCloudPlatform/vertex-ai-creative-studio-mcp-chirp3-go",
+  "name": "io.github.GoogleCloudPlatform/genmedia-creative-studio-mcp-chirp3-go",
   "description": "An MCP server for Text-to-Speech (TTS) synthesis using Google Cloud TTS with Chirp3-HD voices.",
   "status": "active",
   "repository": {
-    "url": "ssh://git@github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git",
+    "url": "ssh://git@github.com/GoogleCloudPlatform/genmedia-creative-studio.git",
     "source": "github"
   },
   "version": "1.0.0",
@@ -12,7 +12,7 @@
     {
       "registry_type": "go",
       "registry_base_url": "https://pkg.go.dev",
-      "identifier": "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go",
+      "identifier": "github.com/GoogleCloudPlatform/genmedia-creative-studio/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go",
       "version": "1.0.0",
       "transport": {
         "type": "stdio"

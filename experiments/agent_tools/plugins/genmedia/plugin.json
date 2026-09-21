@@ -7,8 +7,8 @@
     "name": "ghchinoy",
     "url": "https://github.com/ghchinoy"
   },
-  "homepage": "https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/agent_tools/plugins/genmedia",
-  "repository": "https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio",
+  "homepage": "https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/agent_tools/plugins/genmedia",
+  "repository": "https://github.com/GoogleCloudPlatform/genmedia-creative-studio",
   "license": "Apache-2.0",
   "keywords": ["genmedia", "mcp", "nanobanana", "image-generation", "gemini", "vertex-ai"]
 }

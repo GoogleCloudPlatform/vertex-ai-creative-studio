@@ -7,7 +7,7 @@ description: "The home for agent-facing tooling — MCP Servers and Agent Skills
 lets AI agents and applications drive Google Cloud's generative media APIs (Gemini
 Image, Gemini TTS, Veo, Chirp, Lyria, and audio/video compositing with AVTool).
 
-It corresponds to the [`experiments/agent_tools/`](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/agent_tools)
+It corresponds to the [`experiments/agent_tools/`](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/agent_tools)
 directory in the repository, which is the intended home for a consolidated set of
 genmedia agent tooling: the existing **MCP Servers** and **Agent Skills**, and — over
 time — **Agent Plugins**, gathered together in one place.
@@ -15,7 +15,7 @@ time — **Agent Plugins**, gathered together in one place.
 :::note[Scope today]
 Right now this directory holds **one** artifact: a cross-server smoke test for the
 media-generation MCP servers (described below). It does **not** move or replace the
-existing [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia/) —
+existing [MCP Servers for Genmedia](/genmedia-creative-studio/experiments/mcp-genmedia/) —
 those stay where they are and continue to be the way you run the servers. Bringing
 Agent Skills and Agent Plugins into this directory is future work, and the exact
 approach is still being decided; nothing here should be read as a committed migration
@@ -28,7 +28,7 @@ The Model Context Protocol (MCP) servers are the shipped, production way to give
 agent access to Google Cloud genmedia. Each server can be run independently, and
 they cover image, video, speech, music, and audio/video compositing.
 
-➡️ **See the [MCP Servers for Genmedia](/vertex-ai-creative-studio/experiments/mcp-genmedia/)
+➡️ **See the [MCP Servers for Genmedia](/genmedia-creative-studio/experiments/mcp-genmedia/)
 overview** for the full list of servers, installation, configuration, and
 per-server documentation.
 
@@ -38,7 +38,7 @@ The repository already ships a set of genmedia **Agent Skills** — markdown exp
 that teaches an agent how to use the MCP tools for complex workflows (for example
 `genmedia-producer`, `genmedia-video-editor`, and `genmedia-audio-engineer`). These
 are documented today under the MCP GenMedia section; see
-[Agent Skills](/vertex-ai-creative-studio/experiments/mcp-genmedia/skills/).
+[Agent Skills](/genmedia-creative-studio/experiments/mcp-genmedia/skills/).
 
 Consolidating these skills — and packaging genmedia tooling as **Agent Plugins** —
 into `experiments/agent_tools/` is a direction under exploration, not a decided plan
@@ -113,5 +113,5 @@ local file), which matters because some servers, notably `mcp-veo-go`, return a
 media is real.
 
 For the complete, authoritative details, see the
-[`experiments/agent_tools/README.md`](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/blob/main/experiments/agent_tools/README.md)
+[`experiments/agent_tools/README.md`](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/blob/main/experiments/agent_tools/README.md)
 in the repository.

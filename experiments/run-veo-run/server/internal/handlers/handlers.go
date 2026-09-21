@@ -19,7 +19,7 @@ import (
 	"net/http"
 
 	"firebase.google.com/go/auth"
-	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server/internal/config"
+	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/run-veo-run/server/internal/config"
 	"github.com/gorilla/websocket"
 	"google.golang.org/genai"
 )

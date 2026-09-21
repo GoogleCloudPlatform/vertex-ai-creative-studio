@@ -95,7 +95,7 @@ You supply the genmedia runtime configuration through **your own environment**:
 
 ```bash
 # From a checkout of this repo, add this directory as a marketplace:
-claude plugin marketplace add /path/to/vertex-ai-creative-studio/experiments/agent_tools
+claude plugin marketplace add /path/to/genmedia-creative-studio/experiments/agent_tools
 claude plugin install genmedia@vaics-agent-tools
 
 # Confirm the server launches and connects (first run downloads the release):

@@ -28,8 +28,8 @@ This demo uses the following Google AI models:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
-    cd vertex-ai-creative-studio/experiments/veo3-character-consistency
+    git clone https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git
+    cd genmedia-creative-studio/experiments/veo3-character-consistency
     ```
 
 2.  **Set up the Python environment and install dependencies:**

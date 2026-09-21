@@ -27,7 +27,7 @@ git clean -fd
 ##### Option 2: Fresh Clone (Recommended for a clean slate)
 The easiest way to get the smaller packfile size immediately:
 ```bash
-git clone git@github.com:GoogleCloudPlatform/vertex-ai-creative-studio.git
+git clone git@github.com:GoogleCloudPlatform/genmedia-creative-studio.git
 ```
 
 ##### Option 3: Preserving In-Flight Feature Branches

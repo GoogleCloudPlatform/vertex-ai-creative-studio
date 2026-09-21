@@ -21,9 +21,9 @@ technical_value: Demonstrates an orchestrated workflow using FastAPI, Vertex AI 
 type: application
 contributors: khulan
 artifacts:
-- link: https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-variations
+- link: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/veo-variations
   title: Code Repository
-demo_guide: https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-variations/README.md
+demo_guide: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/veo-variations/README.md
 purpose: This application generates creative variations of a video concept and evaluates
   them technically using Nano Banana, Gemini, and Veo 3.1 Lite. It also performs NIQE
   score calculation and C2PA manifest extraction for content provenance.

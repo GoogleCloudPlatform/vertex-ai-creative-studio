@@ -31,7 +31,7 @@ See the [Agent Skills](./skills/) directory for more information on how to link 
 
 ## Installation
 
-**Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
+**Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
 
 ### Easy Installation (Pre-compiled Binaries)
 
@@ -40,7 +40,7 @@ For the fastest setup without needing the Go toolchain installed, you can use ou
 Run the following command in your terminal:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/genmedia-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
 ```
 
 *Note: Ensure `~/.local/bin` is added to your system `PATH`.*
@@ -76,7 +76,7 @@ The servers are configured primarily through environment variables. Key variable
 *   **Imagen:** Generate and edit images from text prompts.
 *   **AVTool:** Perform audio/video compositing and manipulation (e.g., combining, concatenating, format conversion).
 
-For a detailed list of tools provided by each server, refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
+For a detailed list of tools provided by each server, refer to the [Go Implementations README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go).
 
 ## Naming Outputs: `output_filename`
 
@@ -148,7 +148,7 @@ gcloud storage buckets add-iam-policy-binding gs://BUCKET_NAME \
 
 ## Client Configurations
 
-The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/blob/main/experiments/mcp-genmedia/sample-agents/mcp-inspector/genmedia-config.json).
+The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/blob/main/experiments/mcp-genmedia/sample-agents/mcp-inspector/genmedia-config.json).
 
 This repository provides AI application samples for:
 
@@ -165,7 +165,7 @@ This repository provides AI application samples for:
 
 ## Development and Contribution
 
-For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go) for more information.
+For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/mcp-genmedia/mcp-genmedia-go) for more information.
 
 ## License
 

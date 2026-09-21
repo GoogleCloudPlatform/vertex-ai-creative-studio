@@ -39,11 +39,11 @@ This repository contains Jupyter notebooks and tools to perform large-scale prod
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
+   git clone https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git
    ```
 2. Navigate to the experiment directory:
    ```bash
-   cd vertex-ai-creative-studio/experiments/Imagen_Product_Recontext
+   cd genmedia-creative-studio/experiments/Imagen_Product_Recontext
    ```
 3. Install the required dependencies:
    ```bash

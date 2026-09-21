@@ -1,4 +1,4 @@
-module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go
+module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go
 
 go 1.25.0
 

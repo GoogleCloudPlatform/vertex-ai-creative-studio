@@ -90,7 +90,6 @@ update_*.py
 .jetskicli/
 
 # Compiled Go Binaries
-**/mcp-*-go
 **/mcp-*-go/mcp-*-go
 bin/
 *.exe

@@ -77,7 +77,7 @@ Here's a glimpse of what you'll find:
 - **MCP Tools for Genmedia:** Model Context Protocol servers for Veo, Imagen, Lyria, Chirp, and Gemini to bring creativity to your agents.
   - ⚡ **Instant Installation:** You can now install all MCP servers directly using our pre-compiled binaries:
     ```bash
-    curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+    curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/genmedia-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
     ```
 
 **Combined Workflows**
