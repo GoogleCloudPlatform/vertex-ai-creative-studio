@@ -4,7 +4,7 @@ description: Builds the mcp-genmedia Go MCP servers (nanobanana, veo, lyria, gem
 license: Apache-2.0
 compatibility: Requires internet access (GitHub clone, Go module downloads). Go is downloaded automatically if absent. Designed for the Gemini Enterprise Claude Code container (linux/amd64, /workspace noexec).
 metadata:
-  source_repo: https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio
+  source_repo: https://github.com/GoogleCloudPlatform/genmedia-creative-studio
   source_path: experiments/mcp-genmedia/mcp-genmedia-go
   go_version: "1.26.2"
   author: build-mcp-genmedia skill

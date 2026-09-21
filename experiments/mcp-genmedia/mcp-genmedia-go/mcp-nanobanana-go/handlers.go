@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/genai"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // validateGeminiImageParams checks the requested aspect_ratio and image_size

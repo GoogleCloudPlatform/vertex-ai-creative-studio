@@ -13,7 +13,7 @@ For the fastest setup without needing the Go toolchain installed, you can use ou
 Run the following command in your terminal:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/genmedia-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
 ```
 
 *Note: Ensure `~/.local/bin` is added to your system `PATH`.*

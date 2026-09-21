@@ -20,10 +20,10 @@ You can install these skills directly from GitHub without cloning the repository
 
 ```bash
 # Install all skills in this directory
-gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills
+gemini skills install https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git --path experiments/mcp-genmedia/skills
 
 # Install a specific skill (e.g., Producer)
-gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
+gemini skills install https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
 ```
 
 ### For Gemini CLI (Local)

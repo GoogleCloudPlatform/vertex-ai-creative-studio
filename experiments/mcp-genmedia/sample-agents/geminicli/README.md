@@ -232,10 +232,10 @@ You can install these skills directly from this repository without cloning it:
 
 ```bash
 # Install the high-level Producer skill
-gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
+gemini skills install https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
 
 # Install the Video Editor skill
-gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-video-editor
+gemini skills install https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-video-editor
 ```
 
 #### 2. Local Linking (Workspace)

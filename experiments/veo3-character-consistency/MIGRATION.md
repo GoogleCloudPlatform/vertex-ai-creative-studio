@@ -27,9 +27,9 @@ Where it is used today (all via `client.models.edit_image(...)`):
 
 Tracking issues:
 
-- **[#1672](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1672)** —
+- **[#1672](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1672)** —
   modernize the deprecated `imagen-3.0-capability-001` usage (and stale Veo/Gemini IDs) in this directory. **This is the issue the eventual code fix closes; it stays open.**
-- **[#1684](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1684)** —
+- **[#1684](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1684)** —
   related build breakage (Python 3.14 pin fails; README's `pip install -r requirements.txt` path has no `requirements.txt`). Independent of the model migration but worth fixing in the same pass.
 
 ## 2. Suggested conversion path to Nano Banana
@@ -43,7 +43,7 @@ The forward direction is **Nano Banana** — Gemini prompt-based image editing
 (`gemini-3.1-flash-image`). This is the same decision the **core app** already made
 and shipped for its Character Consistency feature:
 
-- Precedent: **[PR #1659](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/pull/1659)**
+- Precedent: **[PR #1659](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1659)**
   ported the core app's Character Consistency edit path off `imagen-3.0-capability-001`
   onto the existing Nano Banana adapter
   (`models.gemini.generate_image_from_prompt_and_images`, backed by
@@ -97,10 +97,10 @@ than doing it twice. This is a planning note — do not execute the refactor now
 **Update (post-2026-06-30):** the stale Gemini and Veo IDs have now been modernized
 in this directory (`gemini-2.5-pro` → `gemini-3.1-pro-preview`,
 `veo-3.0-generate-preview` → `veo-3.1-generate-001`) under
-[#1672](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1672).
+[#1672](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1672).
 The `imagen-3.0-capability-001` → Nano Banana port described above **remains
 outstanding** — it is a behavior-changing refactor, not a string swap, so it was not
 bundled into that mechanical pass. The 2026-06-30 sunset has now passed, so the
 edit/outpaint calls should be treated as broken until the port lands.
-[#1684](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/issues/1684)
+[#1684](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1684)
 tracks the separate build breakage.

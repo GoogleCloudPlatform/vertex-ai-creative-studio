@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // TestImagenOutputNames locks the output_filename → per-image name mapping,

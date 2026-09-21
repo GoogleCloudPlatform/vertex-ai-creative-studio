@@ -1,4 +1,4 @@
-module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server
+module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/run-veo-run/server
 
 go 1.25.8
 

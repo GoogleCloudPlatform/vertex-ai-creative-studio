@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // TestAVToolOutputFilenameWiring is a handler-level wiring test: it drives the exact

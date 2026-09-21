@@ -49,11 +49,11 @@ The Showcase page uses the `outputs/showcase_outputs.csv` file which has details
 item_url,title,brief,prompt,video_uri
 https://cymbal.com/item,Item title,Brief details,Prompt used,uri-here
 ```
-Then follow the [instructions in the README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio?tab=readme-ov-file#create-virtual-environment) at the top level of this repo.
+Then follow the [instructions in the README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio?tab=readme-ov-file#create-virtual-environment) at the top level of this repo.
 
 ## Deploy to Cloud Run
 
-Similarly, using the environment variables and GCS bucket structure detailed above, follow the [instructions in the README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio?tab=readme-ov-file#deploy-to-cloud-run) at the top level of this repo.
+Similarly, using the environment variables and GCS bucket structure detailed above, follow the [instructions in the README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio?tab=readme-ov-file#deploy-to-cloud-run) at the top level of this repo.
 
 ## Disclaimer
 

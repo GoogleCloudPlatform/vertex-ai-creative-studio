@@ -24,7 +24,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"google.golang.org/genai"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 func TestExtForMimeType(t *testing.T) {

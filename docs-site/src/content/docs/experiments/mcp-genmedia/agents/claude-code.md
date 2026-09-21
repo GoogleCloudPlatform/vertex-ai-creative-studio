@@ -10,13 +10,13 @@ Claude Code can install the genmedia servers as an Agent Plugin from this repo, 
 
 ```bash
 # From a checkout of this repo, add the plugins directory as a marketplace:
-claude plugin marketplace add /path/to/vertex-ai-creative-studio/experiments/agent_tools
+claude plugin marketplace add /path/to/genmedia-creative-studio/experiments/agent_tools
 claude plugin install genmedia@vaics-agent-tools
 # Confirm the server connects (first run downloads the pinned release):
 claude mcp list        # -> plugin:genmedia:nanobanana ... Connected
 ```
 
-For the download-on-launch launcher, credentials, and current scope, see the [plugin README](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/blob/main/experiments/agent_tools/plugins/genmedia/README.md).
+For the download-on-launch launcher, credentials, and current scope, see the [plugin README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/blob/main/experiments/agent_tools/plugins/genmedia/README.md).
 
 The plugin needs `GOOGLE_CLOUD_PROJECT` and ADC available (see [Authentication](#authentication)).
 

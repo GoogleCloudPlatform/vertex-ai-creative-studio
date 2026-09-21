@@ -6,12 +6,12 @@ import catppuccin from '@catppuccin/starlight';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://GoogleCloudPlatform.github.io',
-	base: '/vertex-ai-creative-studio/',
+	base: '/genmedia-creative-studio/',
 	integrations: [
 		starlight({
 			title: 'GenMedia Creative Studio',
 			favicon: '/favicon.ico',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/GoogleCloudPlatform/genmedia-creative-studio' }],
 			// Bright Catppuccin theme: Latte (light) forward, with Mocha for dark mode.
 			plugins: [catppuccin({
 				light: { flavor: 'latte', accent: 'blue' },

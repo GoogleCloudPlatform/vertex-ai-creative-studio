@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // TestVeoOutputNames locks the output_filename → per-video name mapping, including

@@ -4,7 +4,7 @@
     "name": "ghchinoy",
     "url": "https://github.com/ghchinoy"
   },
-  "description": "Agent tooling for GoogleCloudPlatform/vertex-ai-creative-studio: genmedia MCP servers packaged as installable Agent Plugins.",
+  "description": "Agent tooling for GoogleCloudPlatform/genmedia-creative-studio: genmedia MCP servers packaged as installable Agent Plugins.",
   "metadata": {
     "pluginRoot": "./plugins"
   },

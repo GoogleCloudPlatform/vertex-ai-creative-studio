@@ -108,8 +108,8 @@ import (
 	"github.com/firebase/genkit/go/plugins/googlegenai"
 	middlewarex "github.com/firebase/genkit/go/plugins/middleware/exp"
 
-	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/genmedia"
-	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
+	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/genmedia"
+	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
 // defaultModel orchestrates delegation and drives each specialist. Single-sourced

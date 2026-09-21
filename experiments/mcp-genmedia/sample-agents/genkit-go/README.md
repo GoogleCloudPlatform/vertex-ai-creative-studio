@@ -398,7 +398,7 @@ download bridge — `StdioConfig.Command` resolves it directly.
 
 ## Contributing
 
-This sample lives in the `vertex-ai-creative-studio` monorepo. Contributions are welcome; please
+This sample lives in the `genmedia-creative-studio` monorepo. Contributions are welcome; please
 read the repository's [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md) first — it requires a signed
 Google [Contributor License Agreement](https://cla.developers.google.com/) and routes all changes
 through GitHub pull-request review. Keep a change scoped to one tier's `main.go` (or the shared

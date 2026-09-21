@@ -1,7 +1,7 @@
 # agent_tools
 
 This directory is the intended future home for a consolidated set of agent
-tooling for the `vertex-ai-creative-studio` project — MCP Servers (existing,
+tooling for the `genmedia-creative-studio` project — MCP Servers (existing,
 under `../mcp-genmedia/`), Agent Skills, and Agent Plugins. It starts small:
 its first artifact is a cross-server smoke test for the media-generation MCP
 servers.

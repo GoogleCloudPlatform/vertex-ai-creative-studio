@@ -1,5 +1,5 @@
 [project]
-name = "vertex-ai-genmedia-creative-studio"
+name = "genmedia-creative-studio"
 version = "1.13.1"
 description = "GenMedia Creative Studio - Veo, Lyria, Nano Banana, Gemini, Gemini TTS"
 readme = "README.md"
