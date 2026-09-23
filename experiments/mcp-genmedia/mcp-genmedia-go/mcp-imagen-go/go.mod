@@ -3,7 +3,7 @@ module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-g
 go 1.26.0
 
 require (
-	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260922125154-cac85e9871dd
+	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260923082313-0e7f9d28295a
 	github.com/mark3labs/mcp-go v1.0.0
 	github.com/rs/cors v1.11.1
 	go.opentelemetry.io/otel v1.46.0
