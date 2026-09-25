@@ -20,19 +20,19 @@ the "broken access control" gap where the only ownership gate lived in
 client/UI state (for example ``is_editable`` computed in a page render or the
 ``mode`` of a dialog), which a caller who reaches the mutation can bypass.
 
-Trust model (Phase 1)
----------------------
-The *caller identity* used here is the **server-derived** user email that is
-established server-side at request handling by
-``common.identity.get_authenticated_user_email`` and stored on
+Trust model
+-----------
+The *caller identity* used here is the **server-derived, cryptographically
+verified** user email. It is established server-side by
+``common.verified_identity.get_verified_user_identity`` (which verifies the IAP
+JWT assertion) in the request middleware and stored on
 ``state.state.AppState.user_email``. It is deliberately **not** re-read from any
-client-controllable component state (``PageState``, dialog ``mode``, etc.).
+client-controllable component state (``PageState``, dialog ``mode``, etc.) nor
+from any plaintext identity header.
 
-This Phase-1 check stops the client-state UI-bypass vector now. It becomes fully
-load-bearing once Phase 2 (verifying the IAP JWT assertion so the identity itself
-is unspoofable) lands. Phase 2 is intentionally out of scope here: this module
-does not change how identity is derived, only that ownership is *enforced* on the
-server before every mutation.
+This ownership check enforces authorization on the server before every mutation;
+Vuln #4 makes the identity it consumes unspoofable (the IAP assertion is verified
+and plaintext identity headers are never trusted).
 """
 
 from __future__ import annotations
@@ -51,10 +51,11 @@ class OwnershipError(PermissionError):
 def get_current_user_email() -> str | None:
     """Return the server-derived caller identity for the current request.
 
-    Reads ``AppState.user_email`` (populated at request handling from
-    ``get_authenticated_user_email``). Returns ``None`` when there is no active
-    Mesop request context (for example a background thread or a unit test), so
-    callers can supply an explicit identity or a server-derived fallback.
+    Reads ``AppState.user_email`` (populated at request handling from the
+    verified identity in ``common.verified_identity``). Returns ``None`` when
+    there is no active Mesop request context (for example a background thread or
+    a unit test), so callers can supply an explicit identity or a server-derived
+    fallback.
 
     All errors are swallowed intentionally: the inability to resolve an identity
     must never be mistaken for a *valid* identity. Callers decide how to treat a

@@ -72,10 +72,17 @@ import pages.storyboarder
 from app_factory import app
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
-    get_authenticated_user_email,
+    INTERNAL_SESSION_ID_HEADER,
+    INTERNAL_VERIFIED_EMAIL_HEADER,
+    LOCAL_APP_ENVS,
+    set_internal_scope_headers,
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
+from common.verified_identity import (
+    get_verified_user_identity,
+    validate_serving_environment,
+)
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
@@ -130,6 +137,24 @@ class UserInfo(BaseModel):
 PUBLIC_PATH_PREFIXES = ("/healthz", "/readyz", "/favicon.ico")
 
 
+def _is_public_path(path: str) -> bool:
+    """Return True only for a public prefix or a sub-path of one.
+
+    Matches on a path-segment boundary so a public prefix like ``/healthz`` does
+    not match an unrelated path such as ``/healthzXYZ`` (audit LOW-2).
+    """
+    return any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in PUBLIC_PATH_PREFIXES
+    )
+
+
+# Serve/boot guard: refuse to serve with a mock (local) identity on a managed
+# platform (audit LOW-3). Runs when the server process boots (this module is the
+# serving entrypoint), not during unit tests, which do not import main.
+validate_serving_environment()
+
+
 # FastAPI server with Mesop
 router = APIRouter()
 app.include_router(router)
@@ -153,6 +178,7 @@ async def readyz():
 # Define allowed origins for CORS
 
 
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -251,26 +277,50 @@ async def add_global_csp(request: Request, call_next):
 
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):
-    user_email = get_authenticated_user_email(request.headers)
-    if not user_email:
-        user_email = ANONYMOUS_USER_EMAIL
+    # Identity comes ONLY from the cryptographically verified source. In a
+    # deployed env this verifies the IAP assertion; plaintext identity headers
+    # are never trusted. Verification is CPU-bound (with an occasional cached cert
+    # fetch), so run it off the event loop.
+    identity = await run_in_threadpool(get_verified_user_identity, request.headers)
+    user_email = identity.email if identity else ANONYMOUS_USER_EMAIL
 
     if (
         config.Default.REQUIRE_AUTHENTICATED_USER
-        and user_email == ANONYMOUS_USER_EMAIL
-        and not request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+        and identity is None
+        and not _is_public_path(request.url.path)
     ):
         return JSONResponse(
             {"detail": "Authentication required"},
             status_code=401,
         )
 
+    # Generate the session id ONCE and use the same value everywhere below (scope
+    # key, internal bridge header, and the response cookie) so AppState, the ASGI
+    # consumers, and the client cookie never disagree.
     session_id = request.cookies.get("session_id")
     if not session_id:
         session_id = str(uuid.uuid4())
 
+    # ASGI scope keys — consumed directly by the ASGI-layer handlers
+    # (veo_router, get_media_proxy, convert_to_gif). Left as-is (Phase 4).
     request.scope["MESOP_USER_EMAIL"] = user_email
     request.scope["MESOP_SESSION_ID"] = session_id
+
+    # ASGI->WSGI bridge (Vuln #4 HIGH-2 transport fix + LOW-4 session transport).
+    # WSGIMiddleware.build_environ copies ONLY headers into the WSGI environ, not
+    # custom scope keys, so the Mesop AppState (WSGI) cannot see the scope values
+    # above. Carry the ALREADY-verified email and the server-owned session id
+    # across as dedicated internal headers. set_internal_scope_headers strips any
+    # client-supplied copy BEFORE setting exactly one server value, so a client
+    # can neither inject nor append to them. These headers are never an identity
+    # input to the verifier.
+    set_internal_scope_headers(
+        request.scope,
+        {
+            INTERNAL_VERIFIED_EMAIL_HEADER: user_email,
+            INTERNAL_SESSION_ID_HEADER: session_id,
+        },
+    )
 
     # Pass GA ID to Mesop context if it exists
     if config.Default.GA_MEASUREMENT_ID:
@@ -320,13 +370,14 @@ def get_proxy_storage_client():
 @app.get("/media/{bucket_name}/{object_path:path}")
 def get_media_proxy(request: Request, bucket_name: str, object_path: str):
     """Securely proxies a GCS object, checking for IAP authentication."""
+    # Consume the verified identity the middleware placed on the request; no
+    # bespoke identity derivation here (Vuln #4, Phase 4).
     user_email = request.scope.get("MESOP_USER_EMAIL")
-    app_env = config.Default().APP_ENV
 
-    # Enforce IAP authentication in any environment that is not explicitly a local dev environment.
-    development_envs = ["", "dev", "local"]
-    if app_env not in development_envs and (
-        not user_email or user_email == "anonymous@google.com"
+    # Enforce authentication in any environment that is not a canonical local dev
+    # environment (aligned with common.identity.LOCAL_APP_ENVS).
+    if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
+        not user_email or user_email == ANONYMOUS_USER_EMAIL
     ):
         raise HTTPException(status_code=401, detail="Authentication required")
 

@@ -11,34 +11,73 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Helpers for reading authenticated user identity from trusted proxies."""
+"""Identity helpers: email normalization and the fail-closed auth policy.
+
+Caller identity is derived exclusively from the cryptographically verified source
+in :mod:`common.verified_identity`. This module intentionally no longer reads any
+plaintext identity header: the prior header-fallback reader (the Vuln #4 spoofing
+vector) has been removed. What remains is provider-agnostic email normalization,
+shared constants, and the ``REQUIRE_AUTHENTICATED_USER`` policy resolution.
+"""
 
 import os
-from collections.abc import Mapping
 
 ANONYMOUS_USER_EMAIL = "anonymous@google.com"
 
-DEFAULT_AUTH_EMAIL_HEADERS = (
-    "X-Goog-Authenticated-User-Email",
-    "X-Auth-Request-Email",
-    "X-Forwarded-Email",
-    "X-Email",
-    "X-Authenticated-User",
-)
-
+# NOTE: MIRRORED by the deploy/terraform LOW-3 serving-environment guard, which
+# hard-codes the same local-env set to decide when to refuse serving a mock
+# identity. The two lists must stay in sync — a value added here must be added to
+# the Terraform guard too (the TF side carries the reciprocal note).
 LOCAL_APP_ENVS = {"", "dev", "development", "local", "test"}
 TRUE_VALUES = {"1", "true", "yes", "on"}
 
+# --- Internal ASGI->WSGI identity transport (Vuln #4) ---------------------- #
+# The verified caller identity is resolved in the ASGI request middleware, but
+# the Mesop ``AppState`` runs in the WSGI app mounted behind ``WSGIMiddleware``.
+# ``build_environ`` copies ONLY request headers (not custom ASGI scope keys) into
+# the WSGI environ, so the middleware transports the ALREADY-verified values
+# across the boundary as dedicated *internal* request headers. It sets them only
+# after UNCONDITIONALLY stripping any client-supplied copy, so a client can never
+# inject or append to them. These headers are NEVER an identity *input* to the
+# verifier (see ``common.verified_identity``); they only carry a server-decided
+# value from the middleware to ``AppState``.
+INTERNAL_VERIFIED_EMAIL_HEADER = "X-Internal-Verified-User-Email"
+INTERNAL_SESSION_ID_HEADER = "X-Internal-Session-Id"
 
-def auth_email_headers() -> tuple[str, ...]:
-    """Return trusted upstream identity headers, in priority order."""
-    configured_headers = os.environ.get("AUTH_EMAIL_HEADERS")
-    if not configured_headers:
-        return DEFAULT_AUTH_EMAIL_HEADERS
 
-    return tuple(
-        header.strip() for header in configured_headers.split(",") if header.strip()
-    )
+def _wsgi_environ_key(header_name: str) -> str:
+    """Return the WSGI environ key ``build_environ`` produces for a header."""
+    return "HTTP_" + header_name.upper().replace("-", "_")
+
+
+# Keys ``AppState`` reads from the WSGI environ (derived so they never drift from
+# the header names the middleware sets).
+INTERNAL_VERIFIED_EMAIL_ENVIRON = _wsgi_environ_key(INTERNAL_VERIFIED_EMAIL_HEADER)
+INTERNAL_SESSION_ID_ENVIRON = _wsgi_environ_key(INTERNAL_SESSION_ID_HEADER)
+
+
+def set_internal_scope_headers(scope: dict, values: dict[str, str]) -> None:
+    """Strip client-supplied copies of the given internal headers, then set one.
+
+    ASGI ``scope["headers"]`` is a list of ``(name, value)`` byte tuples. For each
+    header in ``values`` this removes EVERY existing copy (case-insensitive)
+    BEFORE appending exactly one server-controlled copy. Stripping first is
+    security-critical: ``build_environ`` comma-joins duplicate headers, so a
+    surviving client copy would be prepended to the server value in the WSGI
+    environ (an internal-channel injection / identity-spoofing vector). This is
+    the transport for the verified identity across the ASGI->WSGI boundary; the
+    values here are already server-resolved and are never re-derived from the
+    request.
+    """
+    strip = {name.lower().encode("latin1") for name in values}
+    headers = [
+        (name, value)
+        for (name, value) in scope.get("headers", [])
+        if name.lower() not in strip
+    ]
+    for name, value in values.items():
+        headers.append((name.lower().encode("latin1"), value.encode("latin1")))
+    scope["headers"] = headers
 
 
 def normalize_user_email(value: str | None) -> str | None:
@@ -56,29 +95,6 @@ def normalize_user_email(value: str | None) -> str | None:
             break
 
     return user_email or None
-
-
-def get_authenticated_user_email(
-    headers: Mapping[str, str] | None = None,
-    environ: Mapping[str, str] | None = None,
-) -> str | None:
-    """Read the authenticated user email from trusted request metadata."""
-    for header_name in auth_email_headers():
-        if headers:
-            user_email = normalize_user_email(headers.get(header_name))
-            if user_email:
-                return user_email
-
-        if environ:
-            environ_key = f"HTTP_{header_name.upper().replace('-', '_')}"
-            user_email = normalize_user_email(environ.get(environ_key))
-            if user_email:
-                return user_email
-
-    if environ:
-        return normalize_user_email(environ.get("MESOP_USER_EMAIL"))
-
-    return None
 
 
 def require_authenticated_user(app_env: str | None) -> bool:

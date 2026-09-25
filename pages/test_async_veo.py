@@ -103,10 +103,10 @@ def on_click_generate(e: me.ClickEvent):
             person_generation="Allow (Adults only)",
         )
         
-        # We need to pass the user email header for auth middleware to work
-        headers = {"X-Goog-Authenticated-User-Email": "test_user@example.com"}
-        
-        response = requests.post(api_url, json=request_data.model_dump(), headers=headers)
+        # Identity is established server-side from the verified IAP assertion
+        # (see common.verified_identity); plaintext identity headers are no longer
+        # trusted, so this local dev probe sends none.
+        response = requests.post(api_url, json=request_data.model_dump())
         response.raise_for_status()
         data = response.json()
         state.job_id = data["job_id"]
