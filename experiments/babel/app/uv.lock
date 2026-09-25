@@ -520,7 +520,7 @@ wheels = [
 
 [[package]]
 name = "mesop"
-version = "1.2.7"
+version = "1.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -534,7 +534,7 @@ dependencies = [
     { name = "werkzeug" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/87/7ccd633203ad435a0680c28037c6206f6c575458da26a07f4cef68e8f0ad/mesop-1.2.7-py3-none-any.whl", hash = "sha256:21a12670a42bd260e511c102602b360ca863dec1ef64b703f36666d9c0cbf2e3", size = 7449890, upload-time = "2026-04-07T17:27:32.737Z" },
+    { url = "https://files.pythonhosted.org/packages/09/b1/8e0a0cc6a125c505df3aeed36582c8532a5fefbfd9fde122eec123d376c5/mesop-1.3.4-py3-none-any.whl", hash = "sha256:18797994e32c628d08f6ebfbda5aad719ed7253a75fba5382ab959c4fe434285", size = 7471677, upload-time = "2026-08-01T18:23:52.853Z" },
 ]
 
 [[package]]
