@@ -40,9 +40,11 @@ from common.identity import ANONYMOUS_USER_EMAIL, require_authenticated_user
 from common.verified_identity import (
     IAP_ASSERTION_HEADER,
     IAP_ISSUER,
+    MANAGED_PLATFORM_MARKERS,
     IdentityConfigError,
     get_verified_user_identity,
     validate_identity_config,
+    validate_serving_environment,
     verify_iap_assertion,
 )
 
@@ -290,6 +292,18 @@ def test_d_local_startup_without_audience_ok(monkeypatch) -> None:
 PUBLIC_PATH_PREFIXES = ("/healthz", "/readyz", "/favicon.ico")
 
 
+def _is_public_path(path: str) -> bool:
+    """Mirror of ``main.py:_is_public_path`` (audit LOW-2 boundary).
+
+    A public prefix like ``/healthz`` matches only itself or a sub-path
+    (``/healthz/live``), never an unrelated path such as ``/healthzXYZ``.
+    """
+    return any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in PUBLIC_PATH_PREFIXES
+    )
+
+
 def _build_app():
     """A minimal Starlette app whose middleware mirrors main.py:set_request_context
     (the Vuln #4 gate), wired to the real get_verified_user_identity."""
@@ -311,7 +325,7 @@ def _build_app():
         if (
             require_authenticated_user(os.environ.get("APP_ENV", ""))
             and identity is None
-            and not request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+            and not _is_public_path(request.url.path)
         ):
             return JSONResponse({"detail": "Authentication required"}, status_code=401)
         request.scope["MESOP_USER_EMAIL"] = user_email
@@ -321,6 +335,8 @@ def _build_app():
         routes=[
             Route("/protected", endpoint),
             Route("/healthz", endpoint),
+            Route("/healthz/live", endpoint),
+            Route("/healthzXYZ", endpoint),
         ],
         middleware=[Middleware(BaseHTTPMiddleware, dispatch=set_request_context)],
     )
@@ -373,3 +389,183 @@ def test_middleware_public_path_allows_anonymous(deployed_env) -> None:
 
     assert resp.status_code == 200
     assert resp.text == ANONYMOUS_USER_EMAIL
+
+
+# --------------------------------------------------------------------------- #
+# LOW-2: public-path boundary — a prefix must match on a segment boundary.     #
+# --------------------------------------------------------------------------- #
+
+
+def test_public_path_boundary_exact_and_subpath() -> None:
+    assert _is_public_path("/healthz") is True
+    assert _is_public_path("/healthz/live") is True
+    assert _is_public_path("/readyz") is True
+    assert _is_public_path("/favicon.ico") is True
+
+
+def test_public_path_boundary_rejects_lookalike() -> None:
+    # The whole point of LOW-2: a lookalike must NOT be treated as public.
+    assert _is_public_path("/healthzXYZ") is False
+    assert _is_public_path("/healthz-admin") is False
+    assert _is_public_path("/readyzzz") is False
+    assert _is_public_path("/") is False
+    assert _is_public_path("/admin") is False
+
+
+def test_middleware_lookalike_public_path_still_401s(deployed_env) -> None:
+    """A path that only *looks* like a public one is gated (LOW-2), not bypassed."""
+    with _client(_build_app()) as client:
+        resp = client.get("/healthzXYZ", headers={"X-Email": SPOOFED_USER})
+
+    assert resp.status_code == 401
+
+
+def test_middleware_public_subpath_allows_anonymous(deployed_env) -> None:
+    with _client(_build_app()) as client:
+        resp = client.get("/healthz/live", headers={"X-Email": SPOOFED_USER})
+
+    assert resp.status_code == 200
+    assert resp.text == ANONYMOUS_USER_EMAIL
+
+
+# --------------------------------------------------------------------------- #
+# LOW-1: boot-time transport smoke-check inside validate_identity_config.      #
+# --------------------------------------------------------------------------- #
+
+
+def test_low1_transport_smoke_check_passes_when_available(monkeypatch) -> None:
+    """In iap mode with a real transport importable, startup validation passes."""
+    import common.verified_identity as vi
+
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("IAP_JWT_AUDIENCE", TEST_AUDIENCE)
+    # Ensure a clean lazy-global so the smoke-check actually constructs one.
+    monkeypatch.setattr(vi, "_TRANSPORT", None)
+
+    validate_identity_config()  # must not raise
+
+    # The smoke-check must have actually constructed the transport at boot.
+    assert vi._TRANSPORT is not None
+
+
+def test_low1_missing_transport_fails_fast_at_boot(monkeypatch) -> None:
+    """If the requests transport cannot be constructed, boot fails loudly (not a
+    silent per-request 401-storm)."""
+    import common.verified_identity as vi
+
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("IAP_JWT_AUDIENCE", TEST_AUDIENCE)
+    monkeypatch.setattr(vi, "_TRANSPORT", None)
+
+    def _boom():
+        raise ImportError("google-auth[requests] transport unavailable")
+
+    monkeypatch.setattr(vi, "_request_transport", _boom)
+
+    with pytest.raises(IdentityConfigError) as excinfo:
+        validate_identity_config()
+
+    assert "transport is unavailable" in str(excinfo.value)
+
+
+# --------------------------------------------------------------------------- #
+# LOW-3: app-side backstop — refuse to serve mock identity on a managed        #
+# platform. Exercises validate_serving_environment (the serve/boot guard).     #
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("marker", MANAGED_PLATFORM_MARKERS)
+def test_low3_managed_platform_marker_plus_local_refuses(monkeypatch, marker) -> None:
+    """Marker present + AUTH_MODE resolved to local -> hard refusal to serve."""
+    monkeypatch.setenv("APP_ENV", "local")
+    for m in MANAGED_PLATFORM_MARKERS:
+        monkeypatch.delenv(m, raising=False)
+    monkeypatch.setenv(marker, "some-value")
+
+    with pytest.raises(IdentityConfigError) as excinfo:
+        validate_serving_environment()
+
+    assert marker in str(excinfo.value)
+
+
+def test_low3_plain_local_dev_serves(monkeypatch) -> None:
+    """No platform markers + local mode -> serves normally (no-op)."""
+    monkeypatch.setenv("APP_ENV", "local")
+    for m in MANAGED_PLATFORM_MARKERS:
+        monkeypatch.delenv(m, raising=False)
+
+    validate_serving_environment()  # must not raise
+
+
+def test_low3_managed_platform_with_iap_mode_ok(monkeypatch) -> None:
+    """Marker present but AUTH_MODE is iap (correct deploy) -> no refusal."""
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("K_SERVICE", "gmcs")
+
+    validate_serving_environment()  # must not raise
+
+
+# --------------------------------------------------------------------------- #
+# Phase 2 (taint site B): AppState derives identity ONLY from the middleware-  #
+# verified MESOP_USER_EMAIL; a spoofed plaintext header cannot influence it.   #
+#                                                                              #
+# mesop is not importable in this sandbox, so we (1) reproduce AppState's      #
+# exact __init__ assignment against a fake Flask request, and (2) assert by    #
+# source inspection that state.py reads no raw identity header.                #
+# --------------------------------------------------------------------------- #
+
+
+class _FakeRequest:
+    def __init__(self, environ):
+        self.environ = environ
+
+
+def _appstate_init_logic(request) -> tuple[str, str]:
+    """Byte-for-byte reproduction of state.state.AppState.__init__ assignment."""
+    user_email = request.environ.get("MESOP_USER_EMAIL", ANONYMOUS_USER_EMAIL)
+    session_id = request.environ.get("MESOP_SESSION_ID", "")
+    return user_email, session_id
+
+
+def test_phase2_appstate_uses_verified_identity_only() -> None:
+    req = _FakeRequest(
+        {
+            "MESOP_USER_EMAIL": REAL_USER,
+            "MESOP_SESSION_ID": "sess-123",
+            # Spoofed raw headers that AppState must ignore entirely.
+            "HTTP_X_EMAIL": SPOOFED_USER,
+            "HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL": SPOOFED_USER,
+        },
+    )
+
+    user_email, session_id = _appstate_init_logic(req)
+
+    assert user_email == REAL_USER
+    assert user_email != SPOOFED_USER
+    assert session_id == "sess-123"
+
+
+def test_phase2_appstate_defaults_anonymous_without_verified_identity() -> None:
+    # Only spoofed headers, no MESOP_USER_EMAIL -> anonymous, never the spoof.
+    req = _FakeRequest({"HTTP_X_EMAIL": SPOOFED_USER})
+
+    user_email, _ = _appstate_init_logic(req)
+
+    assert user_email == ANONYMOUS_USER_EMAIL
+    assert user_email != SPOOFED_USER
+
+
+def test_phase2_appstate_source_reads_no_raw_header() -> None:
+    """Source-level guarantee: state.py derives identity only from MESOP_USER_EMAIL
+    and never re-introduces a raw-header identity read (taint site B closed)."""
+    source = (Path(__file__).resolve().parents[1] / "state" / "state.py").read_text()
+
+    assert "MESOP_USER_EMAIL" in source
+    assert "get_authenticated_user_email" not in source
+    for banned in (
+        "X-Email",
+        "X-Goog-Authenticated-User-Email",
+        "X-Forwarded-Email",
+        "X-Authenticated-User",
+    ):
+        assert banned not in source, f"state.py must not read raw header {banned!r}"

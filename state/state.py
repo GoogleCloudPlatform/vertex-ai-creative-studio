@@ -17,7 +17,6 @@ from flask import request
 
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
-    get_authenticated_user_email,
 )
 
 
@@ -32,17 +31,18 @@ class AppState:
     current_page: str = ""
 
     def __init__(self):
-        """Initializes the AppState, reading user info from the request context."""
-        user_email = get_authenticated_user_email(
-            headers=request.headers,
-            environ=request.environ,
+        """Initializes the AppState from the middleware-verified identity.
+
+        Identity is taken ONLY from ``MESOP_USER_EMAIL``, which the request
+        middleware sets from the cryptographically verified caller (Vuln #4).
+        AppState no longer re-derives identity from raw request headers, so a
+        spoofed plaintext identity header cannot influence it (taint site B).
+        """
+        self.user_email = request.environ.get(
+            "MESOP_USER_EMAIL",
+            ANONYMOUS_USER_EMAIL,
         )
-        if user_email:
-            self.user_email = user_email
-            self.session_id = request.environ.get("MESOP_SESSION_ID", "")
-        elif "MESOP_USER_EMAIL" in request.environ:
-            self.user_email = request.environ["MESOP_USER_EMAIL"]
-            self.session_id = request.environ["MESOP_SESSION_ID"]
+        self.session_id = request.environ.get("MESOP_SESSION_ID", "")
 
 
 def theme_toggle_button():

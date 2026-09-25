@@ -88,8 +88,9 @@ google-api-core==2.36.0
     #   google-cloud-storage
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-google-auth==2.57.1
+google-auth[requests]==2.57.1
     # via
+    #   genmedia-creative-studio (pyproject.toml)
     #   google-api-core
     #   google-cloud-aiplatform
     #   google-cloud-appengine-logging

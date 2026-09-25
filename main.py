@@ -72,10 +72,14 @@ import pages.storyboarder
 from app_factory import app
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
+    LOCAL_APP_ENVS,
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
-from common.verified_identity import get_verified_user_identity
+from common.verified_identity import (
+    get_verified_user_identity,
+    validate_serving_environment,
+)
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
@@ -128,6 +132,24 @@ class UserInfo(BaseModel):
 
 
 PUBLIC_PATH_PREFIXES = ("/healthz", "/readyz", "/favicon.ico")
+
+
+def _is_public_path(path: str) -> bool:
+    """Return True only for a public prefix or a sub-path of one.
+
+    Matches on a path-segment boundary so a public prefix like ``/healthz`` does
+    not match an unrelated path such as ``/healthzXYZ`` (audit LOW-2).
+    """
+    return any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in PUBLIC_PATH_PREFIXES
+    )
+
+
+# Serve/boot guard: refuse to serve with a mock (local) identity on a managed
+# platform (audit LOW-3). Runs when the server process boots (this module is the
+# serving entrypoint), not during unit tests, which do not import main.
+validate_serving_environment()
 
 
 # FastAPI server with Mesop
@@ -253,16 +275,16 @@ async def add_global_csp(request: Request, call_next):
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):
     # Identity comes ONLY from the cryptographically verified source. In a
-    # deployed env this verifies X-Goog-IAP-JWT-Assertion; plaintext identity
-    # headers (X-Email, etc.) are never trusted. Verification is CPU-bound (with
-    # an occasional cached cert fetch), so run it off the event loop.
+    # deployed env this verifies the IAP assertion; plaintext identity headers
+    # are never trusted. Verification is CPU-bound (with an occasional cached cert
+    # fetch), so run it off the event loop.
     identity = await run_in_threadpool(get_verified_user_identity, request.headers)
     user_email = identity.email if identity else ANONYMOUS_USER_EMAIL
 
     if (
         config.Default.REQUIRE_AUTHENTICATED_USER
         and identity is None
-        and not request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+        and not _is_public_path(request.url.path)
     ):
         return JSONResponse(
             {"detail": "Authentication required"},
@@ -324,13 +346,14 @@ def get_proxy_storage_client():
 @app.get("/media/{bucket_name}/{object_path:path}")
 def get_media_proxy(request: Request, bucket_name: str, object_path: str):
     """Securely proxies a GCS object, checking for IAP authentication."""
+    # Consume the verified identity the middleware placed on the request; no
+    # bespoke identity derivation here (Vuln #4, Phase 4).
     user_email = request.scope.get("MESOP_USER_EMAIL")
-    app_env = config.Default().APP_ENV
 
-    # Enforce IAP authentication in any environment that is not explicitly a local dev environment.
-    development_envs = ["", "dev", "local"]
-    if app_env not in development_envs and (
-        not user_email or user_email == "anonymous@google.com"
+    # Enforce authentication in any environment that is not a canonical local dev
+    # environment (aligned with common.identity.LOCAL_APP_ENVS).
+    if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
+        not user_email or user_email == ANONYMOUS_USER_EMAIL
     ):
         raise HTTPException(status_code=401, detail="Authentication required")
 

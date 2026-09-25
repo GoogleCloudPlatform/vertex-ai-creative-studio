@@ -14,10 +14,10 @@
 """Canonical, cryptographically-verified caller identity.
 
 This module is the single source of truth for *who the caller is*. It replaces
-the previous practice of trusting client-settable plaintext identity headers
-(``X-Email``, ``X-Authenticated-User``, ...). In a deployed environment the only
-identity source is the IAP-signed assertion ``X-Goog-IAP-JWT-Assertion``, whose
-signature, issuer, audience and expiry are verified before any claim is trusted.
+the previous practice of trusting client-settable plaintext identity headers. In
+a deployed environment the only identity source is the IAP-signed assertion
+``X-Goog-IAP-JWT-Assertion``, whose signature, issuer, audience and expiry are
+verified before any claim is trusted.
 
 Consumed by the request middleware (``main.py:set_request_context``) and, in a
 later phase, by the Mesop ``AppState``. Vuln #2's server-side ownership checks
@@ -53,6 +53,11 @@ IDENTITY_SOURCE_LOCAL = "local-dev"
 
 AUTH_MODE_IAP = "iap"
 AUTH_MODE_LOCAL = "local"
+
+# Environment markers that indicate we are running on a managed serving platform
+# (Cloud Run sets K_SERVICE; GKE sets KUBERNETES_SERVICE_HOST). If either is
+# present we must never serve with the local mock identity.
+MANAGED_PLATFORM_MARKERS = ("K_SERVICE", "KUBERNETES_SERVICE_HOST")
 
 
 @dataclass(frozen=True)
@@ -114,14 +119,54 @@ def _local_dev_user_email() -> str | None:
 def validate_identity_config() -> None:
     """Startup validation: fail fast on a misconfigured deployed env.
 
-    Must be called once at boot. In ``iap`` mode an unset/empty
-    ``IAP_JWT_AUDIENCE`` is fatal (raises :class:`IdentityConfigError`). In
-    ``local`` mode this is a no-op.
+    Must be called once at boot. In ``iap`` mode:
+      * an unset/empty ``IAP_JWT_AUDIENCE`` is fatal; and
+      * the google-auth requests transport must be importable/usable — a missing
+        transport is caught here (fail fast) rather than producing a silent
+        per-request 401-storm at runtime.
+    In ``local`` mode this is a no-op.
     """
-    if auth_mode() == AUTH_MODE_IAP and not iap_jwt_audience():
+    if auth_mode() != AUTH_MODE_IAP:
+        return
+
+    if not iap_jwt_audience():
         raise IdentityConfigError(
             "AUTH_MODE=iap requires IAP_JWT_AUDIENCE to be set "
             "(the per-env IAP JWT audience). Refusing to serve.",
+        )
+
+    # Boot-time transport smoke-check (audit LOW-1): confirm the google-auth
+    # requests transport can be constructed now, while we can still fail loudly.
+    try:
+        _request_transport()
+    except Exception as exc:  # noqa: BLE001 - surface any import/instantiation error
+        raise IdentityConfigError(
+            "The google-auth requests transport is unavailable; IAP assertion "
+            "verification cannot run. Ensure 'google-auth[requests]' (and its "
+            "'requests' dependency) is installed. Refusing to serve.",
+        ) from exc
+
+
+def validate_serving_environment() -> None:
+    """Serve/boot guard — must be called from the serving path, NOT at module import.
+
+    Refuses to serve (audit LOW-3) when the app has resolved to ``local`` mode
+    (mock identity) but a managed-platform marker is present — i.e. a deployment
+    that forgot to set a non-local ``APP_ENV`` would otherwise silently accept a
+    mock/anonymous identity in production. This is a hard refusal, not a warning,
+    with no easy override. In every other case it is a no-op, so plain local dev
+    (no platform markers) serves normally.
+    """
+    if auth_mode() != AUTH_MODE_LOCAL:
+        return
+
+    present = [m for m in MANAGED_PLATFORM_MARKERS if os.environ.get(m)]
+    if present:
+        raise IdentityConfigError(
+            "AUTH_MODE resolved to 'local' but a managed-platform marker is set "
+            f"({', '.join(present)}). Refusing to serve with a mock identity in a "
+            "deployed environment. Set APP_ENV to a non-local value so identity is "
+            "verified from the IAP assertion.",
         )
 
 
