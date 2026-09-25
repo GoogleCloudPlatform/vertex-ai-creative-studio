@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -29,6 +30,18 @@ import (
 // and both-local+GCS legs plus an explicit byte-for-byte back-compat assertion on
 // the GCS text summary. All legs are network-free (write/upload seams stubbed).
 func TestGeminiResourceLinkMatrix(t *testing.T) {
+	// output_directory is now confined to MCP_OUTPUT_ROOT (CWE-22): use a relative
+	// dir under a configured temp root; savedShot is the confined absolute path the
+	// saved-file summary is expected to reference.
+	root := t.TempDir()
+	t.Setenv("MCP_OUTPUT_ROOT", root)
+	const outDir = "out"
+	resolvedRoot, evalErr := filepath.EvalSymlinks(root)
+	if evalErr != nil {
+		resolvedRoot = root
+	}
+	savedShot := filepath.Join(resolvedRoot, outDir, "shot.png")
+
 	resourceLinks := func(res *mcp.CallToolResult) []mcp.ResourceLink {
 		var links []mcp.ResourceLink
 		for _, c := range res.Content {
@@ -64,7 +77,7 @@ func TestGeminiResourceLinkMatrix(t *testing.T) {
 		writeFileFn = func(string, []byte, os.FileMode) error { return nil }
 
 		resp := imageResponse(textPart("hi"), imagePart("image/png", []byte("a")))
-		res, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "shot.png"}, "/tmp/out", "", "", "")
+		res, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "shot.png"}, outDir, "", "", "")
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
@@ -74,7 +87,7 @@ func TestGeminiResourceLinkMatrix(t *testing.T) {
 		if got := inlineImages(res); got != 0 {
 			t.Errorf("local-only returned %d inline image(s), want 0", got)
 		}
-		if text := firstText(t, res); !strings.Contains(text, "Generated and saved 1 image(s): /tmp/out/shot.png") {
+		if text := firstText(t, res); !strings.Contains(text, "Generated and saved 1 image(s): "+savedShot) {
 			t.Errorf("local-only text missing saved-file line; got %q", text)
 		}
 	})
@@ -89,7 +102,7 @@ func TestGeminiResourceLinkMatrix(t *testing.T) {
 		uploadToGCSFn = func(context.Context, string, string, string, []byte) error { return nil }
 
 		resp := imageResponse(textPart("hi"), imagePart("image/png", []byte("a")))
-		res, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "shot.png"}, "/tmp/out", "gs://test-bucket/pfx", "test-bucket", "pfx")
+		res, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "shot.png"}, outDir, "gs://test-bucket/pfx", "test-bucket", "pfx")
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
@@ -101,7 +114,7 @@ func TestGeminiResourceLinkMatrix(t *testing.T) {
 			t.Errorf("resource_link URI = %q, want gs://test-bucket/pfx/shot.png", links[0].URI)
 		}
 		text := firstText(t, res)
-		if !strings.Contains(text, "Generated and saved 1 image(s): /tmp/out/shot.png") {
+		if !strings.Contains(text, "Generated and saved 1 image(s): "+savedShot) {
 			t.Errorf("both sink text lost local saved line; got %q", text)
 		}
 		if !strings.Contains(text, "Generated and uploaded 1 image(s) to GCS: gs://test-bucket/pfx/shot.png") {

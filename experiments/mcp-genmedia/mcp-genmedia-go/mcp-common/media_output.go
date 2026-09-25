@@ -88,6 +88,14 @@ func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsB
 	var out PersistedMedia
 
 	if outputDir != "" {
+		// Confine the caller-supplied output directory to the configured output
+		// root before any filesystem operation (CWE-22 directory traversal). This
+		// rejects absolute paths and ".." escapes; see ResolveConfinedOutputDir.
+		confinedDir, confErr := ResolveConfinedOutputDir(outputDir)
+		if confErr != nil {
+			return out, fmt.Errorf("invalid output directory: %w", confErr)
+		}
+		outputDir = confinedDir
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			return out, fmt.Errorf("failed to create output directory: %w", err)
 		}

@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -38,13 +39,17 @@ func TestRenderOmniResultBothLocalAndGCS(t *testing.T) {
 		return "https://signed.example/" + object, nil
 	}
 
+	// output_directory is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp
+	// dir a child of the configured root and pass it as a relative dir.
 	dir := t.TempDir()
+	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+	relDir := filepath.Base(dir)
 	result := &OmniResult{
 		Videos:         [][]byte{[]byte("mp4-bytes")},
 		VideoMimeTypes: []string{"video/mp4"},
 		Text:           "here is your video",
 	}
-	content, err := RenderOmniResult(context.Background(), result, dir, "my-bucket/prefix", "clip.mp4")
+	content, err := RenderOmniResult(context.Background(), result, relDir, "my-bucket/prefix", "clip.mp4")
 	if err != nil {
 		t.Fatalf("RenderOmniResult error: %v", err)
 	}

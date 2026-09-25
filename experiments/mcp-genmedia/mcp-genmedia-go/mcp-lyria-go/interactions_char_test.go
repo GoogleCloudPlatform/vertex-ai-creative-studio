@@ -366,13 +366,22 @@ func TestChar_Lyria3_HandlerResultAndFilename(t *testing.T) {
 	}
 
 	// (2) Local path, no file_name -> generated filename pattern lyria_output_<id>.mp3.
-	dir := t.TempDir()
+	// local_path is now confined to MCP_OUTPUT_ROOT (CWE-22); pass a relative subdir
+	// under a configured temp root and read the confined location back.
+	root := t.TempDir()
+	t.Setenv("MCP_OUTPUT_ROOT", root)
+	resolvedRoot, evalErr := filepath.EvalSymlinks(root)
+	if evalErr != nil {
+		resolvedRoot = root
+	}
+	const localSubdir = "music"
+	dir := filepath.Join(resolvedRoot, localSubdir)
 	reqLocal := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Arguments: map[string]interface{}{
 				"prompt":     "a bright melody",
 				"model_id":   "lyria-3-clip-preview",
-				"local_path": dir,
+				"local_path": localSubdir,
 			},
 		},
 	}

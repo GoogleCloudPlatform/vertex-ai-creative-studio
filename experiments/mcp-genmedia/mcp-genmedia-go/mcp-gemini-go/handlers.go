@@ -188,6 +188,17 @@ func processGeminiImageResponse(ctx context.Context, resp *genai.GenerateContent
 	generatedImages := 0
 	returnImageDataInResponse := outputDir == "" && gcsOutputURI == ""
 
+	// Confine the caller-supplied output directory to the configured output root
+	// before any filesystem operation (CWE-22 directory traversal). Resolved once
+	// here so the per-image loop below writes only under the confined path.
+	if outputDir != "" {
+		confinedDir, confErr := common.ResolveConfinedOutputDir(outputDir)
+		if confErr != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid output_directory: %v", confErr)), nil
+		}
+		outputDir = confinedDir
+	}
+
 	// Check for optional Sherlog header
 	if resp.SDKHTTPResponse != nil && resp.SDKHTTPResponse.Headers != nil {
 		if link := resp.SDKHTTPResponse.Headers.Get("x-goog-sherlog-link"); link != "" {

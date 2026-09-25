@@ -42,7 +42,16 @@ var unknownBytes = []byte("not-real-audio-bytes")
 // .mp3, and an MP3 bitstream forces .mp3 regardless of the requested extension so
 // the container matches the bytes and the C2PA/ID3 manifest is preserved.
 func TestSaveLyriaLocalFileWiring(t *testing.T) {
-	const dir = "/out"
+	// saveLyriaLocalFile now confines the output directory to MCP_OUTPUT_ROOT
+	// (CWE-22). Use a relative dir under a configured temp root.
+	root := t.TempDir()
+	t.Setenv("MCP_OUTPUT_ROOT", root)
+	const dir = "out"
+	resolvedRoot, evalErr := filepath.EvalSymlinks(root)
+	if evalErr != nil {
+		resolvedRoot = root
+	}
+	confinedDir := filepath.Join(resolvedRoot, dir)
 
 	origWrite := writeFileFn
 	t.Cleanup(func() { writeFileFn = origWrite })
@@ -82,7 +91,7 @@ func TestSaveLyriaLocalFileWiring(t *testing.T) {
 			if werr != nil {
 				t.Fatalf("saveLyriaLocalFile error: %v", werr)
 			}
-			want := filepath.Join(dir, tc.want)
+			want := filepath.Join(confinedDir, tc.want)
 			if fullPath != want || gotPath != want {
 				t.Errorf("fullPath=%q writeTarget=%q, want %q", fullPath, gotPath, want)
 			}
@@ -106,7 +115,7 @@ func TestSaveLyriaLocalFileWiring(t *testing.T) {
 		if werr == nil {
 			t.Fatalf("expected write error")
 		}
-		if fullPath != filepath.Join(dir, "song.mp3") {
+		if fullPath != filepath.Join(confinedDir, "song.mp3") {
 			t.Errorf("path should still be reported on write error, got %q", fullPath)
 		}
 	})

@@ -279,6 +279,29 @@ func imagenOutputNames(outputFilename string, count int, mimeType string) []stri
 	return names
 }
 
+// confineImagenOutputDir applies output-directory confinement (CWE-22) to the
+// caller-supplied local output directory for the imagen local-save sink. It is a
+// behavior-preserving extraction of the former inline block so the confinement
+// wiring is independently testable (mirrors mcp-gemini-go's processGeminiImageResponse).
+//
+// Fail-closed: when attemptLocalSave is true and the directory is a traversal attempt
+// (absolute path or containing ".."), it returns attempt=false and appends the
+// rejection reason, so the caller's `if attemptLocalSave { … }` skips the local write
+// entirely and nothing is written outside the root. On success it returns the confined
+// directory. When attemptLocalSave is already false it is a no-op pass-through.
+func confineImagenOutputDir(outputDir string, attemptLocalSave bool, reasons []string) (confinedDir string, attempt bool, updatedReasons []string) {
+	if !attemptLocalSave {
+		return outputDir, attemptLocalSave, reasons
+	}
+	confined, confErr := common.ResolveConfinedOutputDir(outputDir)
+	if confErr != nil {
+		log.Printf("Rejecting unsafe output_directory %q: %v", outputDir, confErr)
+		reasons = append(reasons, confErr.Error())
+		return outputDir, false, reasons
+	}
+	return confined, true, reasons
+}
+
 // buildImagenRenamePlan maps the API-written GCS objects (Path C: imagen lets
 // Vertex name the objects sample_k under the output prefix) to the client-desired
 // names. It returns the bucket, the ordered src→dst renames, and — aligned 1:1 with
@@ -501,6 +524,14 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 
 	var savedLocalFilenames []string
 	var failedLocalSaveReasons []string
+
+	// Confine the caller-supplied output directory to the configured output root
+	// before any filesystem operation (CWE-22 directory traversal). Resolved once
+	// here so the per-image loop writes only under the confined path. On a
+	// traversal attempt (absolute path or ".."), local save is disabled and the
+	// reason is surfaced in the response rather than writing outside the root.
+	outputDir, attemptLocalSave, failedLocalSaveReasons = confineImagenOutputDir(outputDir, attemptLocalSave, failedLocalSaveReasons)
+
 	var gcsSavedURIs []string
 	// gcsSavedMimes stays 1:1 with gcsSavedURIs so a resource_link per GCS
 	// artifact carries the right MIME type (design #483).
@@ -572,8 +603,9 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 					localFilename += ".png"
 				}
 			}
+			// outputDir is already confined to the output root above (CWE-22);
+			// filepath.Clean alone does NOT confine and has been removed.
 			actualSavePath := filepath.Join(outputDir, localFilename)
-			actualSavePath = filepath.Clean(actualSavePath)
 
 			if imageSourceIsGCS {
 				log.Printf("Attempting to download image %d from GCS URI %s to %s", n, currentImageGCSURI, actualSavePath)

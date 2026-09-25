@@ -104,6 +104,14 @@ func ProcessOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, final
 	currentLocalPath := ffmpegOutputActualPath
 
 	if outputLocalDir != "" {
+		// Confine the caller-supplied output directory to the configured output
+		// root before any filesystem operation (CWE-22 directory traversal). This
+		// rejects absolute paths and ".." escapes; see ResolveConfinedOutputDir.
+		confinedDir, confErr := ResolveConfinedOutputDir(outputLocalDir)
+		if confErr != nil {
+			return "", "", fmt.Errorf("invalid output local directory: %w", confErr)
+		}
+		outputLocalDir = confinedDir
 		if errMkdir := os.MkdirAll(outputLocalDir, 0755); errMkdir != nil {
 			return "", "", fmt.Errorf("failed to create specified output local directory %s: %w", outputLocalDir, errMkdir)
 		}

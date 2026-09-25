@@ -407,7 +407,11 @@ func TestParseOmniToolArgsImageCountGuardBeforeRead(t *testing.T) {
 // a local-only save (no GCS), asserting the filename extension, saved-path
 // summary, model text, and thought-step NOTE all appear.
 func TestRenderOmniResultLocal(t *testing.T) {
+	// output_directory is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp
+	// dir a child of the configured root and pass it as a relative dir.
 	dir := t.TempDir()
+	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+	relDir := filepath.Base(dir)
 	result := &OmniResult{
 		Videos:         [][]byte{[]byte("mp4-bytes")},
 		VideoMimeTypes: []string{"video/mp4"},
@@ -415,7 +419,7 @@ func TestRenderOmniResultLocal(t *testing.T) {
 		ThoughtSteps:   1,
 	}
 
-	content, err := RenderOmniResult(context.Background(), result, dir, "", "")
+	content, err := RenderOmniResult(context.Background(), result, relDir, "", "")
 	if err != nil {
 		t.Fatalf("RenderOmniResult returned error: %v", err)
 	}
@@ -566,12 +570,14 @@ func TestRenderOmniResultNoDestination(t *testing.T) {
 func TestRenderOmniResultOutputFilename(t *testing.T) {
 	t.Run("single video honored, extension forced", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		result := &OmniResult{
 			Videos:         [][]byte{[]byte("mp4-bytes")},
 			VideoMimeTypes: []string{"video/mp4"},
 		}
 		// Wrong client extension must be forced to the true media type.
-		if _, err := RenderOmniResult(context.Background(), result, dir, "", "clip.mov"); err != nil {
+		if _, err := RenderOmniResult(context.Background(), result, relDir, "", "clip.mov"); err != nil {
 			t.Fatalf("RenderOmniResult returned error: %v", err)
 		}
 		entries, _ := os.ReadDir(dir)
@@ -582,11 +588,13 @@ func TestRenderOmniResultOutputFilename(t *testing.T) {
 
 	t.Run("multiple videos suffixed 1-based", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		result := &OmniResult{
 			Videos:         [][]byte{[]byte("a"), []byte("b"), []byte("c")},
 			VideoMimeTypes: []string{"video/mp4", "video/mp4", "video/mp4"},
 		}
-		if _, err := RenderOmniResult(context.Background(), result, dir, "", "clip.mp4"); err != nil {
+		if _, err := RenderOmniResult(context.Background(), result, relDir, "", "clip.mp4"); err != nil {
 			t.Fatalf("RenderOmniResult returned error: %v", err)
 		}
 		got := names(mustReadDir(t, dir))
