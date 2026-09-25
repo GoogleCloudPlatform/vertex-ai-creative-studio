@@ -22,6 +22,7 @@ from dataclasses import asdict, dataclass, field
 
 from google.cloud import firestore
 
+from common import authz
 from common.analytics import get_logger
 from config.default import Default
 from config.firebase_config import FirebaseClient
@@ -190,10 +191,20 @@ def add_media_item_to_firestore(item: MediaItem):
             )
             firestore_data["timestamp"] = datetime.datetime.now(datetime.UTC)
 
+    # Server-side authorization: the caller must own an item they overwrite, and
+    # a newly created item must be attributed to the server-derived caller.
+    caller = authz.resolve_caller_email(fallback=item.user_email)
+
     try:
         if item.id:
             # If an ID is provided, update the existing document
             doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item.id)
+            authz.authorize_existing_document(
+                doc_ref,
+                "user_email",
+                caller,
+                resource="media item",
+            )
             # We can remove the 'id' field before setting, as it's the doc's name
             if "id" in firestore_data:
                 del firestore_data["id"]
@@ -203,6 +214,11 @@ def add_media_item_to_firestore(item: MediaItem):
             )
         else:
             # If no ID is provided, create a new document
+            authz.authorize_attribution(
+                item.user_email,
+                caller,
+                resource="media item",
+            )
             doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
             if "id" in firestore_data:
                 del firestore_data["id"]
@@ -229,10 +245,28 @@ def save_storyboard(storyboard: dict) -> dict:
 
     """
     db = FirebaseClient().get_client()
-    if "id" not in storyboard or not storyboard.get("id"):
+
+    # Server-side authorization: the recorded owner must be the server-derived
+    # caller, and an existing storyboard may only be overwritten by its owner.
+    caller = authz.resolve_caller_email(fallback=storyboard.get("user_email"))
+    authz.authorize_attribution(
+        storyboard.get("user_email"),
+        caller,
+        resource="storyboard",
+    )
+
+    is_new = "id" not in storyboard or not storyboard.get("id")
+    if is_new:
         storyboard["id"] = str(uuid.uuid4())
 
     doc_ref = db.collection("interior_design_storyboards").document(storyboard["id"])
+    if not is_new:
+        authz.authorize_existing_document(
+            doc_ref,
+            "user_email",
+            caller,
+            resource="storyboard",
+        )
     doc_ref.set(storyboard)
     logger.info(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
     return storyboard
@@ -388,6 +422,11 @@ def get_media_item_by_id(
 
 def add_media_item(user_email: str, **kwargs):
     """Add a media item to Firestore persistence"""
+    # Server-side authorization: a new item must be attributed to the
+    # server-derived caller (prevent attribution forgery).
+    caller = authz.resolve_caller_email(fallback=user_email)
+    authz.authorize_attribution(user_email, caller, resource="media item")
+
     current_datetime = datetime.datetime.now(datetime.UTC)
 
     # Prepare data for Firestore
@@ -439,6 +478,11 @@ def add_vto_metadata(
     user_email: str,
 ):
     """Add VTO metadata to Firestore persistence"""
+    # Server-side authorization: a new record must be attributed to the
+    # server-derived caller (prevent attribution forgery).
+    caller = authz.resolve_caller_email(fallback=user_email)
+    authz.authorize_attribution(user_email, caller, resource="VTO result")
+
     current_datetime = datetime.datetime.now()
 
     doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()

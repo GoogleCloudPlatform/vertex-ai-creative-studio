@@ -1,0 +1,177 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Server-side ownership authorization for Firestore mutations.
+
+This module centralizes the *server-side* authorization that every Firestore
+mutate/delete path must perform before writing or deleting a document. It closes
+the "broken access control" gap where the only ownership gate lived in
+client/UI state (for example ``is_editable`` computed in a page render or the
+``mode`` of a dialog), which a caller who reaches the mutation can bypass.
+
+Trust model (Phase 1)
+---------------------
+The *caller identity* used here is the **server-derived** user email that is
+established server-side at request handling by
+``common.identity.get_authenticated_user_email`` and stored on
+``state.state.AppState.user_email``. It is deliberately **not** re-read from any
+client-controllable component state (``PageState``, dialog ``mode``, etc.).
+
+This Phase-1 check stops the client-state UI-bypass vector now. It becomes fully
+load-bearing once Phase 2 (verifying the IAP JWT assertion so the identity itself
+is unspoofable) lands. Phase 2 is intentionally out of scope here: this module
+does not change how identity is derived, only that ownership is *enforced* on the
+server before every mutation.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+
+class OwnershipError(PermissionError):
+    """Raised when the server-derived caller does not own the target document.
+
+    Subclasses :class:`PermissionError` so existing ``except PermissionError``
+    handlers (and callers that expect a 403-style failure) work unchanged.
+    """
+
+
+def get_current_user_email() -> str | None:
+    """Return the server-derived caller identity for the current request.
+
+    Reads ``AppState.user_email`` (populated at request handling from
+    ``get_authenticated_user_email``). Returns ``None`` when there is no active
+    Mesop request context (for example a background thread or a unit test), so
+    callers can supply an explicit identity or a server-derived fallback.
+
+    All errors are swallowed intentionally: the inability to resolve an identity
+    must never be mistaken for a *valid* identity. Callers decide how to treat a
+    ``None`` result (see :func:`resolve_caller_email`).
+    """
+    try:
+        import mesop as me
+
+        from state.state import AppState
+
+        return me.state(AppState).user_email
+    except Exception:
+        return None
+
+
+def resolve_caller_email(
+    explicit: str | None = None,
+    *,
+    fallback: str | None = None,
+) -> str | None:
+    """Resolve the server-derived caller identity to enforce ownership against.
+
+    Priority:
+      1. ``explicit`` — an identity the caller already derived server-side
+         (for example the ``user_email`` a request-scoped middleware computed).
+      2. ``AppState.user_email`` for the active request.
+      3. ``fallback`` — a server-derived value captured earlier at request time
+         (for example ``item.user_email`` set from ``app_state.user_email``),
+         used for create/overwrite paths that may run outside a live request
+         context (background threads) where nothing else is available.
+    """
+    if explicit:
+        return explicit
+    server = get_current_user_email()
+    if server:
+        return server
+    return fallback
+
+
+def enforce_ownership(
+    existing_owner: Any,
+    caller_email: str | None,
+    *,
+    resource: str = "document",
+) -> None:
+    """Raise :class:`OwnershipError` unless ``caller_email`` owns the resource.
+
+    Fails closed: a missing caller identity is rejected rather than allowed. An
+    ``existing_owner`` of ``None`` (an ownerless/legacy document) is permitted so
+    this check does not break access to pre-existing unattributed data.
+    """
+    if not caller_email:
+        raise OwnershipError(
+            f"Refusing to modify {resource}: no server-derived caller identity "
+            "is available to authorize the request.",
+        )
+    if existing_owner is not None and existing_owner != caller_email:
+        raise OwnershipError(
+            f"Caller {caller_email!r} is not the owner of this {resource} "
+            f"(owned by {existing_owner!r}).",
+        )
+
+
+def authorize_snapshot(
+    snapshot: Any,
+    owner_field: str,
+    caller_email: str | None,
+    *,
+    resource: str = "document",
+) -> None:
+    """Authorize a mutation against an already-loaded Firestore snapshot.
+
+    Use this to avoid a second read when the caller has already fetched the
+    document. A non-existent snapshot is treated as ownerless (create).
+    """
+    existing_owner = None
+    if snapshot is not None and getattr(snapshot, "exists", False):
+        existing_owner = (snapshot.to_dict() or {}).get(owner_field)
+    enforce_ownership(existing_owner, caller_email, resource=resource)
+
+
+def authorize_existing_document(
+    doc_ref: Any,
+    owner_field: str,
+    caller_email: str | None,
+    *,
+    resource: str = "document",
+) -> None:
+    """Load ``doc_ref`` and authorize the caller against its ``owner_field``.
+
+    For update/overwrite/delete paths keyed by a client-supplied document id.
+    Loads the existing document, compares its owner field to ``caller_email`` and
+    raises :class:`OwnershipError` on mismatch. A document that does not yet
+    exist is treated as a create (ownerless) and only requires a valid caller.
+    """
+    snapshot = doc_ref.get()
+    authorize_snapshot(snapshot, owner_field, caller_email, resource=resource)
+
+
+def authorize_attribution(
+    recorded_owner: Any,
+    caller_email: str | None,
+    *,
+    resource: str = "document",
+) -> None:
+    """Authorize a create: the recorded owner must equal the caller identity.
+
+    Prevents attribution forgery — a caller recording a document as owned by
+    someone else. Fails closed when no caller identity is available.
+    """
+    if not caller_email:
+        raise OwnershipError(
+            f"Refusing to create {resource}: no server-derived caller identity "
+            "is available to authorize the request.",
+        )
+    if recorded_owner is not None and recorded_owner != caller_email:
+        raise OwnershipError(
+            f"Refusing to record {resource} attributed to {recorded_owner!r} "
+            f"on behalf of caller {caller_email!r}.",
+        )

@@ -37,12 +37,16 @@ async def set_user_identity_and_session(
     if not session_id:
         session_id = str(uuid.uuid4())
 
+    # Ensure session exists in Firestore. If the cookie points at a session
+    # owned by a different identity (e.g. an anonymous->authenticated login where
+    # the cookie is not rotated), get_or_create_session mints a fresh session and
+    # returns it, so use the returned id for request state and the cookie.
+    session = get_or_create_session(session_id, user_email)
+    session_id = session.id
+
     # Attach user and session info to the request state
     request.state.user_email = user_email
     request.state.session_id = session_id
-
-    # Ensure session exists in Firestore
-    get_or_create_session(session_id, user_email)
 
     response = await call_next(request)
 

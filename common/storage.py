@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import base64
+import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 
 from google.cloud import storage
 
+from common import authz
 from config.default import Default
 from config.firebase_config import FirebaseClient
 from common.analytics import get_logger
@@ -76,20 +78,63 @@ class Session:
     last_accessed_at: datetime = field(default_factory=datetime.utcnow)
 
 
+def _create_session(user_email: str, session_id: str | None = None) -> Session:
+    """Create and persist a fresh session record owned by ``user_email``.
+
+    The recorded owner must equal the server-derived caller identity resolved by
+    the request middleware (no attribution forgery). ``session_id`` may be
+    ``None`` to mint a brand-new, unguessable id (used when rotating away from a
+    session that belongs to a different identity).
+    """
+    caller = authz.resolve_caller_email(user_email)
+    authz.authorize_attribution(user_email, caller, resource="session")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    session = Session(id=session_id, user_email=user_email)
+    db.collection(cfg.SESSIONS_COLLECTION_NAME).document(session_id).set(
+        asdict(session),
+    )
+    return session
+
+
 def get_or_create_session(session_id: str, user_email: str) -> Session:
-    """Retrieves a session from Firestore or creates a new one if it doesn't exist."""
+    """Retrieve a session for its owner, or create/rotate one for the caller.
+
+    This runs in the global identity middleware on every request, so it must be
+    availability-safe: it never raises on an ownership mismatch. The client
+    ``session_id`` cookie is not rotated when the identity changes (for example
+    an anonymous->authenticated login, or a replayed cookie), so a stored session
+    may belong to a different identity than the current caller. In that case the
+    other identity's record is left untouched and a brand-new session is minted
+    for the current caller (returned to the middleware so it can update the
+    cookie). This closes the cross-identity access without a 500-on-every-request
+    denial of service. The security value of the gate is intentionally low here:
+    the record only refreshes ``last_accessed_at`` and identity is header-derived,
+    never read back from the session document.
+    """
     session_ref = db.collection(cfg.SESSIONS_COLLECTION_NAME).document(session_id)
     session_doc = session_ref.get()
 
     if session_doc.exists:
-        session = Session(**session_doc.to_dict())
+        stored = session_doc.to_dict() or {}
+        stored_owner = stored.get("user_email")
+        caller = authz.resolve_caller_email(user_email)
+        if stored_owner is not None and stored_owner != caller:
+            # Rotated/replayed cookie pointing at another identity's session:
+            # do not touch it; mint a fresh session for the current caller.
+            logger.info(
+                "Session %s belongs to a different identity; rotating to a new "
+                "session for the current caller.",
+                session_id,
+            )
+            return _create_session(user_email)
+        session = Session(**stored)
         # Update last accessed time
         session.last_accessed_at = datetime.utcnow()
         session_ref.update({"last_accessed_at": session.last_accessed_at})
         return session
-    session = Session(id=session_id, user_email=user_email)
-    session_ref.set(asdict(session))
-    return session
+
+    return _create_session(user_email, session_id)
 
 
 def store_to_gcs(
