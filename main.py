@@ -72,10 +72,10 @@ import pages.storyboarder
 from app_factory import app
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
-    get_authenticated_user_email,
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
+from common.verified_identity import get_verified_user_identity
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
@@ -153,6 +153,7 @@ async def readyz():
 # Define allowed origins for CORS
 
 
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -251,13 +252,16 @@ async def add_global_csp(request: Request, call_next):
 
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):
-    user_email = get_authenticated_user_email(request.headers)
-    if not user_email:
-        user_email = ANONYMOUS_USER_EMAIL
+    # Identity comes ONLY from the cryptographically verified source. In a
+    # deployed env this verifies X-Goog-IAP-JWT-Assertion; plaintext identity
+    # headers (X-Email, etc.) are never trusted. Verification is CPU-bound (with
+    # an occasional cached cert fetch), so run it off the event loop.
+    identity = await run_in_threadpool(get_verified_user_identity, request.headers)
+    user_email = identity.email if identity else ANONYMOUS_USER_EMAIL
 
     if (
         config.Default.REQUIRE_AUTHENTICATED_USER
-        and user_email == ANONYMOUS_USER_EMAIL
+        and identity is None
         and not request.url.path.startswith(PUBLIC_PATH_PREFIXES)
     ):
         return JSONResponse(

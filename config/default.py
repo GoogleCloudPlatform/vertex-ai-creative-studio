@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from common.identity import require_authenticated_user
+from common.verified_identity import resolve_auth_mode, validate_identity_config
 
 load_dotenv(override=True)
 
@@ -61,6 +62,12 @@ class Default:
 
     APP_ENV: str = os.environ.get("APP_ENV", "")
     REQUIRE_AUTHENTICATED_USER: bool = require_authenticated_user(APP_ENV)
+    # Identity source mode, derived from APP_ENV (not an operator boolean):
+    # deployed envs verify the IAP assertion; local envs use a mock identity.
+    AUTH_MODE: str = resolve_auth_mode(APP_ENV)
+    # Per-env IAP JWT audience (opaque, infra-owned). Required in iap mode; the
+    # literal value is never hardcoded. Startup validation enforces its presence.
+    IAP_JWT_AUDIENCE: str = os.environ.get("IAP_JWT_AUDIENCE", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL",
         f"http://localhost:{os.environ.get('PORT', '8080')}",
@@ -313,6 +320,10 @@ def load_build_info() -> None:
 
 load_package_version()
 load_build_info()
+
+# Fail fast at startup on a misconfigured deployed env (AUTH_MODE=iap with no
+# IAP_JWT_AUDIENCE). No-op in local mode.
+validate_identity_config()
 
 
 def get_welcome_page_config():

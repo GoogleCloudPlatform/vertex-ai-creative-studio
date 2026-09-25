@@ -24,11 +24,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
-    auth_email_headers,
-    get_authenticated_user_email,
     normalize_user_email,
     require_authenticated_user,
 )
+from common.verified_identity import get_verified_user_identity
+
+# Every plaintext identity header the app historically trusted. The request path
+# must NOT derive identity from any of them (Vuln #4).
+SPOOFABLE_IDENTITY_HEADERS = {
+    "X-Goog-Authenticated-User-Email": "accounts.google.com:iap@example.com",
+    "X-Auth-Request-Email": "oauth@example.com",
+    "X-Forwarded-Email": "forwarded@example.com",
+    "X-Email": "spoofed@example.com",
+    "X-Authenticated-User": "netskope@example.com",
+}
 
 
 def test_normalize_iap_email_prefix() -> None:
@@ -38,41 +47,42 @@ def test_normalize_iap_email_prefix() -> None:
     )
 
 
-def test_uses_iap_header_before_proxy_headers() -> None:
+def test_deployed_request_ignores_plaintext_identity_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """INVERTED (was test_uses_*_header): in a deployed env plaintext identity
+    headers are never trusted. With no verified IAP assertion, the request has
+    no identity regardless of any spoofed header."""
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("IAP_JWT_AUDIENCE", "test-audience")
+
+    assert get_verified_user_identity(SPOOFABLE_IDENTITY_HEADERS) is None
+
+
+def test_deployed_request_ignores_iap_email_header_without_assertion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Even IAP's own *plaintext* X-Goog-Authenticated-User-Email is not an
+    identity source — only the signed assertion is."""
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("IAP_JWT_AUDIENCE", "test-audience")
+
     headers = {
         "X-Goog-Authenticated-User-Email": "accounts.google.com:iap@example.com",
-        "X-Auth-Request-Email": "oauth@example.com",
     }
 
-    assert get_authenticated_user_email(headers=headers) == "iap@example.com"
+    assert get_verified_user_identity(headers) is None
 
 
-def test_uses_oauth2_proxy_email_header() -> None:
-    headers = {"X-Auth-Request-Email": "oauth@example.com"}
+def test_local_request_ignores_plaintext_identity_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In local mode too, identity comes from LOCAL_DEV_USER_EMAIL, never from a
+    client-supplied plaintext header."""
+    monkeypatch.setenv("APP_ENV", "local")
+    monkeypatch.delenv("LOCAL_DEV_USER_EMAIL", raising=False)
 
-    assert get_authenticated_user_email(headers=headers) == "oauth@example.com"
-
-
-def test_uses_netskope_authenticated_user_header() -> None:
-    headers = {"X-Authenticated-User": "netskope@example.com"}
-
-    assert get_authenticated_user_email(headers=headers) == "netskope@example.com"
-
-
-def test_reads_wsgi_environ_header() -> None:
-    environ = {"HTTP_X_FORWARDED_EMAIL": "forwarded@example.com"}
-
-    assert get_authenticated_user_email(environ=environ) == "forwarded@example.com"
-
-
-def test_custom_auth_email_headers(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AUTH_EMAIL_HEADERS", "X-Custom-Email")
-
-    assert auth_email_headers() == ("X-Custom-Email",)
-    assert (
-        get_authenticated_user_email(headers={"X-Custom-Email": "custom@example.com"})
-        == "custom@example.com"
-    )
+    assert get_verified_user_identity(SPOOFABLE_IDENTITY_HEADERS) is None
 
 
 def test_require_authenticated_user_is_false_for_local_envs(
