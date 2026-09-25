@@ -127,6 +127,13 @@ data "google_service_account" "runtime" {
   project    = var.project_id
 }
 
+# Project metadata — READ-ONLY. Used only to derive the numeric project NUMBER for
+# the IAP_JWT_AUDIENCE value below (parity with the Cloud Run root's
+# data.google_project.project). No project resource is created or mutated.
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 locals {
   asset_bucket_name = "creative-studio-${var.project_id}-assets"
 
@@ -140,12 +147,35 @@ locals {
   firestore_db_name = "create-studio-asset-metadata" # data-stores module literal
   tasks_queue_name  = "thumbnail-extraction"         # data-stores module literal
 
+  # IAP_JWT_AUDIENCE (GKE Ingress/BackendConfig topology). The app verifies the
+  # IAP-signed X-Goog-IAP-JWT-Assertion against this audience. For GKE the aud uses
+  # the Compute/GKE LB form:
+  #   /projects/<PROJECT_NUMBER>/global/backendServices/<NUMERIC_BACKEND_SERVICE_ID>
+  # (confirmed in iap-jwt-audience-facts.md §A row 3, from the IAP signed-headers
+  # doc). PROJECT_NUMBER is derived from the data source above (never hardcoded).
+  #
+  # The NUMERIC backend-service id is NOT knowable at plan/apply: the GKE
+  # Ingress/NEG controller auto-creates the backend service ASYNCHRONOUSLY AFTER
+  # apply, so its numeric id does not exist yet on the first apply. It is therefore
+  # supplied OUT-OF-BAND on a SECOND apply via var.iap_backend_service_id — exactly
+  # mirroring the existing out-of-band var.iap_backend_service_name flow that feeds
+  # the IAP IAM binding (that variable is the NAME, fine for IAM; the aud
+  # additionally needs the NUMERIC id of the same backend service). See the
+  # two-stage sequence + FATAL-on-unset argument in gke/IAP_JWT_AUDIENCE.md.
+  #
+  # Until that numeric id is supplied the key is OMITTED from the env map (never a
+  # hardcoded id/number, never an empty placeholder). The workload must not be
+  # placed into iap mode (APP_ENV non-local) until this value is present — that
+  # ordering is what keeps the app's iap-mode FATAL-on-unset path from ever firing
+  # on a live boot (see the doc).
+  iap_jwt_audience = var.iap_backend_service_id != null ? "/projects/${data.google_project.project.number}/global/backendServices/${var.iap_backend_service_id}" : null
+
   # SAME env-var contract as the Cloud Run root (cloudrun/main.tf
   # local.creative_studio_env_vars), so the container config is identical across
   # platforms. Values are sourced from the read-only data sources + the
   # deterministic names above. edit_images_enabled is tostring()'d because a
   # ConfigMap's data is map(string).
-  creative_studio_env_vars = {
+  creative_studio_env_vars = merge({
     PROJECT_ID                            = var.project_id
     LOCATION                              = var.region
     GEMINI_LOCATION                       = var.gemini_location
@@ -172,7 +202,13 @@ locals {
     # GKE is always LB/ingress-fronted (managed cert on var.domain), so the base
     # URL follows the ingress domain — parity with the Cloud Run use_lb path.
     API_BASE_URL = var.api_base_url != "" ? var.api_base_url : (var.domain != "" ? "https://${var.domain}" : "")
-  }
+    },
+    # IAP_JWT_AUDIENCE is added ONLY once the numeric backend-service id is known
+    # (second apply, see above). Omitted on the first apply so it is never a
+    # hardcoded/empty value; the app's iap-mode FATAL-on-unset is avoided by the
+    # ordering rule documented in gke/IAP_JWT_AUDIENCE.md, not by an empty default.
+    local.iap_jwt_audience != null ? { IAP_JWT_AUDIENCE = local.iap_jwt_audience } : {}
+  )
 }
 
 # ---------------------------------------------------------------------------
