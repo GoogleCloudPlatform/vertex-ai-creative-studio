@@ -15,6 +15,7 @@
 """Model logic for the Object Rotation feature."""
 
 import uuid
+from common import authz
 from common.analytics import get_logger
 from config.firebase_config import FirebaseClient
 
@@ -31,10 +32,27 @@ def save_object_rotation_project(project: dict) -> dict:
     Returns:
         The project dictionary, now with an 'id' if it was new.
     """
-    if "id" not in project or not project.get("id"):
+    # Server-side authorization: the recorded owner must be the server-derived
+    # caller, and an existing project may only be overwritten by its owner.
+    caller = authz.resolve_caller_email(fallback=project.get("user_email"))
+    authz.authorize_attribution(
+        project.get("user_email"),
+        caller,
+        resource="object rotation project",
+    )
+
+    is_new = "id" not in project or not project.get("id")
+    if is_new:
         project["id"] = str(uuid.uuid4())
 
     doc_ref = db.collection("object_rotation_projects").document(project["id"])
+    if not is_new:
+        authz.authorize_existing_document(
+            doc_ref,
+            "user_email",
+            caller,
+            resource="object rotation project",
+        )
     doc_ref.set(project)
     logger.info(f"Object Rotation project saved to Firestore with ID: {project['id']}")
     return project

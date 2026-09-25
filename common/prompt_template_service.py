@@ -20,8 +20,15 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from common import authz
 from common.metadata import db
 from config.default import get_config_path
+
+# Fields a client must never be able to set or change through an update payload:
+# ownership/attribution and default-template status are server-controlled.
+IMMUTABLE_TEMPLATE_FIELDS = frozenset(
+    {"attribution", "is_default", "id", "created_at"},
+)
 
 
 class PromptTemplate(BaseModel):
@@ -154,6 +161,15 @@ class PromptTemplateService:
         if not db:
             raise ConnectionError("Firestore client is not initialized.")
 
+        # Server-side authorization: the attribution recorded on a new template
+        # must equal the server-derived caller identity (no attribution forgery).
+        caller = authz.resolve_caller_email(fallback=template.attribution)
+        authz.authorize_attribution(
+            template.attribution,
+            caller,
+            resource="prompt template",
+        )
+
         now = datetime.now(timezone.utc)
         template.created_at = now
         template.updated_at = now
@@ -169,13 +185,37 @@ class PromptTemplateService:
         return template
 
     def update_template(self, template_id: str, updates: dict):
-        """Updates an existing template in the Firestore collection."""
+        """Updates an existing template in the Firestore collection.
+
+        Enforces server-side ownership: the server-derived caller identity must
+        match the stored template's ``attribution`` field, and clients may not
+        overwrite ownership/default fields via the ``updates`` payload.
+        """
         if not db:
             raise ConnectionError("Firestore client is not initialized.")
 
-        updates["updated_at"] = datetime.now(timezone.utc)
+        # Forbid clients from overwriting attribution / owner / is_default (and
+        # other server-controlled fields) through the update payload.
+        forbidden = IMMUTABLE_TEMPLATE_FIELDS.intersection(updates)
+        if forbidden:
+            raise authz.OwnershipError(
+                "Update payload may not modify server-controlled fields: "
+                f"{sorted(forbidden)}.",
+            )
 
         doc_ref = db.collection(self.collection_name).document(template_id)
+
+        # Server-side authorization: only the owner (attribution) may update.
+        caller = authz.resolve_caller_email()
+        authz.authorize_existing_document(
+            doc_ref,
+            "attribution",
+            caller,
+            resource="prompt template",
+        )
+
+        updates["updated_at"] = datetime.now(timezone.utc)
+
         doc_ref.update(updates)
         print(f"Successfully updated template '{template_id}' in Firestore.")
 

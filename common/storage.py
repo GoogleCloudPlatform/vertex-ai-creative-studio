@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 
 from google.cloud import storage
 
+from common import authz
 from config.default import Default
 from config.firebase_config import FirebaseClient
 from common.analytics import get_logger
@@ -82,6 +83,15 @@ def get_or_create_session(session_id: str, user_email: str) -> Session:
     session_doc = session_ref.get()
 
     if session_doc.exists:
+        # Server-side authorization: only the owning user may touch (and refresh)
+        # an existing session record. The caller identity here is the
+        # server-derived ``user_email`` resolved by the request middleware.
+        authz.authorize_snapshot(
+            session_doc,
+            "user_email",
+            authz.resolve_caller_email(user_email),
+            resource="session",
+        )
         session = Session(**session_doc.to_dict())
         # Update last accessed time
         session.last_accessed_at = datetime.utcnow()

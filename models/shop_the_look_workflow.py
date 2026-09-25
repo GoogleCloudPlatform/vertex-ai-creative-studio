@@ -20,6 +20,7 @@ import datetime
 import mesop as me
 from google.cloud import firestore
 
+from common import authz
 from common.storage import (
     download_from_gcs_as_string,
     store_to_gcs,
@@ -38,14 +39,25 @@ db = FirebaseClient(database_id=config.GENMEDIA_FIREBASE_DB).get_client()
 
 def model_on_delete(e: me.ClickEvent):
      state = me.state(PageState)
+     app_state = me.state(AppState)
      file_to_delete = e.key.split("/")[-1]
      print(f"deleting {file_to_delete}")
      state.current_status = f"Deleting model {file_to_delete}"
-     try:
-         doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).document(
-             file_to_delete
-         )
 
+     doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).document(
+         file_to_delete
+     )
+     # Server-side authorization: only the uploading user may delete this model.
+     # Raises OwnershipError (a PermissionError) on mismatch; shared records
+     # (upload_user="everyone") are not owned by any single caller and are
+     # therefore protected from deletion here.
+     authz.authorize_existing_document(
+         doc_ref,
+         "upload_user",
+         authz.resolve_caller_email(app_state.user_email),
+         resource="VTO model",
+     )
+     try:
          doc_ref.delete()
          state.models = load_model_data()
          state.current_status = ""
@@ -55,13 +67,25 @@ def model_on_delete(e: me.ClickEvent):
 
 def article_on_delete(e: me.ClickEvent):
     state = me.state(PageState)
+    app_state = me.state(AppState)
     file_to_delete = e.key.split("/")[-1]
     print(f"deleting {file_to_delete}")
     state.current_status = f"Deleting article {file_to_delete}"
+
+    doc_ref = db.collection(config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME).document(
+        file_to_delete
+    )
+    # Server-side authorization: only the uploading user may delete this article.
+    # Raises OwnershipError (a PermissionError) on mismatch; shared records
+    # (upload_user="everyone") are not owned by any single caller and are
+    # therefore protected from deletion here.
+    authz.authorize_existing_document(
+        doc_ref,
+        "upload_user",
+        authz.resolve_caller_email(app_state.user_email),
+        resource="VTO catalog article",
+    )
     try:
-        doc_ref = db.collection(config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME).document(
-            file_to_delete
-        )
         doc_ref.delete()
         load_article_data()
         state.current_status = ""
