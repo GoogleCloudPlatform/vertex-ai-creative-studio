@@ -33,6 +33,30 @@ import (
 	"google.golang.org/genai"
 )
 
+// confineVeoOutputDir applies output-directory confinement (CWE-22) to the
+// caller-supplied local output directory for the veo local-download sink. It is a
+// behavior-preserving extraction of the former inline block so the confinement
+// wiring is independently testable (mirrors mcp-gemini-go's processGeminiImageResponse).
+//
+// Fail-closed: when attemptLocalDownload is true and the directory is a traversal
+// attempt (absolute path or containing ".."), it returns attempt=false and appends
+// the rejection reason, so the caller's `if attemptLocalDownload { … }` skips the
+// per-video download entirely and nothing is written outside the root. On success it
+// returns the confined directory. When attemptLocalDownload is already false it is a
+// no-op pass-through.
+func confineVeoOutputDir(outputDir string, attemptLocalDownload bool, errs []string) (confinedDir string, attempt bool, updatedErrs []string) {
+	if !attemptLocalDownload {
+		return outputDir, attemptLocalDownload, errs
+	}
+	confined, confErr := common.ResolveConfinedOutputDir(outputDir)
+	if confErr != nil {
+		log.Printf("Rejecting unsafe output_directory %q: %v", outputDir, confErr)
+		errs = append(errs, confErr.Error())
+		return outputDir, false, errs
+	}
+	return confined, true, errs
+}
+
 // veoOutputNames returns the deterministic per-video output file names when a
 // client output_filename is set (extension forced to the true video MIME, 1-based
 // suffixing for count > 1 per design #842 §4b/§4c). It returns nil when
@@ -342,16 +366,7 @@ func callGenerateVideosAPI(
 	// here so the per-video download loop writes only under the confined path. On a
 	// traversal attempt (absolute path or ".."), local download is disabled and the
 	// reason is surfaced in the response rather than writing outside the root.
-	if attemptLocalDownload {
-		confinedDir, confErr := common.ResolveConfinedOutputDir(outputDir)
-		if confErr != nil {
-			log.Printf("Rejecting unsafe output_directory %q: %v", outputDir, confErr)
-			downloadErrors = append(downloadErrors, confErr.Error())
-			attemptLocalDownload = false
-		} else {
-			outputDir = confinedDir
-		}
-	}
+	outputDir, attemptLocalDownload, downloadErrors = confineVeoOutputDir(outputDir, attemptLocalDownload, downloadErrors)
 
 	// Collect the produced GCS video URIs (compacted, in generation order) and the
 	// true output MIME type. Veo (Path C) lets Vertex name the objects itself under
