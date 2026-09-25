@@ -31,10 +31,18 @@ import (
 // _1..n suffix rule is covered where multi-output actually happens (imagen/veo/
 // nanobanana/gemini-image/omni) and in mcp-common's BuildOutputFilenames tests.
 func TestSaveGeminiTTSAudioWiring(t *testing.T) {
-	const (
-		voice = "Callirrhoe"
-		dir   = "/out"
-	)
+	const voice = "Callirrhoe"
+	// output_directory is confined to MCP_OUTPUT_ROOT (CWE-22): the caller passes a
+	// relative dir under the configured root; the write target is the resolved
+	// (confined) absolute path.
+	root := t.TempDir()
+	t.Setenv("MCP_OUTPUT_ROOT", root)
+	const dir = "out"
+	resolvedRoot, evalErr := filepath.EvalSymlinks(root)
+	if evalErr != nil {
+		resolvedRoot = root
+	}
+	confinedDir := filepath.Join(resolvedRoot, dir)
 	origWrite := writeFileFn
 	t.Cleanup(func() { writeFileFn = origWrite })
 
@@ -64,7 +72,7 @@ func TestSaveGeminiTTSAudioWiring(t *testing.T) {
 			if nameErr != nil || writeErr != nil {
 				t.Fatalf("unexpected errors: name=%v write=%v", nameErr, writeErr)
 			}
-			want := filepath.Join(dir, tc.want)
+			want := filepath.Join(confinedDir, tc.want)
 			if saved != want || gotPath != want {
 				t.Errorf("saved=%q writeTarget=%q, want %q", saved, gotPath, want)
 			}
@@ -98,7 +106,7 @@ func TestSaveGeminiTTSAudioWiring(t *testing.T) {
 		if writeErr == nil {
 			t.Fatalf("expected write error")
 		}
-		if saved != filepath.Join(dir, "speech.wav") {
+		if saved != filepath.Join(confinedDir, "speech.wav") {
 			t.Errorf("saved path should still be reported on write error, got %q", saved)
 		}
 	})

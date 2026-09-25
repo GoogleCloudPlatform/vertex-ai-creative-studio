@@ -124,10 +124,14 @@ func TestPersistMediaOutputsGCSAndLocal(t *testing.T) {
 		},
 	)
 
+	// outputDir is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp dir a
+	// child of the configured root and pass it as a relative dir so it stays inside.
 	dir := t.TempDir()
+	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+	relDir := filepath.Base(dir)
 	art := MediaArtifact{Data: []byte("v"), MimeType: "video/mp4", FileName: "clip.mp4"}
 
-	got, err := PersistMediaOutputs(context.Background(), art, dir, "gs://b/prefix", time.Hour)
+	got, err := PersistMediaOutputs(context.Background(), art, relDir, "gs://b/prefix", time.Hour)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -302,14 +306,18 @@ func TestSignedURLExpiryFromEnv(t *testing.T) {
 // TestPersistMediaOutputsLocalOnly verifies the local-write path of
 // PersistMediaOutputs without touching GCS (gcsBucketURI empty).
 func TestPersistMediaOutputsLocalOnly(t *testing.T) {
+	// outputDir is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp dir a
+	// child of the configured root and pass it as a relative dir so it stays inside.
 	dir := t.TempDir()
+	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
+	relDir := filepath.Base(dir)
 	art := MediaArtifact{
 		Data:     []byte("hello-mp4-bytes"),
 		MimeType: "video/mp4",
 		FileName: "omni_20260101_0.mp4",
 	}
 
-	got, err := PersistMediaOutputs(context.Background(), art, dir, "", 0)
+	got, err := PersistMediaOutputs(context.Background(), art, relDir, "", 0)
 	if err != nil {
 		t.Fatalf("PersistMediaOutputs returned fatal error: %v", err)
 	}

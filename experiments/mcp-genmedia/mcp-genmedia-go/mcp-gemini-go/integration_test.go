@@ -55,7 +55,11 @@ func TestIntegrationGeminiImageNamingEndToEnd(t *testing.T) {
 	}
 
 	t.Run("output_filename applied identically to local files and GCS objects", func(t *testing.T) {
+		// output_directory is confined to MCP_OUTPUT_ROOT (CWE-22): configure the
+		// root to the temp dir's parent and pass the temp dir as a relative path.
 		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		var gcsObjects []string
 		uploadToGCSFn = func(_ context.Context, _ /*bucket*/, object, _ /*mime*/ string, _ []byte) error {
 			gcsObjects = append(gcsObjects, object)
@@ -70,7 +74,7 @@ func TestIntegrationGeminiImageNamingEndToEnd(t *testing.T) {
 		// Wrong extension (.jpeg) forced to real MIME (.png); n>1 => _1..n.
 		if _, err := processGeminiImageResponse(
 			context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"},
-			dir, "gs://bkt/pre/", "bkt", "pre/",
+			relDir, "gs://bkt/pre/", "bkt", "pre/",
 		); err != nil {
 			t.Fatalf("processGeminiImageResponse error: %v", err)
 		}
@@ -98,6 +102,8 @@ func TestIntegrationGeminiImageNamingEndToEnd(t *testing.T) {
 
 	t.Run("single image -> no suffix on both sinks", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		var gcsObjects []string
 		uploadToGCSFn = func(_ context.Context, _, object, _ string, _ []byte) error {
 			gcsObjects = append(gcsObjects, object)
@@ -106,7 +112,7 @@ func TestIntegrationGeminiImageNamingEndToEnd(t *testing.T) {
 		resp := imageResponse(imagePart("image/png", []byte("solo")))
 		if _, err := processGeminiImageResponse(
 			context.Background(), resp, map[string]any{"output_filename": "hero"},
-			dir, "gs://bkt/pre/", "bkt", "pre/",
+			relDir, "gs://bkt/pre/", "bkt", "pre/",
 		); err != nil {
 			t.Fatalf("processGeminiImageResponse error: %v", err)
 		}

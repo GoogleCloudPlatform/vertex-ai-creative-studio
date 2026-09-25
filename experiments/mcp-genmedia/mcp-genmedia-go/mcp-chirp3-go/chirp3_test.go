@@ -31,10 +31,19 @@ import (
 // multi-output actually happens (imagen/veo/nanobanana/gemini-image/omni) and in
 // mcp-common's BuildOutputFilenames tests.
 func TestSaveChirpAudioWiring(t *testing.T) {
-	const (
-		voice = "en-US-Chirp3-HD-Zephyr"
-		dir   = "/out"
-	)
+	const voice = "en-US-Chirp3-HD-Zephyr"
+	// saveChirpAudio now confines the output directory to MCP_OUTPUT_ROOT (CWE-22).
+	// Use a relative dir under a configured temp root; the confined absolute dir is
+	// what the write is expected to target.
+	root := t.TempDir()
+	t.Setenv("MCP_OUTPUT_ROOT", root)
+	const dir = "out"
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		resolvedRoot = root
+	}
+	confinedDir := filepath.Join(resolvedRoot, dir)
+
 	origWrite := writeFileFn
 	t.Cleanup(func() { writeFileFn = origWrite })
 
@@ -63,7 +72,7 @@ func TestSaveChirpAudioWiring(t *testing.T) {
 			if nameErr != nil || writeErr != nil {
 				t.Fatalf("unexpected errors: name=%v write=%v", nameErr, writeErr)
 			}
-			want := filepath.Clean(filepath.Join(dir, tc.want))
+			want := filepath.Join(confinedDir, tc.want)
 			if saved != want || gotPath != want {
 				t.Errorf("saved=%q writeTarget=%q, want %q", saved, gotPath, want)
 			}
@@ -96,7 +105,7 @@ func TestSaveChirpAudioWiring(t *testing.T) {
 		if writeErr == nil {
 			t.Fatalf("expected write error")
 		}
-		if saved != filepath.Clean(filepath.Join(dir, "greeting.wav")) {
+		if saved != filepath.Join(confinedDir, "greeting.wav") {
 			t.Errorf("saved path should still be reported on write error, got %q", saved)
 		}
 	})

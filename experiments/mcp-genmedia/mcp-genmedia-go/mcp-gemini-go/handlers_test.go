@@ -54,9 +54,13 @@ func TestProcessGeminiImageResponseNaming(t *testing.T) {
 
 	t.Run("output_filename single, extension forced", func(t *testing.T) {
 		got := capture()
+		// output_directory is confined to MCP_OUTPUT_ROOT (CWE-22): pass a relative
+		// dir under a configured root instead of an absolute temp dir.
+		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
 		resp := imageResponse(textPart("hi"), imagePart("image/png", []byte("a")))
 		// Wrong client extension (.jpeg) must be forced to the true MIME (.png).
-		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"}, t.TempDir(), "", "", ""); err != nil {
+		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"}, filepath.Base(dir), "", "", ""); err != nil {
 			t.Fatalf("error: %v", err)
 		}
 		if want := []string{"hero.png"}; !reflect.DeepEqual(*got, want) {
@@ -66,12 +70,14 @@ func TestProcessGeminiImageResponseNaming(t *testing.T) {
 
 	t.Run("output_filename multiple, 1-based suffix", func(t *testing.T) {
 		got := capture()
+		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
 		resp := imageResponse(
 			imagePart("image/png", []byte("a")),
 			imagePart("image/png", []byte("b")),
 			imagePart("image/png", []byte("c")),
 		)
-		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero"}, t.TempDir(), "", "", ""); err != nil {
+		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero"}, filepath.Base(dir), "", "", ""); err != nil {
 			t.Fatalf("error: %v", err)
 		}
 		want := []string{"hero_1.png", "hero_2.png", "hero_3.png"}
@@ -82,8 +88,10 @@ func TestProcessGeminiImageResponseNaming(t *testing.T) {
 
 	t.Run("unset output_filename keeps legacy gemini_* scheme", func(t *testing.T) {
 		got := capture()
+		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
 		resp := imageResponse(imagePart("image/jpeg", []byte("a")))
-		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{}, t.TempDir(), "", "", ""); err != nil {
+		if _, err := processGeminiImageResponse(context.Background(), resp, map[string]any{}, filepath.Base(dir), "", "", ""); err != nil {
 			t.Fatalf("error: %v", err)
 		}
 		if len(*got) != 1 || filepath.Ext((*got)[0]) != ".jpg" || (*got)[0][:7] != "gemini_" {

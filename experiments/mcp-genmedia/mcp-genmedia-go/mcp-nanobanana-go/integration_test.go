@@ -60,6 +60,8 @@ func TestIntegrationNanobananaNamingToDisk(t *testing.T) {
 
 	t.Run("multiple images -> 1-based suffixed files with forced extension", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		resp := imageResponse(
 			textPart("here you go"),
 			imagePart("image/png", []byte("alpha")),
@@ -68,7 +70,7 @@ func TestIntegrationNanobananaNamingToDisk(t *testing.T) {
 		)
 		// Client asks for hero.jpeg but the bytes are PNG: the extension must be
 		// forced to .png (design §4b) and, because n>1, suffixed _1..n (§4c).
-		if _, err := processImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"}, dir, ""); err != nil {
+		if _, err := processImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"}, relDir, ""); err != nil {
 			t.Fatalf("processImageResponse error: %v", err)
 		}
 		want := []string{"hero_1.png", "hero_2.png", "hero_3.png"}
@@ -85,8 +87,10 @@ func TestIntegrationNanobananaNamingToDisk(t *testing.T) {
 
 	t.Run("single image -> no suffix", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		resp := imageResponse(imagePart("image/png", []byte("solo")))
-		if _, err := processImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero"}, dir, ""); err != nil {
+		if _, err := processImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero"}, relDir, ""); err != nil {
 			t.Fatalf("processImageResponse error: %v", err)
 		}
 		if got := readNames(t, dir); !equalStrings(got, []string{"hero.png"}) {
@@ -99,8 +103,10 @@ func TestIntegrationNanobananaNamingToDisk(t *testing.T) {
 
 	t.Run("unset output_filename keeps the legacy default scheme on disk", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("MCP_OUTPUT_ROOT", filepath.Dir(dir))
+		relDir := filepath.Base(dir)
 		resp := imageResponse(imagePart("image/jpeg", []byte("x")))
-		if _, err := processImageResponse(context.Background(), resp, map[string]any{}, dir, ""); err != nil {
+		if _, err := processImageResponse(context.Background(), resp, map[string]any{}, relDir, ""); err != nil {
 			t.Fatalf("processImageResponse error: %v", err)
 		}
 		got := readNames(t, dir)

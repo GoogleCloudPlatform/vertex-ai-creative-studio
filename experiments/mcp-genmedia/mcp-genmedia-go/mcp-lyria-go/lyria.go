@@ -390,23 +390,21 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 			localSaveMessage = fmt.Sprintf("Failed to decode audio for local save: %v.", decodeErr)
 			log.Printf("Error decoding audio for local save (dir: %s): %v", localDirectoryPathParameter, decodeErr)
 		} else {
-			if errMkdir := os.MkdirAll(localDirectoryPathParameter, 0755); errMkdir != nil {
-				localSaveMessage = fmt.Sprintf("Failed to create local directory %s: %v.", localDirectoryPathParameter, errMkdir)
-				log.Printf("Error creating local directory %s: %v", localDirectoryPathParameter, errMkdir)
+			// Directory confinement + creation now happen inside saveLyriaLocalFile
+			// so the caller-supplied directory is validated before any filesystem
+			// write.
+			//
+			// Finalize the extension from the actual bytes so the local file matches
+			// the bitstream (issue #1777). Deterministic given the same (base, bytes),
+			// so it agrees with the GCS object name finalized in invokeLyriaAndUpload.
+			localFilename := finalizeLyriaFilename(baseFilename, audioBytes)
+			fullLocalPath, errWrite := saveLyriaLocalFile(localDirectoryPathParameter, localFilename, audioBytes)
+			if errWrite != nil {
+				localSaveMessage = fmt.Sprintf("Failed to save audio locally to %s: %v.", localDirectoryPathParameter, errWrite)
+				log.Printf("Error saving audio locally to %s: %v", localDirectoryPathParameter, errWrite)
 			} else {
-				// Finalize the extension from the actual bytes so the local file
-				// matches the bitstream (issue #1777). Deterministic given the same
-				// (base, bytes), so it agrees with the GCS object name finalized in
-				// invokeLyriaAndUpload.
-				localFilename := finalizeLyriaFilename(baseFilename, audioBytes)
-				fullLocalPath, errWrite := saveLyriaLocalFile(localDirectoryPathParameter, localFilename, audioBytes)
-				if errWrite != nil {
-					localSaveMessage = fmt.Sprintf("Failed to save audio locally to %s: %v.", fullLocalPath, errWrite)
-					log.Printf("Error saving audio locally to %s: %v", fullLocalPath, errWrite)
-				} else {
-					localSaveMessage = fmt.Sprintf("Successfully saved audio locally to %s.", fullLocalPath)
-					log.Printf("Successfully saved audio locally to %s.", fullLocalPath)
-				}
+				localSaveMessage = fmt.Sprintf("Successfully saved audio locally to %s.", fullLocalPath)
+				log.Printf("Successfully saved audio locally to %s.", fullLocalPath)
 			}
 		}
 	}
@@ -567,7 +565,17 @@ func finalizeLyriaFilename(base string, audioBytes []byte) string {
 // local file and the GCS object. It returns the full local path and any write
 // error.
 func saveLyriaLocalFile(localDir, baseFilename string, audioBytes []byte) (fullLocalPath string, err error) {
-	fullLocalPath = filepath.Join(localDir, baseFilename)
+	// Confine the caller-supplied output directory to the configured output root
+	// before creating it or writing into it (CWE-22 directory traversal). This
+	// rejects absolute paths and ".." escapes; see ResolveConfinedOutputDir.
+	confinedDir, confErr := common.ResolveConfinedOutputDir(localDir)
+	if confErr != nil {
+		return "", confErr
+	}
+	if mkErr := os.MkdirAll(confinedDir, 0755); mkErr != nil {
+		return "", mkErr
+	}
+	fullLocalPath = filepath.Join(confinedDir, baseFilename)
 	// Collision policy: overwrite with a warning (design §4e).
 	if _, statErr := os.Stat(fullLocalPath); statErr == nil {
 		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", baseFilename, localDir)

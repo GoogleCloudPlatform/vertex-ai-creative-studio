@@ -54,7 +54,18 @@ func saveGeminiTTSAudio(args map[string]any, audioBytes []byte, outputDir, voice
 	if err != nil {
 		return "", err, nil
 	}
-	savedFilename = filepath.Join(outputDir, filename)
+	// Confine the caller-supplied output directory to the configured output root
+	// before creating it or writing into it (CWE-22 directory traversal). A
+	// traversal attempt (absolute path or "..") is fatal (nameErr); a directory
+	// creation failure is non-fatal (writeErr) so the caller falls back to inline.
+	confinedDir, confErr := common.ResolveConfinedOutputDir(outputDir)
+	if confErr != nil {
+		return "", confErr, nil
+	}
+	if mkErr := os.MkdirAll(confinedDir, 0755); mkErr != nil {
+		return "", nil, mkErr
+	}
+	savedFilename = filepath.Join(confinedDir, filename)
 	// Collision policy: overwrite with a warning (design §4e).
 	if _, statErr := os.Stat(savedFilename); statErr == nil {
 		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", filename, outputDir)
@@ -323,26 +334,20 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	}
 
 	if outputDir != "" {
-		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			fileSaveMessage = fmt.Sprintf("Error creating directory %s: %v. Audio data will be returned in response instead.", outputDir, err)
+		// Directory confinement + creation now happen inside saveGeminiTTSAudio so
+		// the caller-supplied directory is validated before any filesystem write.
+		savedFilename, nameErr, writeErr := saveGeminiTTSAudio(request.GetArguments(), audioBytes, outputDir, voiceName, fileExtension, mimeType)
+		if nameErr != nil {
+			return mcp.NewToolResultError(nameErr.Error()), nil
+		}
+		if writeErr != nil {
+			fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, writeErr)
 			log.Print(fileSaveMessage)
-			// Fallback to returning data in response
 			base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
 			contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 		} else {
-			savedFilename, nameErr, writeErr := saveGeminiTTSAudio(request.GetArguments(), audioBytes, outputDir, voiceName, fileExtension, mimeType)
-			if nameErr != nil {
-				return mcp.NewToolResultError(nameErr.Error()), nil
-			}
-			if writeErr != nil {
-				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, writeErr)
-				log.Print(fileSaveMessage)
-				base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
-				contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
-			} else {
-				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedFilename, len(audioBytes))
-				log.Print(fileSaveMessage)
-			}
+			fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedFilename, len(audioBytes))
+			log.Print(fileSaveMessage)
 		}
 	} else {
 		base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)

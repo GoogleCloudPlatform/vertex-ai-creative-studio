@@ -337,6 +337,22 @@ func callGenerateVideosAPI(
 	var downloadedLocalFiles []string
 	var downloadErrors []string
 
+	// Confine the caller-supplied output directory to the configured output root
+	// before any filesystem operation (CWE-22 directory traversal). Resolved once
+	// here so the per-video download loop writes only under the confined path. On a
+	// traversal attempt (absolute path or ".."), local download is disabled and the
+	// reason is surfaced in the response rather than writing outside the root.
+	if attemptLocalDownload {
+		confinedDir, confErr := common.ResolveConfinedOutputDir(outputDir)
+		if confErr != nil {
+			log.Printf("Rejecting unsafe output_directory %q: %v", outputDir, confErr)
+			downloadErrors = append(downloadErrors, confErr.Error())
+			attemptLocalDownload = false
+		} else {
+			outputDir = confinedDir
+		}
+	}
+
 	// Collect the produced GCS video URIs (compacted, in generation order) and the
 	// true output MIME type. Veo (Path C) lets Vertex name the objects itself under
 	// the OutputGCSURI prefix; the client-supplied output_filename is honored by a
@@ -378,8 +394,9 @@ func callGenerateVideosAPI(
 				// Construct a descriptive filename similar to Imagen (legacy default).
 				localFilename = fmt.Sprintf("veo-%s-%s-%d.mp4", modelName, time.Now().Format("20060102-150405"), j)
 			}
+			// outputDir is already confined to the output root above (CWE-22);
+			// filepath.Clean alone does NOT confine and has been removed.
 			localFilepath := filepath.Join(outputDir, localFilename)
-			localFilepath = filepath.Clean(localFilepath)
 
 			log.Printf("Attempting to download video %d from GCS URI %s to %s", j, videoGCSURI, localFilepath)
 			downloadErr := common.DownloadFromGCS(ctx, videoGCSURI, localFilepath)

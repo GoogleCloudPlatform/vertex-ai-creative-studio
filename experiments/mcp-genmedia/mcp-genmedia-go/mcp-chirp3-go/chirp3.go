@@ -518,7 +518,19 @@ func saveChirpAudio(args map[string]any, audioBytes []byte, outputDir, voiceName
 	if err != nil {
 		return "", err, nil
 	}
-	savedFilename = filepath.Clean(filepath.Join(outputDir, genFilename))
+	// Confine the caller-supplied output directory to the configured output root
+	// before creating it or writing into it (CWE-22 directory traversal). filepath.Clean
+	// alone does NOT confine (it neither strips a leading "/" nor prevents ".." from
+	// escaping), so it is replaced by ResolveConfinedOutputDir. A traversal attempt is
+	// fatal (nameErr); a directory creation failure is non-fatal (writeErr).
+	confinedDir, confErr := common.ResolveConfinedOutputDir(outputDir)
+	if confErr != nil {
+		return "", confErr, nil
+	}
+	if mkErr := os.MkdirAll(confinedDir, 0755); mkErr != nil {
+		return "", nil, mkErr
+	}
+	savedFilename = filepath.Join(confinedDir, genFilename)
 	// Collision policy: overwrite with a warning (design §4e).
 	if _, statErr := os.Stat(savedFilename); statErr == nil {
 		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", genFilename, outputDir)
@@ -643,29 +655,23 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	var savedFilename string
 
 	if attemptLocalSave {
-		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			fileSaveMessage = fmt.Sprintf("Error creating directory %s: %v. Audio data will be returned in response instead.", outputDir, err)
+		// Directory confinement + creation now happen inside saveChirpAudio so the
+		// caller-supplied directory is validated before any filesystem write.
+		savedName, nameErr, writeErr := saveChirpAudio(request.GetArguments(), audioContentBytes, outputDir, selectedVoice.Name)
+		if nameErr != nil {
+			return mcp.NewToolResultError(nameErr.Error()), nil
+		}
+		if writeErr != nil {
+			fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedName, writeErr)
 			log.Print(fileSaveMessage)
 			base64AudioData := base64.StdEncoding.EncodeToString(audioContentBytes)
 			audioItem := mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"}
 			contentItems = append(contentItems, audioItem)
+			savedFilename = ""
 		} else {
-			savedName, nameErr, writeErr := saveChirpAudio(request.GetArguments(), audioContentBytes, outputDir, selectedVoice.Name)
-			if nameErr != nil {
-				return mcp.NewToolResultError(nameErr.Error()), nil
-			}
-			if writeErr != nil {
-				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedName, writeErr)
-				log.Print(fileSaveMessage)
-				base64AudioData := base64.StdEncoding.EncodeToString(audioContentBytes)
-				audioItem := mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"}
-				contentItems = append(contentItems, audioItem)
-				savedFilename = ""
-			} else {
-				savedFilename = savedName
-				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedName, len(audioContentBytes))
-				log.Printf("Audio content (%d bytes) written to file: %s", len(audioContentBytes), savedName)
-			}
+			savedFilename = savedName
+			fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedName, len(audioContentBytes))
+			log.Printf("Audio content (%d bytes) written to file: %s", len(audioContentBytes), savedName)
 		}
 	} else {
 		base64AudioData := base64.StdEncoding.EncodeToString(audioContentBytes)
