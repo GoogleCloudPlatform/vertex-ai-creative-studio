@@ -72,7 +72,10 @@ import pages.storyboarder
 from app_factory import app
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
+    INTERNAL_SESSION_ID_HEADER,
+    INTERNAL_VERIFIED_EMAIL_HEADER,
     LOCAL_APP_ENVS,
+    set_internal_scope_headers,
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
@@ -291,12 +294,33 @@ async def set_request_context(request: Request, call_next):
             status_code=401,
         )
 
+    # Generate the session id ONCE and use the same value everywhere below (scope
+    # key, internal bridge header, and the response cookie) so AppState, the ASGI
+    # consumers, and the client cookie never disagree.
     session_id = request.cookies.get("session_id")
     if not session_id:
         session_id = str(uuid.uuid4())
 
+    # ASGI scope keys — consumed directly by the ASGI-layer handlers
+    # (veo_router, get_media_proxy, convert_to_gif). Left as-is (Phase 4).
     request.scope["MESOP_USER_EMAIL"] = user_email
     request.scope["MESOP_SESSION_ID"] = session_id
+
+    # ASGI->WSGI bridge (Vuln #4 HIGH-2 transport fix + LOW-4 session transport).
+    # WSGIMiddleware.build_environ copies ONLY headers into the WSGI environ, not
+    # custom scope keys, so the Mesop AppState (WSGI) cannot see the scope values
+    # above. Carry the ALREADY-verified email and the server-owned session id
+    # across as dedicated internal headers. set_internal_scope_headers strips any
+    # client-supplied copy BEFORE setting exactly one server value, so a client
+    # can neither inject nor append to them. These headers are never an identity
+    # input to the verifier.
+    set_internal_scope_headers(
+        request.scope,
+        {
+            INTERNAL_VERIFIED_EMAIL_HEADER: user_email,
+            INTERNAL_SESSION_ID_HEADER: session_id,
+        },
+    )
 
     # Pass GA ID to Mesop context if it exists
     if config.Default.GA_MEASUREMENT_ID:

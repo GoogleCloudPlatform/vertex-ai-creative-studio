@@ -139,7 +139,7 @@ def validate_identity_config() -> None:
     # requests transport can be constructed now, while we can still fail loudly.
     try:
         _request_transport()
-    except Exception as exc:  # noqa: BLE001 - surface any import/instantiation error
+    except Exception as exc:
         raise IdentityConfigError(
             "The google-auth requests transport is unavailable; IAP assertion "
             "verification cannot run. Ensure 'google-auth[requests]' (and its "

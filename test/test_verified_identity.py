@@ -36,7 +36,15 @@ from cryptography.x509.oid import NameOID
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.identity import ANONYMOUS_USER_EMAIL, require_authenticated_user
+from common.identity import (
+    ANONYMOUS_USER_EMAIL,
+    INTERNAL_SESSION_ID_ENVIRON,
+    INTERNAL_SESSION_ID_HEADER,
+    INTERNAL_VERIFIED_EMAIL_ENVIRON,
+    INTERNAL_VERIFIED_EMAIL_HEADER,
+    require_authenticated_user,
+    set_internal_scope_headers,
+)
 from common.verified_identity import (
     IAP_ASSERTION_HEADER,
     IAP_ISSUER,
@@ -506,66 +514,215 @@ def test_low3_managed_platform_with_iap_mode_ok(monkeypatch) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Phase 2 (taint site B): AppState derives identity ONLY from the middleware-  #
-# verified MESOP_USER_EMAIL; a spoofed plaintext header cannot influence it.   #
+# Phase 2 (taint site B) + HIGH-2/LOW-4: the REAL ASGI->WSGI identity bridge.  #
 #                                                                              #
-# mesop is not importable in this sandbox, so we (1) reproduce AppState's      #
-# exact __init__ assignment against a fake Flask request, and (2) assert by    #
-# source inspection that state.py reads no raw identity header.                #
+# AppState runs in a WSGI app mounted behind WSGIMiddleware; build_environ     #
+# copies ONLY headers into the WSGI environ, so custom ASGI scope keys never   #
+# reach AppState. These tests drive the REAL bridge end-to-end: the production #
+# strip-then-set helper + real WSGIMiddleware.build_environ + a WSGI app that  #
+# reads the environ EXACTLY as state.state.AppState.__init__ does. No          #
+# fabricated environ is used (closes MED-1).                                   #
 # --------------------------------------------------------------------------- #
 
 
-class _FakeRequest:
-    def __init__(self, environ):
-        self.environ = environ
+def _appstate_read_from_environ(environ) -> tuple[str, str]:
+    """Mirror of state.state.AppState.__init__ reads, against the WSGI environ.
 
-
-def _appstate_init_logic(request) -> tuple[str, str]:
-    """Byte-for-byte reproduction of state.state.AppState.__init__ assignment."""
-    user_email = request.environ.get("MESOP_USER_EMAIL", ANONYMOUS_USER_EMAIL)
-    session_id = request.environ.get("MESOP_SESSION_ID", "")
+    Flask's ``request.environ`` (what AppState reads) IS the WSGI environ that
+    ``build_environ`` produces, so reading this dict is faithful to AppState.
+    """
+    user_email = environ.get(INTERNAL_VERIFIED_EMAIL_ENVIRON, ANONYMOUS_USER_EMAIL)
+    session_id = environ.get(INTERNAL_SESSION_ID_ENVIRON, "")
     return user_email, session_id
 
 
-def test_phase2_appstate_uses_verified_identity_only() -> None:
-    req = _FakeRequest(
+def _build_bridge_app(captured: dict):
+    """A Starlette app whose middleware mirrors main.py:set_request_context and
+    mounts a WSGI app (standing in for the Mesop/Flask AppState app) behind the
+    REAL WSGIMiddleware, so the ASGI->WSGI header bridge is exercised for real."""
+    import uuid
+
+    from starlette.applications import Starlette
+    from starlette.concurrency import run_in_threadpool
+    from starlette.middleware import Middleware
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.middleware.wsgi import WSGIMiddleware
+    from starlette.routing import Mount
+
+    def mesop_like_wsgi_app(environ, start_response):
+        # This is the WSGI boundary AppState lives behind. Read exactly as
+        # AppState.__init__ does.
+        user_email, session_id = _appstate_read_from_environ(environ)
+        captured["user_email"] = user_email
+        captured["session_id"] = session_id
+        # Prove the original HIGH bug: a custom ASGI scope key must NOT be here.
+        captured["environ_has_scope_key"] = "MESOP_USER_EMAIL" in environ
+        captured["raw_internal_email"] = environ.get(INTERNAL_VERIFIED_EMAIL_ENVIRON)
+        start_response("200 OK", [("Content-Type", "text/plain")])
+        return [user_email.encode()]
+
+    async def set_request_context(request, call_next):
+        identity = await run_in_threadpool(get_verified_user_identity, request.headers)
+        user_email = identity.email if identity else ANONYMOUS_USER_EMAIL
+
+        # Generate session id once; use the SAME value for scope, bridge header,
+        # and response cookie (mirrors main.py).
+        session_id = request.cookies.get("session_id") or str(uuid.uuid4())
+
+        request.scope["MESOP_USER_EMAIL"] = user_email
+        request.scope["MESOP_SESSION_ID"] = session_id
+        set_internal_scope_headers(
+            request.scope,
+            {
+                INTERNAL_VERIFIED_EMAIL_HEADER: user_email,
+                INTERNAL_SESSION_ID_HEADER: session_id,
+            },
+        )
+        captured["server_session_id"] = session_id
+        response = await call_next(request)
+        response.set_cookie("session_id", session_id, httponly=True, samesite="Lax")
+        return response
+
+    return Starlette(
+        routes=[Mount("/", app=WSGIMiddleware(mesop_like_wsgi_app))],
+        middleware=[Middleware(BaseHTTPMiddleware, dispatch=set_request_context)],
+    )
+
+
+def test_bridge_carries_verified_identity_to_appstate(
+    deployed_env, patch_certs, mint_token
+) -> None:
+    """Valid assertion -> AppState.user_email == the verified email, across the
+    REAL WSGI bridge (the scenario the old fabricated-environ test never ran)."""
+    captured: dict = {}
+    with _client(_build_bridge_app(captured)) as client:
+        resp = client.get(
+            "/anything",
+            headers={IAP_ASSERTION_HEADER: mint_token(email=REAL_USER)},
+        )
+
+    assert resp.status_code == 200
+    assert captured["user_email"] == REAL_USER
+    assert resp.text == REAL_USER
+
+
+def test_bridge_strips_client_injected_identity_header(
+    deployed_env, patch_certs, mint_token
+) -> None:
+    """A client that supplies the internal transport header cannot influence
+    AppState: the copy is stripped before build_environ, server value wins, and
+    there is no comma-join with the spoofed value."""
+    captured: dict = {}
+    with _client(_build_bridge_app(captured)) as client:
+        resp = client.get(
+            "/anything",
+            headers={
+                IAP_ASSERTION_HEADER: mint_token(email=REAL_USER),
+                INTERNAL_VERIFIED_EMAIL_HEADER: SPOOFED_USER,
+                INTERNAL_SESSION_ID_HEADER: "attacker-supplied-session",
+            },
+        )
+
+    assert resp.status_code == 200
+    assert captured["user_email"] == REAL_USER
+    assert captured["raw_internal_email"] == REAL_USER  # exactly one server copy
+    assert SPOOFED_USER not in (captured["raw_internal_email"] or "")
+    assert captured["session_id"] != "attacker-supplied-session"
+
+
+def test_bridge_anonymous_when_no_assertion(deployed_env) -> None:
+    """Deployed mode, no assertion + a spoofed internal header -> AppState is
+    anonymous (never the spoof); the internal header is server-set to anonymous."""
+    captured: dict = {}
+    with _client(_build_bridge_app(captured)) as client:
+        resp = client.get(
+            "/anything",
+            headers={INTERNAL_VERIFIED_EMAIL_HEADER: SPOOFED_USER},
+        )
+
+    assert resp.status_code == 200
+    assert captured["user_email"] == ANONYMOUS_USER_EMAIL
+    assert captured["user_email"] != SPOOFED_USER
+
+
+def test_bridge_session_id_consistent_first_request_no_cookie(
+    deployed_env, patch_certs, mint_token
+) -> None:
+    """FIX 2 consistency: on a FIRST request (no session cookie) the session id
+    AppState reads must equal the uuid the response Set-Cookie carries, and be
+    non-empty. Proves AppState is not desynced by reading the cookie directly."""
+    captured: dict = {}
+    with _client(_build_bridge_app(captured)) as client:
+        resp = client.get(
+            "/anything",
+            headers={IAP_ASSERTION_HEADER: mint_token(email=REAL_USER)},
+        )
+
+    assert resp.status_code == 200
+    assert captured["session_id"]  # non-empty
+    assert captured["session_id"] == captured["server_session_id"]
+    assert resp.cookies.get("session_id") == captured["session_id"]
+
+
+def test_bridge_regression_custom_scope_key_absent_from_wsgi_environ(
+    deployed_env, patch_certs, mint_token
+) -> None:
+    """Regression pin for the original HIGH bug: a custom ASGI scope key
+    (MESOP_USER_EMAIL) does NOT reach the WSGI environ. This is exactly why
+    setting identity on scope alone left AppState anonymous for everyone."""
+    captured: dict = {}
+    with _client(_build_bridge_app(captured)) as client:
+        client.get(
+            "/anything",
+            headers={IAP_ASSERTION_HEADER: mint_token(email=REAL_USER)},
+        )
+
+    assert captured["environ_has_scope_key"] is False
+
+
+def test_set_internal_scope_headers_strips_all_client_copies() -> None:
+    """Unit test for the production strip-then-set helper: every client copy
+    (any case) is removed before exactly one server copy is appended."""
+    scope = {
+        "headers": [
+            (b"host", b"example.com"),
+            (b"x-internal-verified-user-email", b"client-a@evil"),
+            (b"X-Internal-Verified-User-Email", b"client-b@evil"),
+            (b"x-internal-session-id", b"client-session"),
+        ],
+    }
+
+    set_internal_scope_headers(
+        scope,
         {
-            "MESOP_USER_EMAIL": REAL_USER,
-            "MESOP_SESSION_ID": "sess-123",
-            # Spoofed raw headers that AppState must ignore entirely.
-            "HTTP_X_EMAIL": SPOOFED_USER,
-            "HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL": SPOOFED_USER,
+            INTERNAL_VERIFIED_EMAIL_HEADER: REAL_USER,
+            INTERNAL_SESSION_ID_HEADER: "server-session",
         },
     )
 
-    user_email, session_id = _appstate_init_logic(req)
-
-    assert user_email == REAL_USER
-    assert user_email != SPOOFED_USER
-    assert session_id == "sess-123"
-
-
-def test_phase2_appstate_defaults_anonymous_without_verified_identity() -> None:
-    # Only spoofed headers, no MESOP_USER_EMAIL -> anonymous, never the spoof.
-    req = _FakeRequest({"HTTP_X_EMAIL": SPOOFED_USER})
-
-    user_email, _ = _appstate_init_logic(req)
-
-    assert user_email == ANONYMOUS_USER_EMAIL
-    assert user_email != SPOOFED_USER
+    email_copies = [
+        v for (k, v) in scope["headers"]
+        if k.lower() == INTERNAL_VERIFIED_EMAIL_HEADER.lower().encode()
+    ]
+    assert email_copies == [REAL_USER.encode()]  # exactly one, server value
+    # Unrelated headers preserved.
+    assert (b"host", b"example.com") in scope["headers"]
 
 
-def test_phase2_appstate_source_reads_no_raw_header() -> None:
-    """Source-level guarantee: state.py derives identity only from MESOP_USER_EMAIL
-    and never re-introduces a raw-header identity read (taint site B closed)."""
+def test_phase2_appstate_source_reads_only_bridged_identity() -> None:
+    """Source-level guarantee: state.py derives identity ONLY from the internal
+    bridge environ key and never re-introduces a raw-header identity read
+    (taint site B closed)."""
     source = (Path(__file__).resolve().parents[1] / "state" / "state.py").read_text()
 
-    assert "MESOP_USER_EMAIL" in source
+    assert "INTERNAL_VERIFIED_EMAIL_ENVIRON" in source
+    assert "INTERNAL_SESSION_ID_ENVIRON" in source
     assert "get_authenticated_user_email" not in source
     for banned in (
         "X-Email",
         "X-Goog-Authenticated-User-Email",
         "X-Forwarded-Email",
         "X-Authenticated-User",
+        "HTTP_COOKIE",
     ):
-        assert banned not in source, f"state.py must not read raw header {banned!r}"
+        assert banned not in source, f"state.py must not read {banned!r}"

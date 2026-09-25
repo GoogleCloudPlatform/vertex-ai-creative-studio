@@ -17,6 +17,8 @@ from flask import request
 
 from common.identity import (
     ANONYMOUS_USER_EMAIL,
+    INTERNAL_SESSION_ID_ENVIRON,
+    INTERNAL_VERIFIED_EMAIL_ENVIRON,
 )
 
 
@@ -33,16 +35,22 @@ class AppState:
     def __init__(self):
         """Initializes the AppState from the middleware-verified identity.
 
-        Identity is taken ONLY from ``MESOP_USER_EMAIL``, which the request
-        middleware sets from the cryptographically verified caller (Vuln #4).
-        AppState no longer re-derives identity from raw request headers, so a
-        spoofed plaintext identity header cannot influence it (taint site B).
+        AppState runs in the Mesop WSGI app mounted behind ``WSGIMiddleware``,
+        which copies only request headers (not custom ASGI scope keys) into the
+        WSGI environ. The request middleware therefore bridges the already
+        cryptographically verified caller across the ASGI->WSGI boundary as the
+        internal ``INTERNAL_VERIFIED_EMAIL_HEADER`` (read here from the WSGI
+        environ). Identity is taken ONLY from that server-set internal header;
+        raw/plaintext request headers are never consulted, so a spoofed identity
+        header cannot influence AppState (taint site B). The session id is read
+        from the matching internal transport header (same value the middleware
+        writes to the response cookie), not from the client cookie directly.
         """
         self.user_email = request.environ.get(
-            "MESOP_USER_EMAIL",
+            INTERNAL_VERIFIED_EMAIL_ENVIRON,
             ANONYMOUS_USER_EMAIL,
         )
-        self.session_id = request.environ.get("MESOP_SESSION_ID", "")
+        self.session_id = request.environ.get(INTERNAL_SESSION_ID_ENVIRON, "")
 
 
 def theme_toggle_button():
