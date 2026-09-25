@@ -23,6 +23,7 @@ Firestore is faked in-process so the tests never touch a real backend.
 
 # ruff: noqa: D101, D102, D103, S101
 
+import datetime
 import sys
 import types
 from pathlib import Path
@@ -303,3 +304,122 @@ def test_vto_model_delete_allows_owner(monkeypatch, fake_db):
     next(gen)  # runs the delete then yields
 
     assert "model_alice" not in fake_db.collections[wf.config.GENMEDIA_VTO_MODEL_COLLECTION_NAME]
+
+
+# --------------------------------------------------------------------------- #
+# 5. Session middleware sink  (common/storage.py::get_or_create_session)
+#    Review R1/L2: must be availability-safe (rotate, never raise) so the global
+#    identity middleware cannot be turned into a 500-on-every-request DoS.
+# --------------------------------------------------------------------------- #
+def _seed_session(fake_db, storage, session_id, user_email):
+    # Naive UTC to match storage.py's datetime.utcnow() (avoids naive/aware compares).
+    now = datetime.datetime.utcnow()
+    fake_db.seed(
+        storage.cfg.SESSIONS_COLLECTION_NAME,
+        session_id,
+        {
+            "id": session_id,
+            "user_email": user_email,
+            "created_at": now,
+            "last_accessed_at": now,
+        },
+    )
+
+
+def test_session_rotates_on_identity_change_without_raising(monkeypatch, fake_db):
+    """Anonymous->authenticated reused cookie must rotate, not raise (no 500)."""
+    import common.storage as storage
+
+    monkeypatch.setattr(storage, "db", fake_db)
+    sessions = storage.cfg.SESSIONS_COLLECTION_NAME
+    _seed_session(fake_db, storage, "cookie123", "anonymous@google.com")
+
+    # Authenticated caller replays the anonymous cookie.
+    session = storage.get_or_create_session("cookie123", "alice@example.com")
+
+    # A fresh session was minted for the current caller (no exception raised).
+    assert session.user_email == "alice@example.com"
+    assert session.id != "cookie123"
+    assert fake_db.collections[sessions][session.id]["user_email"] == "alice@example.com"
+    # The other identity's session was left completely untouched.
+    assert fake_db.collections[sessions]["cookie123"]["user_email"] == "anonymous@google.com"
+
+
+def test_session_owner_match_refreshes_in_place(monkeypatch, fake_db):
+    import common.storage as storage
+
+    monkeypatch.setattr(storage, "db", fake_db)
+    sessions = storage.cfg.SESSIONS_COLLECTION_NAME
+    _seed_session(fake_db, storage, "cookie123", "alice@example.com")
+    original_accessed = fake_db.collections[sessions]["cookie123"]["last_accessed_at"]
+
+    session = storage.get_or_create_session("cookie123", "alice@example.com")
+
+    assert session.id == "cookie123"
+    assert session.user_email == "alice@example.com"
+    # last_accessed_at was refreshed on the same record.
+    assert fake_db.collections[sessions]["cookie123"]["last_accessed_at"] >= original_accessed
+
+
+def test_session_create_records_caller_as_owner(monkeypatch, fake_db):
+    import common.storage as storage
+
+    monkeypatch.setattr(storage, "db", fake_db)
+    sessions = storage.cfg.SESSIONS_COLLECTION_NAME
+
+    session = storage.get_or_create_session("brandnew", "alice@example.com")
+
+    assert session.id == "brandnew"
+    assert fake_db.collections[sessions]["brandnew"]["user_email"] == "alice@example.com"
+
+
+# --------------------------------------------------------------------------- #
+# 6. VTO CSV bulk-upload sinks  (models/shop_the_look_workflow.py)
+#    Review M1: previously wrote deterministic-id VTO docs with no authz and no
+#    owner field. Must stamp the server-derived caller and reject cross-owner
+#    overwrite.
+# --------------------------------------------------------------------------- #
+_MODEL_CSV = (
+    b"model_group,model_id,model_name,model_description,model_view,primary_view,model_image\n"
+    b"g0,m1,Name,Desc,front,true,gs://x\n"
+)
+
+
+def _prep_model_upload(monkeypatch, fake_db, wf, caller_email):
+    monkeypatch.setattr(wf, "db", fake_db)
+    monkeypatch.setattr(wf.me, "state", _fake_me_state(caller_email))
+    monkeypatch.setattr(wf, "store_to_gcs", lambda *a, **k: "bucket/uploads/models.csv")
+    monkeypatch.setattr(
+        wf, "download_from_gcs_as_string", lambda *a, **k: _MODEL_CSV
+    )
+    file = types.SimpleNamespace(
+        name="models.csv", mime_type="text/csv", getvalue=lambda: _MODEL_CSV
+    )
+    return types.SimpleNamespace(file=file)
+
+
+def test_vto_csv_upload_stamps_caller_as_owner(monkeypatch, fake_db):
+    import models.shop_the_look_workflow as wf
+
+    event = _prep_model_upload(monkeypatch, fake_db, wf, "alice@example.com")
+
+    wf.on_click_upload_models(event)
+
+    models = wf.config.GENMEDIA_VTO_MODEL_COLLECTION_NAME
+    assert fake_db.collections[models]["m1_front"]["upload_user"] == "alice@example.com"
+
+
+def test_vto_csv_upload_rejects_cross_owner_overwrite(monkeypatch, fake_db):
+    import models.shop_the_look_workflow as wf
+
+    event = _prep_model_upload(monkeypatch, fake_db, wf, "attacker@evil.com")
+    models = wf.config.GENMEDIA_VTO_MODEL_COLLECTION_NAME
+    # Alice already owns the doc the attacker's CSV row would collide with.
+    fake_db.seed(models, "m1_front", {"upload_user": "alice@example.com", "model_id": "m1"})
+
+    with pytest.raises(PermissionError):
+        wf.on_click_upload_models(event)
+
+    # Alice's document is untouched.
+    assert fake_db.collections[models]["m1_front"]["upload_user"] == "alice@example.com"
+    assert "model_id" in fake_db.collections[models]["m1_front"]

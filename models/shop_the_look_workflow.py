@@ -152,27 +152,40 @@ def on_click_upload_models(e: me.UploadEvent):
             return
 
     current_datetime = datetime.datetime.now()
+    # Server-side caller identity to stamp/authorize each row's write.
+    caller = authz.resolve_caller_email(me.state(AppState).user_email)
 
     for row in cf:
         try:
             # TODO mapping object instead of row[]
-            doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).document(
-                f"{row[1]}_{row[4]}"
-            )
-            doc_ref.set(
-                {
-                    "model_group": row[0],
-                    "model_id": row[1],
-                    "model_name": row[2],
-                    "model_description": row[3],
-                    "model_view": row[4],
-                    "primary_view": row[5],
-                    "model_image": row[6],
-                    "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
-                }
-            )
-        except:
-            print(f"{row[2]} cannot be converted")
+            doc_id = f"{row[1]}_{row[4]}"
+            doc_data = {
+                "model_group": row[0],
+                "model_id": row[1],
+                "model_name": row[2],
+                "model_description": row[3],
+                "model_view": row[4],
+                "primary_view": row[5],
+                "model_image": row[6],
+                "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
+                # Stamp the server-derived caller as the owner (never client-supplied).
+                "upload_user": caller,
+            }
+        except Exception:
+            print(f"{row} cannot be converted")
+            continue
+
+        doc_ref = db.collection(config.GENMEDIA_VTO_MODEL_COLLECTION_NAME).document(
+            doc_id
+        )
+        # Server-side authz: reject overwriting a VTO model owned by another user.
+        authz.authorize_existing_document(
+            doc_ref,
+            "upload_user",
+            caller,
+            resource="VTO model",
+        )
+        doc_ref.set(doc_data)
 
 
 def on_click_upload_catalog(e: me.UploadEvent):
@@ -216,27 +229,40 @@ def on_click_upload_catalog(e: me.UploadEvent):
             return
 
     current_datetime = datetime.datetime.now()
+    # Server-side caller identity to stamp/authorize each row's write.
+    caller = authz.resolve_caller_email(me.state(AppState).user_email)
 
     for row in cf:
         try:
-            doc_ref = db.collection(
-                config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME
-            ).document(f"{row[1]}_{row[2]}")
-            doc_ref.set(
-                {
-                    "item_id": row[0],
-                    "look_id": int(row[1]),
-                    "article_type": row[2],
-                    "article_color": row[3],
-                    "model_group": row[4],
-                    "description": row[5],
-                    "image_view": row[6],
-                    "try_on_order": row[7],
-                    "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
-                }
-            )
-        except:
-            print(f"{row[2]} cannot be converted")
+            doc_id = f"{row[1]}_{row[2]}"
+            doc_data = {
+                "item_id": row[0],
+                "look_id": int(row[1]),
+                "article_type": row[2],
+                "article_color": row[3],
+                "model_group": row[4],
+                "description": row[5],
+                "image_view": row[6],
+                "try_on_order": row[7],
+                "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
+                # Stamp the server-derived caller as the owner (never client-supplied).
+                "upload_user": caller,
+            }
+        except Exception:
+            print(f"{row} cannot be converted")
+            continue
+
+        doc_ref = db.collection(
+            config.GENMEDIA_VTO_CATALOG_COLLECTION_NAME
+        ).document(doc_id)
+        # Server-side authz: reject overwriting a VTO article owned by another user.
+        authz.authorize_existing_document(
+            doc_ref,
+            "upload_user",
+            caller,
+            resource="VTO catalog article",
+        )
+        doc_ref.set(doc_data)
 
 
 def load_model_data(limit: int = 50):
