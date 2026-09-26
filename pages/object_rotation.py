@@ -298,13 +298,21 @@ def open_library_dialog(e: me.ClickEvent, view_name: str | None = None):
     state.show_library = True
     yield
 
+    # Fail closed: get_media_for_page's owner filter short-circuits to "return
+    # everything" when filter_by_user_email is falsy, so never call it without a
+    # server-derived identity. Mirror the explicit guard in guideline_analysis
+    # get_all_media_for_chooser: no identity -> show nothing, never all.
+    if not app_state.user_email:
+        state.library_items = []
+        state.is_loading_library = False
+        yield
+        return
+
     try:
         from common.metadata import get_media_for_page
 
         # Owner-scope the library listing to the server-derived caller so a user
-        # can only browse their own media (read-side IDOR fix). AppState.user_email
-        # is always populated server-side (defaults to the anonymous identity in
-        # local/dev), so this filter is always applied.
+        # can only browse their own media (read-side IDOR fix).
         state.library_items = get_media_for_page(
             1,
             50,

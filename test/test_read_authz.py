@@ -35,6 +35,7 @@ Firestore is faked in-process so the tests never touch a real backend.
 import datetime
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -223,6 +224,27 @@ def test_authorize_read_missing_doc_returns_none(fake_db):
     assert authz.authorize_read(doc_ref, "user_email", "alice@example.com") is None
 
 
+def test_authorize_read_non_owner_and_missing_are_indistinguishable(fake_db):
+    """No existence/content oracle: a non-owner load and a not-found load must
+    return the identical ``None`` so the two cases render the same at call sites
+    (interior_design_v2 / object_rotation on_load) and a caller cannot probe
+    whether another user's doc exists."""
+    fake_db.seed(
+        "interior_design_storyboards",
+        "sb_alice",
+        {"user_email": "alice@example.com", "secret": "alice-plan"},
+    )
+    owned_ref = fake_db.collection("interior_design_storyboards").document("sb_alice")
+    missing_ref = fake_db.collection("interior_design_storyboards").document("ghost")
+
+    non_owner = authz.authorize_read(owned_ref, "user_email", "attacker@evil.com")
+    not_found = authz.authorize_read(missing_ref, "user_email", "attacker@evil.com")
+
+    assert non_owner is None
+    assert not_found is None
+    assert non_owner == not_found  # indistinguishable outcome, no oracle
+
+
 def test_is_owner_policy():
     assert authz.is_owner("alice@example.com", "alice@example.com") is True
     assert authz.is_owner("alice@example.com", "attacker@evil.com") is False
@@ -280,26 +302,65 @@ def test_chooser_lists_only_callers_items(monkeypatch, fake_db):
     assert "m_bob_1" in fake_db.collections[coll]
 
 
-def test_chooser_without_identity_returns_empty(monkeypatch, fake_db):
+def test_chooser_without_identity_does_not_query(monkeypatch):
+    """Load-bearing fail-closed proof for the chooser.
+
+    The pre-query guard is the only thing that must produce an empty result, so
+    we assert Firestore is *never touched* when no identity is resolvable. A
+    ``MagicMock`` db is used deliberately: a plain ``raise`` inside the query
+    path would be swallowed by ``get_all_media_for_chooser``'s broad ``except``
+    (and the test would still pass with the guard removed — the L2 defect). With
+    ``assert_not_called`` the test FAILS if the guard is removed, because the
+    function would then reach ``db.collection(...)``.
+    """
     import pages.guideline_analysis as page
 
-    _seed_two_user_media(fake_db)
+    mock_db = MagicMock()
+    monkeypatch.setattr(page, "db", mock_db)
 
-    # Make any accidental query blow up loudly: if the code queried instead of
-    # failing closed, we'd get an exception, not a silent "return everything".
-    class Boom:
-        def collection(self, *a, **k):  # noqa: ANN001
-            raise AssertionError("must not query Firestore without an identity")
+    for missing in (None, ""):
+        items, last = page.get_all_media_for_chooser(page_size=20, user_email=missing)
+        assert items == []
+        assert last is None
 
-    monkeypatch.setattr(page, "db", Boom())
+    # The guard must short-circuit before any Firestore access.
+    mock_db.collection.assert_not_called()
 
-    items, last = page.get_all_media_for_chooser(page_size=20, user_email=None)
-    assert items == []
-    assert last is None
 
-    items, last = page.get_all_media_for_chooser(page_size=20, user_email="")
-    assert items == []
-    assert last is None
+def test_object_rotation_library_returns_empty_without_identity(
+    monkeypatch, app_state_factory
+):
+    """Spot 2 fail-closed proof (L1 fix).
+
+    ``get_media_for_page`` fails OPEN on an empty filter, so the call site must
+    not invoke it without an identity. We spy on it and assert it is never
+    called and the listing is empty. FAILS if the call-site guard is removed
+    (the spy would be called and its rows would populate ``library_items``).
+    """
+    import common.metadata as md
+    import pages.object_rotation as page
+
+    calls = []
+
+    def spy_get_media_for_page(*args, **kwargs):
+        calls.append(kwargs)
+        return ["LEAKED_ROW"]  # would be exposed if the guard were removed
+
+    monkeypatch.setattr(md, "get_media_for_page", spy_get_media_for_page)
+
+    page_state = page.PageState()
+    app_state = app_state_factory(user_email="")  # no resolvable identity
+
+    def fake_state(cls):
+        return app_state if cls is page.AppState else page_state
+
+    monkeypatch.setattr(page.me, "state", fake_state)
+
+    # Drive the generator handler to completion.
+    list(page.open_library_dialog(None, view_name="front_view"))
+
+    assert calls == []  # get_media_for_page never invoked
+    assert page_state.library_items == []
 
 
 # --------------------------------------------------------------------------- #
