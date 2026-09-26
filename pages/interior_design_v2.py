@@ -24,6 +24,7 @@ import uuid
 
 import mesop as me
 
+from common import authz
 from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore, save_storyboard
 from common.storage import store_to_gcs
@@ -63,6 +64,7 @@ with open("config/about_content.json", "r") as f:
 def on_load(e: me.LoadEvent):
     """Loads a storyboard from Firestore if an ID is provided in the URL."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     if not state.initial_load_complete:
         storyboard_id = me.query_params.get("storyboard_id")
         if storyboard_id:
@@ -72,9 +74,16 @@ def on_load(e: me.LoadEvent):
             doc_ref = db.collection("interior_design_storyboards").document(
                 storyboard_id
             )
-            doc = doc_ref.get()
-            if doc.exists:
-                storyboard = doc.to_dict()
+            # Owner-scoped read: only the storyboard's owner (or a legacy
+            # ownerless doc) is returned. A non-owner load is indistinguishable
+            # from not-found (fail-closed, no existence/content leak).
+            storyboard = authz.authorize_read(
+                doc_ref,
+                "user_email",
+                app_state.user_email,
+                resource="storyboard",
+            )
+            if storyboard is not None:
                 # Hydrate old data: generate display URLs if they don't exist.
                 if storyboard.get("original_floor_plan_uri") and not storyboard.get(
                     "original_floor_plan_display_url"

@@ -21,6 +21,7 @@ from typing import Callable
 
 import mesop as me
 
+from common import authz
 from common.storage import store_to_gcs
 from common.utils import create_display_url
 from components.header import header
@@ -111,15 +112,23 @@ def show_snackbar(state: PageState, message: str):
 def on_load(e: me.LoadEvent):
     """Loads a rotation project from Firestore if an ID is provided in the URL."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     if not state.initial_load_complete:
         object_rotation_id = me.query_params.get("object_rotation_id")
         if object_rotation_id:
             from config.firebase_config import FirebaseClient
             db = FirebaseClient().get_client()
             doc_ref = db.collection("object_rotation_projects").document(object_rotation_id)
-            doc = doc_ref.get()
-            if doc.exists:
-                project = doc.to_dict()
+            # Owner-scoped read: only the project's owner (or a legacy ownerless
+            # doc) is returned. A non-owner load is indistinguishable from
+            # not-found (fail-closed, no existence/content leak).
+            project = authz.authorize_read(
+                doc_ref,
+                "user_email",
+                app_state.user_email,
+                resource="object rotation project",
+            )
+            if project is not None:
                 # Hydrate display URLs
                 if project.get("main_product_image_uri"):
                     project["main_product_image_display_url"] = create_display_url(project["main_product_image_uri"])
@@ -133,6 +142,11 @@ def on_load(e: me.LoadEvent):
                 state.current_step = 3
                 state.max_completed_step = 3
                 print(f"Loaded rotation project {object_rotation_id} from Firestore.")
+            else:
+                yield from show_snackbar(
+                    state,
+                    f"Could not find project with ID: {object_rotation_id}",
+                )
         state.initial_load_complete = True
     yield
 
@@ -278,14 +292,33 @@ def on_main_image_upload(e: me.UploadEvent):
 def open_library_dialog(e: me.ClickEvent, view_name: str | None = None):
     """Opens the library dialog and fetches the initial data."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     state.show_library_for_view = view_name
     state.is_loading_library = True
     state.show_library = True
     yield
 
+    # Fail closed: get_media_for_page's owner filter short-circuits to "return
+    # everything" when filter_by_user_email is falsy, so never call it without a
+    # server-derived identity. Mirror the explicit guard in guideline_analysis
+    # get_all_media_for_chooser: no identity -> show nothing, never all.
+    if not app_state.user_email:
+        state.library_items = []
+        state.is_loading_library = False
+        yield
+        return
+
     try:
         from common.metadata import get_media_for_page
-        state.library_items = get_media_for_page(1, 50, type_filters=["images"])
+
+        # Owner-scope the library listing to the server-derived caller so a user
+        # can only browse their own media (read-side IDOR fix).
+        state.library_items = get_media_for_page(
+            1,
+            50,
+            type_filters=["images"],
+            filter_by_user_email=app_state.user_email,
+        )
     except Exception as ex:
         print(f"Error loading library items: {ex}")
     finally:

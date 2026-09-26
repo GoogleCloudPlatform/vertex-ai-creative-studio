@@ -176,3 +176,48 @@ def authorize_attribution(
             f"Refusing to record {resource} attributed to {recorded_owner!r} "
             f"on behalf of caller {caller_email!r}.",
         )
+
+
+def is_owner(existing_owner: Any, caller_email: str | None) -> bool:
+    """Return ``True`` when ``caller_email`` may access ``existing_owner``'s data.
+
+    The read-side counterpart of :func:`enforce_ownership`, sharing the same
+    policy but returning a boolean instead of raising:
+
+    * fails closed — a missing caller identity is *never* an owner;
+    * tolerates legacy/ownerless documents (``existing_owner is None``) so
+      pre-existing unattributed data stays reachable, consistent with #1920.
+    """
+    if not caller_email:
+        return False
+    if existing_owner is None:
+        return True
+    return existing_owner == caller_email
+
+
+def authorize_read(
+    doc_ref: Any,
+    owner_field: str,
+    caller_email: str | None,
+    *,
+    resource: str = "document",  # noqa: ARG001 (kept for call-site symmetry)
+) -> dict | None:
+    """Owner-scoped single-document read for load-by-client-supplied-id paths.
+
+    Loads ``doc_ref`` and returns its data dict **only** when the caller owns it
+    (or it is a legacy ownerless document, per :func:`is_owner`). Returns
+    ``None`` when the document does not exist **or** the caller is not
+    authorized — the two cases are deliberately indistinguishable so a non-owner
+    cannot probe existence or contents (no existence/content leak). Fails closed
+    on a missing caller identity.
+
+    Use this for reads keyed by a client-controllable id (for example a
+    ``storyboard_id`` / ``object_rotation_id`` URL query param).
+    """
+    snapshot = doc_ref.get()
+    if snapshot is None or not getattr(snapshot, "exists", False):
+        return None
+    data = snapshot.to_dict() or {}
+    if not is_owner(data.get(owner_field), caller_email):
+        return None
+    return data
