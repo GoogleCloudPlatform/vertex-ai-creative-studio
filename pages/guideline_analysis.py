@@ -380,13 +380,19 @@ def _uploader_placeholder(on_library_select: Callable):
 
 
 def get_all_media_for_chooser(
-    page_size: int, start_after=None
+    page_size: int, start_after=None, *, user_email: str | None = None
 ) -> tuple[list[MediaItem], firestore.DocumentSnapshot | None]:
     if not db:
         return [], None
+    # Fail closed: without a server-derived caller identity we must never list
+    # another user's media. Return nothing rather than everything.
+    if not user_email:
+        return [], None
     try:
-        query = db.collection(config.GENMEDIA_COLLECTION_NAME).order_by(
-            "timestamp", direction=firestore.Query.DESCENDING
+        query = (
+            db.collection(config.GENMEDIA_COLLECTION_NAME)
+            .where("user_email", "==", user_email)
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
         )
         if start_after:
             query = query.start_after(start_after)
@@ -418,6 +424,7 @@ def render_chooser_dialog():
         yield
 
     def handle_load_more(e: me.WebEvent):
+        app_state = me.state(AppState)
         if state.chooser_is_loading or state.chooser_all_items_loaded:
             return
 
@@ -432,6 +439,7 @@ def render_chooser_dialog():
         new_items, last_doc = get_all_media_for_chooser(
             page_size=20,
             start_after=last_doc_ref,
+            user_email=app_state.user_email,
         )
 
         for item in new_items:
@@ -520,6 +528,7 @@ def render_chooser_dialog():
 
 def open_chooser_dialog(e: me.ClickEvent):
     state = me.state(PageState)
+    app_state = me.state(AppState)
     state.show_chooser_dialog = True
     state.chooser_is_loading = True
     state.chooser_media_items = []
@@ -527,7 +536,9 @@ def open_chooser_dialog(e: me.ClickEvent):
     state.chooser_last_doc_id = ""
     yield
 
-    items, last_doc = get_all_media_for_chooser(page_size=20)
+    items, last_doc = get_all_media_for_chooser(
+        page_size=20, user_email=app_state.user_email
+    )
 
     for item in items:
         gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
