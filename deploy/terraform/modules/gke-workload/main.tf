@@ -67,6 +67,17 @@ locals {
   # for control-flow. Values are only ever referenced inside the Secret's `data`
   # and via secretKeyRef (by name), never expanded into config here.
   secret_env_keys = nonsensitive(toset(keys(var.secret_env)))
+
+  # Vuln #4 (mechanism (b)) — versioned/immutable ConfigMap name. The name embeds
+  # a content hash of the env data map so that ANY change to env_vars yields a NEW
+  # ConfigMap NAME (never an in-place mutation of a fixed name). A new name flows
+  # into the Deployment pod template (env_from.config_map_ref.name below), which
+  # rolls a NEW ReplicaSet — so the env change and the (out-of-band) image roll are
+  # carried by a single pod-template update and old-RS pods keep referencing the
+  # OLD immutable ConfigMap on any restart. The hash input is deterministic
+  # (jsonencode sorts map keys; no timestamps/random), so a re-render of the same
+  # env produces the same name => a `terraform apply` reconcile is a no-op.
+  env_config_map_name = "${var.name}-env-${substr(sha256(jsonencode(var.env_vars)), 0, 10)}"
 }
 
 # --- Workload Identity: KSA annotated to the existing runtime Google SA -------
@@ -91,13 +102,27 @@ resource "google_service_account_iam_member" "workload_identity" {
 
 # --- Config & secrets (parity with Cloud Run; secret path dormant by default) -
 
+# Vuln #4 (mechanism (b)): versioned/immutable ConfigMap. The NAME is content-
+# hashed (local.env_config_map_name) and the object is `immutable = true`, so it
+# can NEVER be mutated in place — an env change produces a brand-new ConfigMap
+# under a new name instead. `create_before_destroy` makes the new ConfigMap exist
+# BEFORE the pod template switches to it (and before the old one is destroyed), so
+# the Deployment can always resolve its config_map_ref during the roll. Old,
+# now-unreferenced ConfigMaps are GC'd out-of-band after the old ReplicaSet
+# retires (see gke/../phase5-gke-apply.md GC step) — Terraform does not mutate the
+# retired object, it simply stops managing that name once no template references it.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
-    name      = "${var.name}-env"
+    name      = local.env_config_map_name
     namespace = var.namespace
     labels    = local.labels
   }
-  data = var.env_vars
+  data      = var.env_vars
+  immutable = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Secret-backed env. DORMANT by default: secret_env = {} => count 0 => no Secret.
@@ -124,6 +149,23 @@ resource "kubernetes_deployment_v1" "workload" {
   }
   spec {
     replicas = var.replicas_min
+
+    # Vuln #4 (mechanism (b)): explicit RollingUpdate that keeps the OLD ReplicaSet
+    # serving until the new pods are Ready. maxUnavailable=0 means no old pod is
+    # torn down before a new pod passes its readiness probe; maxSurge=1 brings up
+    # one new pod at a time. If a new pod CrashLoops on the app's startup FATAL
+    # (e.g. iap-mode with an unset audience, or a local-mode-on-managed-platform
+    # backstop), it never becomes Ready, the rollout STALLS, and the old ReplicaSet
+    # keeps serving = fail-safe DOWN. NOT Recreate (which would tear down the old
+    # pods first and open an outage / bad-state window).
+    strategy {
+      type = "RollingUpdate"
+      rolling_update {
+        max_unavailable = "0"
+        max_surge       = "1"
+      }
+    }
+
     selector {
       match_labels = local.labels
     }

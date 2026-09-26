@@ -127,6 +127,13 @@ data "google_service_account" "runtime" {
   project    = var.project_id
 }
 
+# Project metadata — READ-ONLY. Used only to derive the numeric project NUMBER for
+# the IAP_JWT_AUDIENCE value below (parity with the Cloud Run root's
+# data.google_project.project). No project resource is created or mutated.
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 locals {
   asset_bucket_name = "creative-studio-${var.project_id}-assets"
 
@@ -139,6 +146,43 @@ locals {
   # or destroys Firestore or the queue.
   firestore_db_name = "create-studio-asset-metadata" # data-stores module literal
   tasks_queue_name  = "thumbnail-extraction"         # data-stores module literal
+
+  # Vuln #4 S1 (audience) + S3 (gate-on) identity contract — GKE Ingress/
+  # BackendConfig topology. All THREE env vars are gated on the SAME Stage-2
+  # condition as the audience (var.iap_backend_service_id != null), so they land
+  # together, atomically, in one Deployment rollout with the S2 image:
+  #   - APP_ENV: a NON-local value so the app derives AUTH_MODE='iap' (the app's
+  #     local set is {"", dev, development, local, test}, common/identity.py). We
+  #     reuse the GKE root's deployed environment label (var.environment, default
+  #     "prod") so the app env matches the deployed environment. AUTH_MODE is NOT
+  #     operator-set — the app derives it from APP_ENV.
+  #   - REQUIRE_AUTHENTICATED_USER: gate on "no verified identity" (fail closed).
+  #   - IAP_JWT_AUDIENCE: the GKE/Compute LB form
+  #       /projects/<PROJECT_NUMBER>/global/backendServices/<NUMERIC_ID>
+  #     (confirmed iap-jwt-audience-facts.md §A row 3). PROJECT_NUMBER from the
+  #     data source (never hardcoded); the NUMERIC backend-service id is NOT
+  #     knowable at plan/apply — the GKE Ingress/NEG controller auto-creates the
+  #     backend service ASYNCHRONOUSLY AFTER apply, so its numeric id is supplied
+  #     OUT-OF-BAND on a SECOND apply via var.iap_backend_service_id (mirroring the
+  #     existing out-of-band var.iap_backend_service_name flow — that variable is
+  #     the NAME, fine for the IAM binding; the aud additionally needs the NUMERIC
+  #     id of the same backend service).
+  #
+  # Stage 1 (id null): the whole map is EMPTY — NONE of APP_ENV / REQUIRE /
+  # IAP_JWT_AUDIENCE is set, so iap mode is UNREACHABLE from this root (infra
+  # bring-up only, fail-safe DOWN). Stage 2 (id supplied): all three land at once.
+  # This is what keeps the app's iap-mode FATAL-on-unset path from ever firing on a
+  # live boot — iap mode is only entered with a resolved non-empty aud in the same
+  # revision. See the two-stage sequence + fail-safe table in gke/IAP_JWT_AUDIENCE.md.
+  #
+  # Kept as a named local so the LOW-3 plan guard below and the intent here share
+  # one source of truth for the app's local set.
+  local_app_envs = ["", "dev", "development", "local", "test"]
+  stage2_identity_env_vars = var.iap_backend_service_id != null ? {
+    APP_ENV                    = var.environment
+    REQUIRE_AUTHENTICATED_USER = "true"
+    IAP_JWT_AUDIENCE           = "/projects/${data.google_project.project.number}/global/backendServices/${var.iap_backend_service_id}"
+  } : {}
 
   # SAME env-var contract as the Cloud Run root (cloudrun/main.tf
   # local.creative_studio_env_vars), so the container config is identical across
@@ -173,6 +217,13 @@ locals {
     # URL follows the ingress domain — parity with the Cloud Run use_lb path.
     API_BASE_URL = var.api_base_url != "" ? var.api_base_url : (var.domain != "" ? "https://${var.domain}" : "")
   }
+
+  # Final env map fed to the workload. The Stage-2 identity vars (APP_ENV,
+  # REQUIRE_AUTHENTICATED_USER, IAP_JWT_AUDIENCE) are merged in ONLY once the
+  # numeric backend-service id is known (Stage 2); until then the map is empty and
+  # none of the three keys is set — never a hardcoded/empty value. See above +
+  # gke/IAP_JWT_AUDIENCE.md.
+  gke_env_vars = merge(local.creative_studio_env_vars, local.stage2_identity_env_vars)
 }
 
 # ---------------------------------------------------------------------------
@@ -227,7 +278,7 @@ module "gke_workload" {
   # Resources (requests == limits) + config/secret parity with Cloud Run.
   cpu        = var.cpu
   memory     = var.memory
-  env_vars   = local.creative_studio_env_vars
+  env_vars   = local.gke_env_vars
   secret_env = var.secret_env
 
   # Autoscaling.
@@ -251,4 +302,25 @@ module "gke_workload" {
   initial_user             = var.initial_user
 
   depends_on = [module.gke_cluster]
+}
+
+# ---------------------------------------------------------------------------
+# Vuln #4 LOW-3: fail-closed APP_ENV misconfig guard for the DEPLOYED GKE path.
+# Active ONLY in Stage 2 (var.iap_backend_service_id != null), i.e. exactly when
+# the identity vars (APP_ENV / REQUIRE_AUTHENTICATED_USER / IAP_JWT_AUDIENCE) are
+# rendered into the env map. In that stage APP_ENV MUST resolve to a NON-local
+# value — otherwise the app would derive AUTH_MODE='local' and serve a mock
+# identity (fail OPEN) on a managed platform. The precondition FAILS the
+# plan/apply in that case. In Stage 1 (id null) count = 0, so the guard is inert
+# (iap mode is unreachable then anyway — nothing to guard).
+# ---------------------------------------------------------------------------
+resource "terraform_data" "gke_app_env_guard" {
+  count = var.iap_backend_service_id != null ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = !contains(local.local_app_envs, local.stage2_identity_env_vars.APP_ENV)
+      error_message = "Vuln #4 LOW-3 misconfig: GKE Stage-2 co-deploy resolved APP_ENV='${try(local.stage2_identity_env_vars.APP_ENV, "")}', which is in the app's LOCAL set {\"\", dev, development, local, test} and would derive AUTH_MODE='local' (mock identity, fail-open) on a managed platform. Set var.environment to a non-local value (e.g. \"prod\") so AUTH_MODE derives to 'iap'."
+    }
+  }
 }
