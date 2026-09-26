@@ -4,6 +4,18 @@
 
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.20.2](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/compare/mcp-v3.20.1...mcp-v3.20.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/googlecloudplatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 0e7f9d2 ([#1917](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1917)) ([0eabe0b](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/0eabe0b77e263332ae933b4f9da60e8397d357a1))
+* **deps:** update github.com/googlecloudplatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 60fd64b ([#1928](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1928)) ([6465bcf](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/6465bcf999828833c28c2e295f36197e266806eb))
+* **deps:** update github.com/googlecloudplatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 7367ff5 ([#1919](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1919)) ([33bab51](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/33bab513d8324ec3ed6304ae0eaca3ed7f1628a3))
+* **deps:** update github.com/googlecloudplatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to 96ed797 ([#1909](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1909)) ([ce294ac](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/ce294ac39185bdc7980079db625f942bcfabdffb))
+* **deps:** update github.com/googlecloudplatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common digest to cac85e9 ([#1913](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1913)) ([0e7f9d2](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/0e7f9d28295a9a0b675f7507d6503c60b0e246c0))
+* **mcp-genmedia:** confine caller-supplied output directories (CWE-22 path traversal) ([#1921](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1921)) ([2bf604e](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/2bf604e920f5ec9ac375be5587e2e2b612cd3b53))
+
 ## [3.20.1](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/compare/mcp-v3.20.0...mcp-v3.20.1) (2026-09-21)
 
 
